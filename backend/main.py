@@ -65,9 +65,94 @@ class QuizRequest(BaseModel):
     topic_description: str | None = None
 
 
+class ExamQuizQuestion(BaseModel):
+    topic_name: str
+    mastery_score: int | float
+
+
+class ExamQuizRequest(BaseModel):
+    subject: str
+    topics: list[ExamQuizQuestion]
+    question_count: int = 10
+
+
 @app.get("/")
 def root():
     return {"message": "AI Campus Copilot backend is running"}
+
+
+@app.post("/api/generate-exam-quiz")
+def generate_exam_quiz(request: ExamQuizRequest):
+    topics_text = "\n".join(
+        f"- {topic.topic_name}: {topic.mastery_score}% mastery"
+        for topic in request.topics
+    )
+
+    prompt = f"""
+You are creating an adaptive exam-practice quiz for a B.Tech Computer Science student.
+
+SUBJECT:
+{request.subject}
+
+TOPICS AND STUDENT MASTERY:
+{topics_text}
+
+Create exactly {request.question_count} multiple-choice questions.
+
+IMPORTANT RULES:
+- Prioritize topics with lower mastery score (weak topics should receive more questions).
+- Cover multiple syllabus topics.
+- Questions should test understanding, problem-solving, and application.
+- Use exactly 4 options per question.
+- Exactly one option is correct (correct_answer is 0-indexed integer: 0, 1, 2, or 3).
+- Do not invent topics outside the provided list.
+- Return raw JSON only with NO markdown code fences or backticks.
+
+JSON format:
+{{
+  "questions": [
+    {{
+      "topic": "Exact topic name",
+      "question": "Question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_answer": 0,
+      "explanation": "Why this answer is correct."
+    }}
+  ]
+}}
+"""
+
+    models_to_try = [
+        "gemini-flash-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-lite-latest",
+        "gemini-3.7-flash",
+        "gemini-2.5-flash",
+    ]
+
+    last_error = None
+
+    for model_name in models_to_try:
+        try:
+            if USE_NEW_SDK:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                return {"quiz": response.text}
+            else:
+                model = genai_legacy.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                return {"quiz": response.text}
+        except Exception as err:
+            print(f"Model {model_name} failed: {err}")
+            last_error = err
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Exam quiz generation failed: {last_error}",
+    )
+
 
 
 @app.post("/api/generate-quiz")

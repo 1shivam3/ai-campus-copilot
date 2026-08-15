@@ -869,7 +869,9 @@ function App() {
           {currentPage === "Progress" && <Progress user={user} profile={profile} />}
           {currentPage === "Tasks" && <Tasks user={user} />}
           {currentPage === "Exams" && <Exams user={user} />}
-          {currentPage === "Exam Mode" && <ExamMode user={user} />}
+          {currentPage === "Exam Mode" && (
+            <ExamMode user={user} profile={profile} />
+          )}
           {currentPage === "Study Material" && <StudyMaterial user={user} />}
           {currentPage === "AI Copilot" && (
             <AITest
