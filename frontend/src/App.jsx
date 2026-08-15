@@ -13,6 +13,7 @@ import ProfileSetup from "./pages/ProfileSetup"
 import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getFreeWindows, getBestStudyWindow } from "./utils/freeTime"
+import { buildDailyPlan } from "./utils/dailyPlan"
 import { getAcademicRecommendation } from "./utils/academicRecommendation"
 import { getTopicRecommendation, getWeakestTopic } from "./utils/topicRecommendation"
 
@@ -225,6 +226,7 @@ function App() {
   const pendingTasksCount = dashboardTasks.length
   const todayClasses = getTodaySchedule(dashboardSchedule)
   const nextClass = getNextClass(dashboardSchedule)
+  const freeWindows = getFreeWindows(dashboardSchedule)
   const nextBestTask = recommendation?.type === "task" ? recommendation.item : null
 
   const recommendedStudyWindow = getBestStudyWindow(
@@ -233,6 +235,14 @@ function App() {
       ? Math.min(Number(nextBestTask.estimated_minutes || 30), 60)
       : 30
   )
+
+  const dailyPlan = buildDailyPlan({
+    classes: todayClasses,
+    tasks: dashboardTasks,
+    exams: dashboardExams,
+    studyWindows: freeWindows,
+    weakestTopic,
+  })
 
   function getTopTopics() {
     return [...dashboardTopics]
@@ -380,6 +390,113 @@ function App() {
                     </div>
                   </div>
                 </div>
+              </section>
+
+              {/* Today's Academic Plan Timeline */}
+              <section className="mb-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold tracking-widest text-blue-600">
+                      TODAY&apos;S ACADEMIC PLAN
+                    </p>
+
+                    <h3 className="mt-1 text-2xl font-bold text-slate-900">
+                      Your day at a glance
+                    </h3>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Classes, open study windows, and academic priorities integrated in real time.
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-blue-50 text-blue-700 px-3 py-1 text-xs font-bold self-start border border-blue-200">
+                    {dailyPlan.length} timeline blocks
+                  </span>
+                </div>
+
+                {dailyPlan.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
+                    <p className="font-semibold text-slate-700">
+                      Nothing scheduled for today
+                    </p>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Add academic tasks or check your semester timetable.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dailyPlan.map((item, index) => {
+                      const typeStyles = {
+                        class: "border-slate-200 bg-slate-50/80 text-slate-900",
+                        study: "border-blue-200 bg-blue-50/70 text-blue-950",
+                        exam: "border-red-200 bg-red-50/70 text-red-950",
+                        weakness: "border-amber-200 bg-amber-50/70 text-amber-950",
+                      }
+
+                      const badgeStyles = {
+                        class: "bg-slate-200/70 text-slate-700",
+                        study: "bg-blue-100 text-blue-700",
+                        exam: "bg-red-100 text-red-700",
+                        weakness: "bg-amber-100 text-amber-800",
+                      }
+
+                      const badgeLabels = {
+                        class: "CLASS",
+                        study: "STUDY WINDOW",
+                        exam: "EXAM",
+                        weakness: "WEAK TOPIC",
+                      }
+
+                      return (
+                        <div
+                          key={`${item.type}-${index}`}
+                          className={`rounded-2xl border p-4 transition hover:shadow-sm ${typeStyles[item.type] || "bg-slate-50"}`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex items-start gap-4">
+                              {item.start ? (
+                                <div className="min-w-[95px] font-mono text-slate-700">
+                                  <p className="text-sm font-bold">
+                                    {item.start}
+                                  </p>
+
+                                  {item.end && (
+                                    <p className="text-xs text-slate-400">
+                                      to {item.end}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="min-w-[95px]">
+                                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold ${badgeStyles[item.type]}`}>
+                                    {badgeLabels[item.type]}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div>
+                                <h4 className="font-bold text-slate-900 leading-snug">
+                                  {item.title}
+                                </h4>
+
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  {item.subtitle}
+                                </p>
+                              </div>
+                            </div>
+
+                            {item.start && (
+                              <span className={`self-start sm:self-center rounded-full px-2.5 py-0.5 text-[10px] font-bold ${badgeStyles[item.type]}`}>
+                                {badgeLabels[item.type]}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </section>
 
               {/* Next Best Action Card */}
