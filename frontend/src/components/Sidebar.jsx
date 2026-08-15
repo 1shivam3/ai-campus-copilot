@@ -3,6 +3,7 @@ function Sidebar({ currentPage, setCurrentPage, user, profile, onLogout }) {
     "Dashboard",
     "My Academics",
     "Syllabus",
+    "Progress",
     "Tasks",
     "Exams",
     "Exam Mode",

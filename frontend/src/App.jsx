@@ -3,6 +3,7 @@ import { supabase } from "./lib/supabase"
 import Sidebar from "./components/Sidebar"
 import MyAcademics from "./pages/MyAcademics"
 import Syllabus from "./pages/Syllabus"
+import Progress from "./pages/Progress"
 import Tasks from "./pages/Tasks"
 import Exams from "./pages/Exams"
 import ExamMode from "./pages/ExamMode"
@@ -796,6 +797,7 @@ function App() {
 
           {currentPage === "My Academics" && <MyAcademics profile={profile} />}
           {currentPage === "Syllabus" && <Syllabus profile={profile} />}
+          {currentPage === "Progress" && <Progress user={user} profile={profile} />}
           {currentPage === "Tasks" && <Tasks user={user} />}
           {currentPage === "Exams" && <Exams user={user} />}
           {currentPage === "Exam Mode" && <ExamMode user={user} />}
