@@ -19,12 +19,17 @@ function ProfileSetup({ user, onComplete }) {
     { value: 8, label: "8th Semester" },
   ]
 
-  const sections = [
-    "B1",
-    "B2",
-    "K1",
-    "K2",
-  ]
+  const sections = Array.from(
+    { length: 12 },
+    (_, index) => {
+      const letter = String.fromCharCode(65 + index)
+
+      return [
+        `${letter}1`,
+        `${letter}2`,
+      ]
+    }
+  ).flat()
 
   async function handleSubmit(e) {
     e.preventDefault()
