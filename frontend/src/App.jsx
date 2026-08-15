@@ -881,7 +881,14 @@ function App() {
             />
           )}
           {currentPage === "Focus Session" && (
-            <FocusSession user={user} recommendedTaskId={recommendedTaskId} />
+            <FocusSession
+              user={user}
+              recommendedTaskId={recommendedTaskId}
+              onReturnToDashboard={() => {
+                loadAllDashboardData()
+                setCurrentPage("Dashboard")
+              }}
+            />
           )}
         </main>
       </div>

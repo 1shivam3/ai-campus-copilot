@@ -2,13 +2,14 @@ import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { calculateNewMastery } from "../utils/mastery"
 
-function FocusSession({ user, recommendedTaskId }) {
+function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
   const [tasks, setTasks] = useState([])
   const [selectedTask, setSelectedTask] = useState("")
   const [minutes, setMinutes] = useState(25)
   const [secondsLeft, setSecondsLeft] = useState(25 * 60)
   const [running, setRunning] = useState(false)
   const [completed, setCompleted] = useState(false)
+  const [updatingTask, setUpdatingTask] = useState(false)
 
   useEffect(() => {
     if (user?.id) {
@@ -126,6 +127,32 @@ function FocusSession({ user, recommendedTaskId }) {
     }
   }
 
+  async function completeTaskAndReturn() {
+    if (!selectedTask || !user?.id) {
+      if (onReturnToDashboard) onReturnToDashboard()
+      return
+    }
+
+    setUpdatingTask(true)
+
+    try {
+      await supabase
+        .from("tasks")
+        .update({ status: "completed" })
+        .eq("id", Number(selectedTask))
+        .eq("user_id", user.id)
+
+      if (onReturnToDashboard) {
+        onReturnToDashboard()
+      }
+    } catch (err) {
+      console.error("Complete task error:", err)
+      if (onReturnToDashboard) onReturnToDashboard()
+    } finally {
+      setUpdatingTask(false)
+    }
+  }
+
   function formatTime(totalSeconds) {
     const mins = Math.floor(totalSeconds / 60)
     const secs = totalSeconds % 60
@@ -139,16 +166,28 @@ function FocusSession({ user, recommendedTaskId }) {
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-6">
-          <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
-            DISTRACTION-FREE WORK
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Deep Work Focus Session
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500">
-            Select one task, mute interruptions, and lock in your study momentum.
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
+              DISTRACTION-FREE WORK
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Deep Work Focus Session
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Select one task, mute interruptions, and lock in your study momentum.
+            </p>
+          </div>
+
+          {onReturnToDashboard && (
+            <button
+              type="button"
+              onClick={onReturnToDashboard}
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
+            >
+              ← Dashboard
+            </button>
+          )}
         </div>
 
         {/* Timer Card */}
@@ -255,6 +294,7 @@ function FocusSession({ user, recommendedTaskId }) {
           </div>
         </div>
 
+        {/* Post-Session Action Cards */}
         {completed && (
           <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-sm">
             <span className="text-3xl">🎯</span>
@@ -265,6 +305,27 @@ function FocusSession({ user, recommendedTaskId }) {
               {minutes} minutes recorded for{" "}
               <strong className="font-bold">{currentTask?.title}</strong>. Your mastery progression has been updated!
             </p>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={completeTaskAndReturn}
+                disabled={updatingTask}
+                className="rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-sm active:scale-[0.98]"
+              >
+                {updatingTask ? "Completing..." : "✓ Mark Task Done & Return to Dashboard"}
+              </button>
+
+              {onReturnToDashboard && (
+                <button
+                  type="button"
+                  onClick={onReturnToDashboard}
+                  className="rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100/50 transition"
+                >
+                  Return to Dashboard →
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
