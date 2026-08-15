@@ -259,21 +259,23 @@ TASK TIME:
 AVAILABLE STUDY TIME:
 {request.recommended_minutes or request.available_minutes} minutes
 
-CRITICAL SCHEDULING INSTRUCTIONS:
+CRITICAL SCHEDULING & TOPIC INSTRUCTIONS:
+- Prioritize the student's highest-risk / weakest syllabus topics first ({request.topic_name}).
+- Do not spend most of the available time on topics where mastery is already high; allocate time heavily to the weakest areas.
 - Respect the student's timetable and lecture schedule.
 - Do not recommend studying during their upcoming class period.
 - If a recommended free study window exists ({request.recommended_start} - {request.recommended_end}), explicitly structure the action plan to fit inside that exact window.
 - Do not invent conflicting times.
 
-Create a high-yield study strategy tailored to this exact time slot.
+Create a high-yield study strategy tailored to this exact time slot and these specific priority topics.
 
 Return exactly:
 
 WHY NOW:
-Explain why this task/topic was prioritized and how it fits cleanly into today's class schedule.
+Explain why these specific topics/tasks were prioritized and how this session fits cleanly into today's class schedule.
 
 ACTION PLAN:
-Create a time-blocked action plan that fits directly inside the available study window.
+Create a time-blocked action plan that directly targets the highest-risk topics ({request.topic_name}) inside the available study window.
 
 FIRST TASK:
 Give one exact action to begin immediately.
