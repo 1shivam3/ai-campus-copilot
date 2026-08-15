@@ -73,36 +73,34 @@ function Progress({ profile, user }) {
       return
     }
 
+    setTopics(topicData || [])
+
     const topicIds = (topicData || []).map(
       (topic) => topic.id
     )
 
-    let progressData = []
-
-    if (topicIds.length > 0 && user?.id) {
-      const { data, error } = await supabase
-        .from("student_topic_progress")
-        .select("*")
-        .eq("user_id", user.id)
-        .in("syllabus_topic_id", topicIds)
-
-      if (error) {
-        console.error(error)
-        setError("Could not load topic progress.")
-        setTopicsLoading(false)
-        return
-      }
-
-      progressData = data || []
-    }
-
     const progressMap = {}
 
-    for (const item of progressData) {
-      progressMap[item.syllabus_topic_id] = item
+    if (topicIds.length > 0 && user?.id) {
+      try {
+        const { data, error } = await supabase
+          .from("student_topic_progress")
+          .select("*")
+          .eq("user_id", user.id)
+          .in("syllabus_topic_id", topicIds)
+
+        if (error) {
+          console.warn("Notice: student_topic_progress table query error (run SQL in Supabase if not created yet):", error.message)
+        } else if (data) {
+          for (const item of data) {
+            progressMap[item.syllabus_topic_id] = item
+          }
+        }
+      } catch (err) {
+        console.warn("Could not query student_topic_progress:", err)
+      }
     }
 
-    setTopics(topicData || [])
     setProgress(progressMap)
     setTopicsLoading(false)
   }
@@ -120,35 +118,47 @@ function Progress({ profile, user }) {
 
     const masteryScore = masteryByStatus[status]
 
-    const { data, error } = await supabase
-      .from("student_topic_progress")
-      .upsert(
-        {
-          user_id: user.id,
-          syllabus_topic_id: topic.id,
-          status,
-          mastery_score: masteryScore,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict:
-            "user_id,syllabus_topic_id",
-        }
-      )
-      .select()
-      .single()
-
-    if (error) {
-      console.error(error)
-      setError("Could not update topic progress.")
-      setSavingId(null)
-      return
-    }
-
+    // Optimistic state update
     setProgress((current) => ({
       ...current,
-      [topic.id]: data,
+      [topic.id]: {
+        ...(current[topic.id] || {}),
+        syllabus_topic_id: topic.id,
+        status,
+        mastery_score: masteryScore,
+      },
     }))
+
+    try {
+      const { data, error } = await supabase
+        .from("student_topic_progress")
+        .upsert(
+          {
+            user_id: user.id,
+            syllabus_topic_id: topic.id,
+            status,
+            mastery_score: masteryScore,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "user_id,syllabus_topic_id",
+          }
+        )
+        .select()
+        .maybeSingle()
+
+      if (error) {
+        console.error("Supabase progress error:", error)
+        setError("Could not save to database. Please ensure the student_topic_progress table was created in Supabase SQL editor.")
+      } else if (data) {
+        setProgress((current) => ({
+          ...current,
+          [topic.id]: data,
+        }))
+      }
+    } catch (err) {
+      console.error(err)
+    }
 
     setSavingId(null)
   }
