@@ -19,6 +19,13 @@ import { buildDailyPlan } from "./utils/dailyPlan"
 import { getAcademicRecommendation } from "./utils/academicRecommendation"
 import { getTopicRecommendation } from "./utils/topicRecommendation"
 import { getWeakestSyllabusTopic, calculateSyllabusMastery } from "./utils/syllabusProgress"
+import { calculateExamReadiness } from "./utils/examReadiness"
+
+function getDaysRemaining(date) {
+  if (!date) return 0
+  const difference = new Date(date).getTime() - new Date().getTime()
+  return Math.max(0, Math.ceil(difference / (1000 * 60 * 60 * 24)))
+}
 
 function App() {
   const [user, setUser] = useState(null)
@@ -31,6 +38,7 @@ function App() {
   const [dashboardExams, setDashboardExams] = useState([])
   const [dashboardTopics, setDashboardTopics] = useState([])
   const [dashboardSchedule, setDashboardSchedule] = useState([])
+  const [academicSubjects, setAcademicSubjects] = useState([])
   const [syllabusTopics, setSyllabusTopics] = useState([])
   const [topicProgress, setTopicProgress] = useState({})
   const [dashboardLoading, setDashboardLoading] = useState(true)
@@ -134,7 +142,7 @@ function App() {
       const { data: subjectData, error: subjectError } =
         await supabase
           .from("academic_subjects")
-          .select("id")
+          .select("id, subject_code, subject_name")
           .eq("semester", profile.semester)
           .eq("section", profile.section)
 
@@ -143,6 +151,7 @@ function App() {
         return
       }
 
+      setAcademicSubjects(subjectData || [])
       const subjectIds = (subjectData || []).map((item) => item.id)
 
       if (!subjectIds.length) {
@@ -320,6 +329,44 @@ function App() {
     studyWindows: freeWindows,
     weakestTopic,
   })
+
+  // Calculate nearest upcoming exam and its syllabus readiness
+  const closestExam = [...dashboardExams].sort(
+    (a, b) => new Date(a.exam_date) - new Date(b.exam_date)
+  )[0]
+
+  const matchedSubject = closestExam
+    ? academicSubjects.find(
+        (s) =>
+          s.subject_name.toLowerCase().includes(closestExam.subject.toLowerCase()) ||
+          closestExam.subject.toLowerCase().includes(s.subject_name.toLowerCase()) ||
+          (s.subject_code && closestExam.subject.toLowerCase().includes(s.subject_code.toLowerCase()))
+      )
+    : null
+
+  const examSyllabusTopics = matchedSubject
+    ? syllabusTopics
+        .filter((t) => t.subject_id === matchedSubject.id)
+        .map((t) => ({
+          ...t,
+          mastery_score: topicProgress[t.id]?.mastery_score || 0,
+        }))
+    : []
+
+  const closestExamDaysRemaining = closestExam
+    ? getDaysRemaining(closestExam.exam_date)
+    : 0
+
+  const examReadiness = closestExam
+    ? calculateExamReadiness({
+        topics: examSyllabusTopics.length > 0
+          ? examSyllabusTopics
+          : dashboardTopics.filter((t) =>
+              t.subject?.toLowerCase().includes(closestExam.subject.toLowerCase())
+            ),
+        daysRemaining: closestExamDaysRemaining,
+      })
+    : null
 
   function getTopTopics() {
     return [...dashboardTopics]
@@ -737,6 +784,74 @@ function App() {
                   )}
                 </div>
               </section>
+
+              {/* Exam Readiness & Overview Row */}
+              {closestExam && examReadiness && (
+                <section className="mb-8 rounded-3xl border border-red-200/80 bg-gradient-to-br from-white to-red-50/30 p-6 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                        <p className="text-xs font-bold tracking-widest text-red-600">
+                          NEAREST EXAM READINESS
+                        </p>
+                      </div>
+
+                      <h3 className="mt-1 text-2xl font-bold text-slate-900">
+                        {closestExam.subject}
+                      </h3>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {closestExamDaysRemaining} {closestExamDaysRemaining === 1 ? "day" : "days"} remaining · Status:{" "}
+                        <span className={`font-bold ${
+                          examReadiness.label === "Strong"
+                            ? "text-emerald-600"
+                            : examReadiness.label === "On track"
+                              ? "text-blue-600"
+                              : "text-amber-600"
+                        }`}>
+                          {examReadiness.label}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-3xl font-bold text-slate-900">
+                          {examReadiness.score}%
+                        </p>
+                        <p className="text-[11px] font-medium text-slate-400">Readiness Score</p>
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage("Exam Mode")}
+                        className="rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700 transition shadow-sm"
+                      >
+                        Prepare Now →
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        examReadiness.score >= 75
+                          ? "bg-emerald-500"
+                          : examReadiness.score >= 50
+                            ? "bg-blue-600"
+                            : "bg-amber-500"
+                      }`}
+                      style={{
+                        width: `${examReadiness.score}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p className="mt-2 text-xs text-slate-400">
+                    Based on your recorded syllabus mastery ({examReadiness.averageMastery}%) and urgency penalty ({closestExamDaysRemaining} days left).
+                  </p>
+                </section>
+              )}
 
               <section className="grid gap-6 md:grid-cols-3">
                 {/* Today's Tasks */}
