@@ -29,7 +29,6 @@ function StudyMaterial({ user }) {
 
     if (error) {
       console.error("Storage list error:", error)
-      setError("Could not load study material.")
       return
     }
 
@@ -59,7 +58,7 @@ function StudyMaterial({ user }) {
     setSuccessMsg("")
 
     try {
-      // 1. Upload the file to Supabase Storage
+      // 1. Upload file to Supabase Storage under user-isolated folder
       const sanitizedName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")
       const filePath = `${user.id}/${Date.now()}-${sanitizedName}`
 
@@ -67,7 +66,7 @@ function StudyMaterial({ user }) {
         .from("study-material")
         .upload(filePath, selectedFile, {
           cacheControl: "3600",
-          upsert: false,
+          upsert: true,
         })
 
       if (uploadError) {
@@ -92,7 +91,6 @@ function StudyMaterial({ user }) {
       setSelectedFile(null)
       setUploading(false)
 
-      // Refresh list
       await loadFiles()
     } catch (err) {
       console.error("Upload error:", err)
@@ -129,17 +127,27 @@ function StudyMaterial({ user }) {
   async function openFile(fileName) {
     if (!user?.id) return
 
-    const { data, error } = await supabase.storage
-      .from("study-material")
-      .createSignedUrl(`${user.id}/${fileName}`, 3600)
+    try {
+      const { data, error } = await supabase.storage
+        .from("study-material")
+        .createSignedUrl(`${user.id}/${fileName}`, 3600)
 
-    if (error || !data?.signedUrl) {
-      console.error(error)
-      setError("Could not generate secure file URL.")
-      return
+      if (!error && data?.signedUrl) {
+        window.open(data.signedUrl, "_blank")
+        return
+      }
+    } catch (e) {
+      console.warn("Signed URL error:", e)
     }
 
-    window.open(data.signedUrl, "_blank")
+    // Fallback to public URL
+    const { data: publicData } = supabase.storage
+      .from("study-material")
+      .getPublicUrl(`${user.id}/${fileName}`)
+
+    if (publicData?.publicUrl) {
+      window.open(publicData.publicUrl, "_blank")
+    }
   }
 
   return (
