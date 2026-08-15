@@ -1,10 +1,12 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 
 function ProfileSetup({ user, onComplete }) {
   const [fullName, setFullName] = useState("")
   const [semester, setSemester] = useState("")
   const [section, setSection] = useState("")
+  const [sections, setSections] = useState([])
+  const [sectionsLoading, setSectionsLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -19,17 +21,33 @@ function ProfileSetup({ user, onComplete }) {
     { value: 8, label: "8th Semester" },
   ]
 
-  const sections = Array.from(
-    { length: 12 },
-    (_, index) => {
-      const letter = String.fromCharCode(65 + index)
+  async function loadSections(selectedSemester) {
+    setSection("")
+    setSections([])
 
-      return [
-        `${letter}1`,
-        `${letter}2`,
-      ]
+    if (!selectedSemester) {
+      return
     }
-  ).flat()
+
+    setSectionsLoading(true)
+    setError("")
+
+    const { data, error: fetchError } = await supabase
+      .from("academic_sections")
+      .select("section")
+      .eq("semester", Number(selectedSemester))
+      .order("section")
+
+    if (fetchError) {
+      console.error("Sections fetch error:", fetchError)
+      setError("Could not load sections for the selected semester.")
+      setSectionsLoading(false)
+      return
+    }
+
+    setSections(data || [])
+    setSectionsLoading(false)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -42,7 +60,7 @@ function ProfileSetup({ user, onComplete }) {
     setLoading(true)
     setError("")
 
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from("student_profiles")
       .insert({
         id: user.id,
@@ -51,8 +69,8 @@ function ProfileSetup({ user, onComplete }) {
         section,
       })
 
-    if (error) {
-      console.error(error)
+    if (insertError) {
+      console.error("Profile save error:", insertError)
       setError("Could not save your profile.")
       setLoading(false)
       return
@@ -77,7 +95,7 @@ function ProfileSetup({ user, onComplete }) {
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
             This helps Campus Copilot load the correct timetable,
-            labs and syllabus for you.
+            labs and syllabus for your section.
           </p>
         </div>
 
@@ -105,7 +123,11 @@ function ProfileSetup({ user, onComplete }) {
 
             <select
               value={semester}
-              onChange={(e) => setSemester(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value
+                setSemester(value)
+                loadSections(value)
+              }}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
               required
             >
@@ -132,16 +154,26 @@ function ProfileSetup({ user, onComplete }) {
             <select
               value={section}
               onChange={(e) => setSection(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
+              disabled={!semester || sectionsLoading}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
               required
             >
               <option value="">
-                Select your section
+                {!semester
+                  ? "Select semester first"
+                  : sectionsLoading
+                    ? "Loading sections..."
+                    : sections.length === 0
+                      ? "No sections registered for this semester"
+                      : "Select your section"}
               </option>
 
               {sections.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+                <option
+                  key={item.section}
+                  value={item.section}
+                >
+                  Section {item.section}
                 </option>
               ))}
             </select>
