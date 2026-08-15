@@ -17,7 +17,8 @@ import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getFreeWindows, getBestStudyWindow } from "./utils/freeTime"
 import { buildDailyPlan } from "./utils/dailyPlan"
 import { getAcademicRecommendation } from "./utils/academicRecommendation"
-import { getTopicRecommendation, getWeakestTopic } from "./utils/topicRecommendation"
+import { getTopicRecommendation } from "./utils/topicRecommendation"
+import { getWeakestSyllabusTopic, calculateSyllabusMastery } from "./utils/syllabusProgress"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -30,6 +31,8 @@ function App() {
   const [dashboardExams, setDashboardExams] = useState([])
   const [dashboardTopics, setDashboardTopics] = useState([])
   const [dashboardSchedule, setDashboardSchedule] = useState([])
+  const [syllabusTopics, setSyllabusTopics] = useState([])
+  const [topicProgress, setTopicProgress] = useState({})
   const [dashboardLoading, setDashboardLoading] = useState(true)
 
   useEffect(() => {
@@ -103,6 +106,7 @@ function App() {
   useEffect(() => {
     if (user?.id && profile) {
       fetchAcademicData()
+      loadSyllabusProgress()
     }
   }, [user, profile, currentPage])
 
@@ -120,6 +124,72 @@ function App() {
       setDashboardSchedule(data || [])
     } catch (error) {
       console.error("Dashboard schedule error:", error)
+    }
+  }
+
+  async function loadSyllabusProgress() {
+    if (!user?.id || !profile) return
+
+    try {
+      const { data: subjectData, error: subjectError } =
+        await supabase
+          .from("academic_subjects")
+          .select("id")
+          .eq("semester", profile.semester)
+          .eq("section", profile.section)
+
+      if (subjectError) {
+        console.error(subjectError)
+        return
+      }
+
+      const subjectIds = (subjectData || []).map((item) => item.id)
+
+      if (!subjectIds.length) {
+        setSyllabusTopics([])
+        setTopicProgress({})
+        return
+      }
+
+      const { data: topicData, error: topicError } =
+        await supabase
+          .from("syllabus_topics")
+          .select("*")
+          .in("subject_id", subjectIds)
+
+      if (topicError) {
+        console.error(topicError)
+        return
+      }
+
+      const topicIds = (topicData || []).map((topic) => topic.id)
+
+      let progressData = []
+
+      if (topicIds.length > 0) {
+        const { data, error } = await supabase
+          .from("student_topic_progress")
+          .select("*")
+          .eq("user_id", user.id)
+          .in("syllabus_topic_id", topicIds)
+
+        if (error) {
+          console.error(error)
+          return
+        }
+
+        progressData = data || []
+      }
+
+      const progressMap = {}
+      progressData.forEach((item) => {
+        progressMap[item.syllabus_topic_id] = item
+      })
+
+      setSyllabusTopics(topicData || [])
+      setTopicProgress(progressMap)
+    } catch (err) {
+      console.error("Syllabus progress loading error:", err)
     }
   }
 
@@ -218,12 +288,17 @@ function App() {
     dashboardTopics
   )
 
-  const weakestTopic = recommendation?.type === "exam"
-    ? getWeakestTopic(
-        dashboardTopics,
-        recommendation.item.subject
-      )
-    : null
+  const weakestSyllabusTopic = getWeakestSyllabusTopic(
+    syllabusTopics,
+    topicProgress
+  )
+
+  const syllabusMastery = calculateSyllabusMastery(
+    syllabusTopics,
+    topicProgress
+  )
+
+  const weakestTopic = weakestSyllabusTopic
 
   const pendingTasksCount = dashboardTasks.length
   const todayClasses = getTodaySchedule(dashboardSchedule)
@@ -576,44 +651,49 @@ function App() {
                           </div>
                         )}
 
-                        {/* WHY THIS? Section */}
-                        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-5">
-                          <p className="text-xs font-bold tracking-widest text-slate-400">
-                            WHY THIS?
-                          </p>
+                        {/* Current Weakest Syllabus Topic Card */}
+                        {weakestSyllabusTopic ? (
+                          <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-5">
+                            <p className="text-xs font-bold tracking-widest text-slate-400">
+                              CURRENT WEAKEST TOPIC
+                            </p>
 
-                          <div className="mt-3 space-y-2 text-sm text-slate-300">
-                            {recommendation.type === "exam" && (
-                              <p>
-                                • {recommendation.item.subject} exam is approaching
-                              </p>
-                            )}
-
-                            {weakestTopic && (
-                              <p>
-                                • {weakestTopic.topic_name} mastery is{" "}
-                                <span className="font-semibold text-amber-400">{weakestTopic.mastery_score}%</span>
-                              </p>
-                            )}
-
-                            {recommendation.type === "task" && (
-                              <>
-                                <p>
-                                  • Importance: {recommendation.item.importance}/10
+                            <div className="mt-3 flex items-end justify-between gap-4">
+                              <div>
+                                <p className="text-lg font-semibold">
+                                  {weakestSyllabusTopic.topic_name}
                                 </p>
 
-                                <p>
-                                  • Estimated effort:{" "}
-                                  {recommendation.item.estimated_minutes} minutes
+                                <p className="mt-1 text-xs text-slate-400">
+                                  {weakestSyllabusTopic.status === "not_started"
+                                    ? "Not started"
+                                    : weakestSyllabusTopic.status === "learning"
+                                      ? "Currently learning"
+                                      : "Mastered"}
                                 </p>
-                              </>
-                            )}
+                              </div>
 
-                            <p>
-                              • Priority score: {recommendation.score}/10
+                              <p className="text-2xl font-bold text-amber-400">
+                                {weakestSyllabusTopic.mastery_score}%
+                              </p>
+                            </div>
+
+                            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                              <div
+                                className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                                style={{
+                                  width: `${weakestSyllabusTopic.mastery_score}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-5">
+                            <p className="text-sm text-slate-400">
+                              No syllabus progress recorded yet.
                             </p>
                           </div>
-                        </div>
+                        )}
                       </>
                     ) : (
                       <>
@@ -706,12 +786,46 @@ function App() {
                   </p>
 
                   <div className="mt-6 space-y-5">
-                    <Stat label="Semester Progress" value="72%" />
+                    <Stat label="Syllabus Mastery" value={`${syllabusMastery}%`} />
                     <Stat label="Study Streak" value="6 days" />
                     <Stat label="Upcoming Tasks" value={pendingTasksCount.toString()} />
                     <Stat label="Upcoming Exams" value={dashboardExams.length.toString()} />
                   </div>
                 </div>
+              </section>
+
+              {/* Overall Syllabus Mastery Section */}
+              <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                  <div>
+                    <p className="text-xs font-bold tracking-widest text-slate-500">
+                      SYLLABUS MASTERY
+                    </p>
+                    <h3 className="mt-1 text-2xl font-bold text-slate-900">
+                      {syllabusMastery}% Overall Coverage
+                    </h3>
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage("Progress")}
+                    className="text-xs font-semibold text-blue-600 hover:underline self-start"
+                  >
+                    Update Progress →
+                  </button>
+                </div>
+
+                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{
+                      width: `${syllabusMastery}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="mt-3 text-xs text-slate-500">
+                  Calculated dynamically from your declared topic progress across all semester courses.
+                </p>
               </section>
 
               {/* Upcoming Exams */}
@@ -744,51 +858,6 @@ function App() {
                       <Exam subject="DBMS" date="9 days" />
                       <Exam subject="Operating Systems" date="14 days" />
                     </>
-                  )}
-                </div>
-              </section>
-
-              {/* Topic Mastery Section */}
-              <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-                <div className="mb-5">
-                  <h3 className="text-lg font-bold">Topic Mastery</h3>
-                  <p className="text-sm text-slate-500">
-                    Your current understanding across important topics
-                  </p>
-                </div>
-
-                <div className="space-y-5">
-                  {getTopTopics().map((topic) => (
-                    <div key={topic.id}>
-                      <div className="mb-2 flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {topic.topic_name}
-                          </p>
-
-                          <p className="text-xs text-slate-400">
-                            {topic.subject}
-                          </p>
-                        </div>
-
-                        <span className="text-sm font-bold text-slate-900">
-                          {topic.mastery_score}%
-                        </span>
-                      </div>
-
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-slate-900 transition-all duration-500"
-                          style={{
-                            width: `${topic.mastery_score}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-
-                  {dashboardTopics.length === 0 && !dashboardLoading && (
-                    <p className="text-sm text-slate-400">No topic mastery data found.</p>
                   )}
                 </div>
               </section>
