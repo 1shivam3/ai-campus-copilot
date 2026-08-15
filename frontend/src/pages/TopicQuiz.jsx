@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { generateTopicQuiz } from "../lib/api"
+import {
+  calculateWeightedMastery,
+  getMasteryStatus,
+} from "../utils/masteryModel"
 
 function TopicQuiz({ topic, user, onComplete, onClose }) {
   const [quiz, setQuiz] = useState(null)
@@ -67,6 +71,7 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
     const percentage = Math.round((score / total) * 100)
 
     try {
+      // 1. Save the quiz attempt record
       const { error: attemptError } = await supabase
         .from("topic_quiz_attempts")
         .insert({
@@ -81,14 +86,32 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
         console.error("Attempt error:", attemptError)
       }
 
+      // 2. Fetch previous mastery for weighted calculation
+      const { data: existingProgress, error: progressFetchError } =
+        await supabase
+          .from("student_topic_progress")
+          .select("mastery_score")
+          .eq("user_id", user.id)
+          .eq("syllabus_topic_id", topic.id)
+          .maybeSingle()
+
+      if (progressFetchError) {
+        console.warn("Could not load previous mastery:", progressFetchError)
+      }
+
+      const previousMastery = Number(existingProgress?.mastery_score || 0)
+      const newMastery = calculateWeightedMastery(previousMastery, percentage)
+      const newStatus = getMasteryStatus(newMastery)
+
+      // 3. Upsert the new weighted mastery score
       const { error: progressError } = await supabase
         .from("student_topic_progress")
         .upsert(
           {
             user_id: user.id,
             syllabus_topic_id: topic.id,
-            status: percentage >= 80 ? "mastered" : "learning",
-            mastery_score: percentage,
+            status: newStatus,
+            mastery_score: newMastery,
             updated_at: new Date().toISOString(),
           },
           {
@@ -104,10 +127,12 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
         score,
         total,
         percentage,
+        previousMastery,
+        newMastery,
       })
 
       if (onComplete) {
-        onComplete(percentage, percentage >= 80 ? "mastered" : "learning")
+        onComplete(newMastery, newStatus)
       }
     } catch (err) {
       console.error("Submission error:", err)
@@ -154,20 +179,52 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
   if (result) {
     return (
       <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-lg">
-        <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-bold tracking-widest text-blue-700">
+        <p className="text-xs font-bold tracking-widest text-blue-600">
           QUIZ COMPLETE
-        </span>
-
-        <h2 className="mt-4 text-4xl font-bold text-slate-900">
-          {result.score} / {result.total}
-        </h2>
-
-        <p className="mt-2 text-base font-semibold text-slate-700">
-          {result.percentage >= 80 ? "🎉 Outstanding! You mastered this topic." : "👍 Good effort! Marked as Learning."}
         </p>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Your topic mastery score has been objectively updated to <strong>{result.percentage}%</strong> in the Copilot engine.
+        <h2 className="mt-3 text-3xl font-bold text-slate-900">
+          {result.score}/{result.total}
+        </h2>
+
+        <p className="mt-2 text-sm text-slate-500">
+          Quiz score: {result.percentage}%
+        </p>
+
+        <div className="mx-auto mt-6 max-w-sm rounded-2xl bg-slate-50 border border-slate-100 p-5">
+          <p className="text-xs font-bold tracking-widest text-slate-500">
+            WEIGHTED MASTERY UPDATE
+          </p>
+
+          <div className="mt-3 flex items-center justify-center gap-4">
+            <div>
+              <p className="text-xs text-slate-400">
+                Before
+              </p>
+
+              <p className="text-2xl font-bold text-slate-700">
+                {result.previousMastery}%
+              </p>
+            </div>
+
+            <span className="text-slate-400 font-bold">
+              →
+            </span>
+
+            <div>
+              <p className="text-xs text-slate-400">
+                Now
+              </p>
+
+              <p className="text-2xl font-bold text-emerald-600">
+                {result.newMastery}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm text-slate-500">
+          Your Copilot will use this updated mastery when recommending what to study next.
         </p>
 
         <div className="mt-6 flex justify-center gap-3">
