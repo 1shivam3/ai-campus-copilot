@@ -1,0 +1,11 @@
+semester,section,subject_code,day_of_week,start_time,end_time,room,teacher_name
+3,B2,CSE301,Monday,09:00,10:00,EB-101,Prof. Rajesh Sharma
+3,B2,CSE302,Monday,10:00,11:00,EB-102,Dr. Priya Verma
+3,B2,CSE303,Tuesday,09:00,10:00,EB-103,Prof. Amit Gupta
+3,B2,CSE304,Tuesday,11:00,12:00,EB-104,Dr. Neha Singh
+3,B2,CSE305,Wednesday,10:00,11:00,EB-105,Prof. Vikas Kumar
+3,B2,CSE301,Wednesday,11:00,12:00,EB-101,Prof. Rajesh Sharma
+3,B2,CSE302,Thursday,09:00,10:00,EB-102,Dr. Priya Verma
+3,B2,CSE303,Thursday,10:00,11:00,EB-103,Prof. Amit Gupta
+3,B2,CSE304,Friday,09:00,10:00,EB-104,Dr. Neha Singh
+3,B2,CSE305,Friday,11:00,12:00,EB-105,Prof. Vikas Kumar

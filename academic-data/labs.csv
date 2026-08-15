@@ -1,0 +1,4 @@
+semester,section,subject_name,day_of_week,start_time,end_time,lab_room,teacher_name
+3,B2,Data Structures Lab,Tuesday,14:00,16:00,Lab-3 (Engineering Block),Prof. Rajesh Sharma
+3,B2,DBMS Lab,Thursday,14:00,16:00,Lab-2 (Engineering Block),Dr. Priya Verma
+3,B2,Operating Systems Lab,Friday,14:00,16:00,Lab-5 (Engineering Block),Prof. Amit Gupta

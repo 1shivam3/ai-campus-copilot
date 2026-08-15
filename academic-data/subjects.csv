@@ -1,0 +1,6 @@
+semester,section,subject_code,subject_name,subject_type,teacher_name,room
+3,B2,CSE301,Data Structures,Theory,Prof. Rajesh Sharma,EB-101
+3,B2,CSE302,Database Management Systems,Theory,Dr. Priya Verma,EB-102
+3,B2,CSE303,Operating Systems,Theory,Prof. Amit Gupta,EB-103
+3,B2,CSE304,Discrete Mathematics,Theory,Dr. Neha Singh,EB-104
+3,B2,CSE305,Computer Networks,Theory,Prof. Vikas Kumar,EB-105

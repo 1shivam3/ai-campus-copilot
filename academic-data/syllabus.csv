@@ -1,0 +1,9 @@
+semester,subject_code,unit_number,topic_name,description
+3,CSE301,1,Arrays & Pointers,Basic array operations multi-dimensional arrays pointer arithmetic and memory layout
+3,CSE301,2,Linked Lists,Singly doubly and circular linked lists with insertion and deletion operations
+3,CSE301,3,Stacks & Queues,Stack implementation expression evaluation circular queues and deques
+3,CSE301,4,Trees & Graphs,Binary trees BST traversals graph representation BFS DFS and Dijkstra algorithm
+3,CSE302,1,Relational Model & SQL,ER Diagrams relational schema normalization DDL DML and joins
+3,CSE302,2,Transactions & Concurrency,ACID properties serializability lock-based protocols and deadlocks
+3,CSE303,1,Process Management,Process states scheduling algorithms threads and inter-process communication
+3,CSE303,2,Memory Management,Paging segmentation virtual memory and page replacement algorithms
