@@ -80,11 +80,11 @@ export function CalendarIntegrationModal({
       } else {
         setError(
           res.message ||
-            "Google Calendar OAuth is not yet configured with client credentials. You can also view calculated timetable availability directly."
+            "Google Calendar OAuth client credentials are not configured on the backend. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your backend environment variables."
         )
       }
     } catch (err) {
-      setError(`OAuth initialization failed: ${err.message}`)
+      setError(`OAuth initialization notice: ${err.message}`)
     } finally {
       setLoading(false)
     }

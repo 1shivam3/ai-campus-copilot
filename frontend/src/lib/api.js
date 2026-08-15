@@ -136,7 +136,12 @@ export async function fetchCalendarAuthUrl(userId) {
   )
 
   if (!response.ok) {
-    throw new Error("Could not retrieve Google Calendar authorization URL.")
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(
+      errData.detail ||
+        errData.message ||
+        `Server returned ${response.status}: Could not initialize Google Calendar authorization.`
+    )
   }
 
   return response.json()

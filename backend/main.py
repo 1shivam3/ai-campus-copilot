@@ -1,3 +1,4 @@
+import logging
 import os
 import urllib.parse
 from datetime import datetime, timezone, timedelta
@@ -6,6 +7,9 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("coursepilot.calendar")
 
 load_dotenv()
 
@@ -438,13 +442,15 @@ def get_calendar_auth_url(user_id: str = Query(...), redirect_uri: str | None = 
     Generates a secure Google OAuth 2.0 authorization URL requesting
     minimal read-only Calendar permissions.
     """
+    logger.info(f"[CALENDAR_OAUTH] auth-url endpoint reached for user={user_id[:8]}...")
     client_id = google_client_id
+
     if not client_id:
-        # Return fallback guidance if OAuth credentials are not set in environment
+        logger.warning("[CALENDAR_OAUTH] GOOGLE_CLIENT_ID is not configured in backend environment variables.")
         return {
             "configured": False,
             "auth_url": None,
-            "message": "Google Calendar OAuth client is not yet configured in environment variables.",
+            "message": "Google Calendar OAuth client credentials are not configured on the backend. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the Render environment settings.",
         }
 
     redirect = redirect_uri or google_redirect_uri or "https://ai-campus-copilot-one.vercel.app"
@@ -461,6 +467,7 @@ def get_calendar_auth_url(user_id: str = Query(...), redirect_uri: str | None = 
     }
 
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+    logger.info(f"[CALENDAR_OAUTH] Generated Google OAuth URL with redirect_uri={redirect} and scope={scope}")
     return {
         "configured": True,
         "auth_url": auth_url,
@@ -473,10 +480,12 @@ async def calendar_oauth_callback(request: CalendarCallbackRequest):
     Exchanges Google authorization code for access & refresh tokens.
     Stores tokens securely on backend memory/store and returns connection status.
     """
+    logger.info(f"[CALENDAR_OAUTH] oauth-callback endpoint reached for user={request.user_id[:8]}...")
     if not google_client_id or not google_client_secret:
+        logger.error("[CALENDAR_OAUTH] Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET on server.")
         raise HTTPException(
             status_code=400,
-            detail="Google Calendar credentials are not configured on the backend.",
+            detail="Google Calendar credentials (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) are not configured on the backend.",
         )
 
     redirect = request.redirect_uri or google_redirect_uri or "https://ai-campus-copilot-one.vercel.app"
@@ -494,6 +503,7 @@ async def calendar_oauth_callback(request: CalendarCallbackRequest):
         async with httpx.AsyncClient(timeout=15.0) as http_client:
             token_res = await http_client.post(token_url, data=payload)
             if not token_res.is_success:
+                logger.error(f"[CALENDAR_OAUTH_ERROR] Token exchange failed with status {token_res.status_code}")
                 raise HTTPException(
                     status_code=400,
                     detail="Google token exchange failed. The authorization code may be invalid or expired.",
@@ -510,6 +520,7 @@ async def calendar_oauth_callback(request: CalendarCallbackRequest):
                 headers={"Authorization": f"Bearer {access_token}"},
             )
             email = userinfo_res.json().get("email") if userinfo_res.is_success else "Google User"
+            logger.info(f"[CALENDAR_OAUTH] Successfully authorized calendar connection for account {email}")
 
             # Store tokens securely on the server
             calendar_token_store[request.user_id] = {
