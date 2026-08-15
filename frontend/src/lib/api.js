@@ -41,3 +41,25 @@ export async function analyzeStudyMaterial(content, subject) {
 
   return result.answer
 }
+
+export async function generateTopicQuiz(data) {
+  const response = await fetch(
+    `${API_URL}/api/generate-quiz`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error("Quiz generation failed.")
+  }
+
+  const result = await response.json()
+
+  return result.quiz
+}
+

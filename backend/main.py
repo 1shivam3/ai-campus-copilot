@@ -60,9 +60,78 @@ class StudyMaterialRequest(BaseModel):
     content: str
 
 
+class QuizRequest(BaseModel):
+    topic_name: str
+    topic_description: str | None = None
+
+
 @app.get("/")
 def root():
     return {"message": "AI Campus Copilot backend is running"}
+
+
+@app.post("/api/generate-quiz")
+def generate_quiz(request: QuizRequest):
+    prompt = f"""
+Create a 5-question multiple-choice quiz for a B.Tech Computer Science student.
+
+TOPIC:
+{request.topic_name}
+
+DESCRIPTION:
+{request.topic_description or "No additional description"}
+
+Rules:
+- Questions must test conceptual understanding, problem-solving, and practical knowledge, not trivial memorization.
+- Use exactly 4 options per question.
+- Exactly one option must be correct (correct_answer is 0-indexed integer: 0, 1, 2, or 3).
+- Do not invent information outside the subject domain.
+- Return raw JSON only with NO markdown code fences or backticks.
+
+JSON format:
+{{
+  "questions": [
+    {{
+      "question": "Clear question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_answer": 0,
+      "explanation": "Brief explanation of why this answer is correct."
+    }}
+  ]
+}}
+"""
+
+    models_to_try = [
+        "gemini-flash-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-lite-latest",
+        "gemini-3.7-flash",
+        "gemini-2.5-flash",
+    ]
+
+    last_error = None
+
+    for model_name in models_to_try:
+        try:
+            if USE_NEW_SDK:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                return {"quiz": response.text}
+            else:
+                model = genai_legacy.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                return {"quiz": response.text}
+        except Exception as err:
+            print(f"Model {model_name} failed: {err}")
+            last_error = err
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Quiz generation failed: {last_error}",
+    )
+
 
 
 @app.post("/api/study-advice")

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
+import TopicQuiz from "./TopicQuiz"
 
 function Progress({ profile, user }) {
   const [subjects, setSubjects] = useState([])
@@ -9,6 +10,7 @@ function Progress({ profile, user }) {
   const [loading, setLoading] = useState(true)
   const [topicsLoading, setTopicsLoading] = useState(false)
   const [savingId, setSavingId] = useState(null)
+  const [activeQuizTopic, setActiveQuizTopic] = useState(null)
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -151,6 +153,18 @@ function Progress({ profile, user }) {
     setSavingId(null)
   }
 
+  function handleQuizCompleted(topicId, newScore, newStatus) {
+    setProgress((current) => ({
+      ...current,
+      [topicId]: {
+        ...(current[topicId] || {}),
+        mastery_score: newScore,
+        status: newStatus,
+        syllabus_topic_id: topicId,
+      },
+    }))
+  }
+
   const overallMastery = useMemo(() => {
     if (!topics.length) return 0
 
@@ -192,7 +206,7 @@ function Progress({ profile, user }) {
 
         <div className="mb-8">
           <p className="text-xs font-bold tracking-widest text-blue-600">
-            LEARNING PROGRESS
+            LEARNING PROGRESS & ADAPTIVE QUIZZES
           </p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
@@ -200,10 +214,25 @@ function Progress({ profile, user }) {
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Track what you have studied so the Copilot can
-            understand your actual strengths and weaknesses.
+            Track what you have studied and validate your mastery with AI-generated conceptual quizzes.
           </p>
         </div>
+
+        {/* Modal/Overlay for Active Topic Quiz */}
+        {activeQuizTopic && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm overflow-y-auto">
+            <div className="my-8 w-full max-w-3xl">
+              <TopicQuiz
+                topic={activeQuizTopic}
+                user={user}
+                onComplete={(score, status) => {
+                  handleQuizCompleted(activeQuizTopic.id, score, status)
+                }}
+                onClose={() => setActiveQuizTopic(null)}
+              />
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
@@ -270,7 +299,7 @@ function Progress({ profile, user }) {
                 </div>
 
                 <p className="mt-3 text-xs text-slate-400">
-                  Calculated from your declared topic progress.
+                  Updated automatically by quiz scores and status.
                 </p>
               </div>
             </div>
@@ -394,7 +423,17 @@ function Progress({ profile, user }) {
                                     </div>
                                   </div>
 
-                                  <div className="flex shrink-0 flex-wrap gap-2 self-start">
+                                  <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
+                                    {/* Test Yourself AI Quiz Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveQuizTopic(topic)}
+                                      className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition shadow-sm flex items-center gap-1.5"
+                                    >
+                                      <span>🎯</span>
+                                      <span>Test Yourself</span>
+                                    </button>
+
                                     {[
                                       ["not_started", "Not Started"],
                                       ["learning", "Learning"],
