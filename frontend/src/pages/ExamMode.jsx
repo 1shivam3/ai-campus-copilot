@@ -3,6 +3,9 @@ import { supabase } from "../lib/supabase"
 import { generateStudyAdvice } from "../lib/api"
 import { getTopExamRisks } from "../utils/examPriority"
 import ExamQuiz from "./ExamQuiz"
+import { SkeletonBanner, SkeletonCard } from "../components/SkeletonLoader"
+import EmptyState from "../components/EmptyState"
+import ErrorState from "../components/ErrorState"
 
 function ExamMode({ user, profile }) {
   const [exam, setExam] = useState(null)
@@ -30,31 +33,29 @@ function ExamMode({ user, profile }) {
     try {
       const { data: examData, error: examError } = await supabase
         .from("exams")
-        .select("*")
+        .select("id, subject, exam_date, importance")
         .eq("user_id", user.id)
         .gte("exam_date", new Date().toISOString())
         .order("exam_date", { ascending: true })
         .limit(1)
 
-      if (examError) {
-        throw examError
-      }
+      if (examError) throw examError
 
       const upcomingExam = examData?.[0] || null
       setExam(upcomingExam)
 
       if (upcomingExam) {
-        // Query academic_subjects to find matching subject
         let query = supabase.from("academic_subjects").select("id, subject_name, subject_code")
         if (profile?.semester && profile?.section) {
           query = query.eq("semester", profile.semester).eq("section", profile.section)
         }
 
         const { data: subjectsData } = await query
-        const matchedSubject = (subjectsData || []).find((s) =>
-          s.subject_name.toLowerCase().includes(upcomingExam.subject.toLowerCase()) ||
-          upcomingExam.subject.toLowerCase().includes(s.subject_name.toLowerCase()) ||
-          (s.subject_code && upcomingExam.subject.toLowerCase().includes(s.subject_code.toLowerCase()))
+        const matchedSubject = (subjectsData || []).find(
+          (s) =>
+            s.subject_name.toLowerCase().includes(upcomingExam.subject.toLowerCase()) ||
+            upcomingExam.subject.toLowerCase().includes(s.subject_name.toLowerCase()) ||
+            (s.subject_code && upcomingExam.subject.toLowerCase().includes(s.subject_code.toLowerCase()))
         )
 
         let loadedTopics = []
@@ -62,7 +63,7 @@ function ExamMode({ user, profile }) {
         if (matchedSubject) {
           const { data: topicsData } = await supabase
             .from("syllabus_topics")
-            .select("*")
+            .select("id, subject_id, unit_number, topic_name, description")
             .eq("subject_id", matchedSubject.id)
             .order("unit_number")
 
@@ -70,7 +71,7 @@ function ExamMode({ user, profile }) {
             const topicIds = topicsData.map((t) => t.id)
             const { data: progressData } = await supabase
               .from("student_topic_progress")
-              .select("*")
+              .select("id, syllabus_topic_id, status, mastery_score")
               .eq("user_id", user.id)
               .in("syllabus_topic_id", topicIds)
 
@@ -92,17 +93,17 @@ function ExamMode({ user, profile }) {
           }
         }
 
-        // If no syllabus topics matched, fallback to general topics
         if (loadedTopics.length === 0) {
           const { data: generalTopics } = await supabase
             .from("topics")
-            .select("*")
+            .select("id, subject, topic_name, mastery_score")
             .eq("user_id", user.id)
 
           loadedTopics = (generalTopics || [])
-            .filter((t) =>
-              t.subject?.toLowerCase().includes(upcomingExam.subject.toLowerCase()) ||
-              upcomingExam.subject?.toLowerCase().includes(t.subject?.toLowerCase())
+            .filter(
+              (t) =>
+                t.subject?.toLowerCase().includes(upcomingExam.subject.toLowerCase()) ||
+                upcomingExam.subject?.toLowerCase().includes(t.subject?.toLowerCase())
             )
             .map((t) => ({
               id: t.id,
@@ -122,10 +123,10 @@ function ExamMode({ user, profile }) {
       }
     } catch (err) {
       console.error("Exam load error:", err)
-      setError("Could not load exam data.")
+      setError("Could not load exam data. Please check your connection.")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const topRisks = getTopExamRisks(examTopics, 5)
@@ -159,63 +160,54 @@ function ExamMode({ user, profile }) {
     } catch (err) {
       console.error(err)
       setError(
-        "Could not generate exam plan. Please check backend connection and try again."
+        "Could not generate exam plan. The backend may be waking up — please try again in a few seconds."
       )
+    } finally {
+      setGenerating(false)
     }
-
-    setGenerating(false)
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] p-8 flex items-center justify-center">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <p className="text-slate-600 font-medium">Loading Exam Mode...</p>
-        </div>
+      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+        <SkeletonBanner />
+        <SkeletonCard />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] p-8">
-        <div className="mx-auto max-w-3xl rounded-2xl bg-red-50 p-6 text-red-700 border border-red-200">
-          {error}
-        </div>
+      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        <ErrorState message={error} onRetry={loadExamData} />
       </div>
     )
   }
 
   if (!exam) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] p-8">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">
-            No upcoming exam found
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Add an exam in the Exams tab first to activate Exam Mode.
-          </p>
-        </div>
+      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        <EmptyState
+          icon="🎯"
+          title="No upcoming exam found"
+          description="Add an upcoming exam in the Exams tab to activate targeted exam preparation and adaptive simulations."
+        />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-8">
+    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <p className="text-xs font-bold tracking-widest text-red-600">
+        <div className="mb-6">
+          <p className="text-xs font-bold tracking-widest text-red-600 uppercase">
             EXAM MODE ACCELERATOR
           </p>
-
-          <h1 className="mt-1 text-3xl font-bold text-slate-900">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Prepare for {exam.subject}
           </h1>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Focus dynamically on high-yield revision and adaptive practice tailored to your weakest syllabus areas.
+          <p className="mt-1 text-xs sm:text-sm text-slate-500">
+            Target high-yield revision and adaptive practice tailored dynamically to your lowest syllabus scores.
           </p>
         </div>
 
@@ -223,11 +215,10 @@ function ExamMode({ user, profile }) {
         <div className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl">
           <div className="grid gap-5 sm:grid-cols-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 EXAM DATE
               </p>
-
-              <p className="mt-1 font-bold text-xl">
+              <p className="mt-1 font-bold text-lg sm:text-xl">
                 {new Date(exam.exam_date).toLocaleDateString(undefined, {
                   month: "short",
                   day: "numeric",
@@ -237,65 +228,77 @@ function ExamMode({ user, profile }) {
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 IMPORTANCE
               </p>
-
-              <p className="mt-1 font-bold text-xl text-emerald-400">
-                {exam.importance}/10
+              <p className="mt-1 font-bold text-lg sm:text-xl text-emerald-400">
+                {exam.importance || 8}/10
               </p>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 HIGHEST-RISK TOPIC
               </p>
-
-              <p className="mt-1 font-bold text-xl text-amber-400 truncate" title={weakestTopic?.topic_name}>
-                {weakestTopic ? `${weakestTopic.topic_name} (${weakestTopic.mastery_score}%)` : "All Topics Covered"}
+              <p
+                className="mt-1 font-bold text-lg sm:text-xl text-amber-400 truncate"
+                title={weakestTopic?.topic_name}
+              >
+                {weakestTopic
+                  ? `${weakestTopic.topic_name} (${weakestTopic.mastery_score}%)`
+                  : "All Topics Covered"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Highest-Risk Topics Card */}
+        {/* Highest-Risk Topics */}
         {topRisks.length > 0 && !showQuiz && (
-          <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <p className="text-xs font-bold tracking-widest text-red-600">
+                <p className="text-[11px] font-bold tracking-widest text-red-600 uppercase">
                   HIGHEST-RISK TOPICS
                 </p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900">
+                <h2 className="mt-0.5 text-lg font-bold text-slate-900">
                   Focus Here First
                 </h2>
               </div>
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
+              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700">
                 {topRisks.length} Priority Areas
               </span>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-2.5">
               {topRisks.map((topic) => (
                 <div
                   key={topic.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 p-4 transition hover:bg-slate-100/70"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 transition hover:bg-slate-100/70"
                 >
-                  <div className="flex-1 pr-4">
-                    <p className="font-bold text-slate-900 text-sm">
+                  <div className="flex-1 pr-3 min-w-0">
+                    <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">
                       {topic.topic_name}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Current mastery: <strong className={topic.mastery_score >= 60 ? "text-blue-600" : "text-amber-600"}>{topic.mastery_score}%</strong>
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      Mastery:{" "}
+                      <strong
+                        className={
+                          topic.mastery_score >= 60 ? "text-blue-600" : "text-amber-600"
+                        }
+                      >
+                        {topic.mastery_score}%
+                      </strong>
                     </p>
                   </div>
 
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold shrink-0 ${
-                    topic.mastery_score <= 40
-                      ? "bg-red-100 text-red-700 border border-red-200"
-                      : "bg-amber-100 text-amber-800 border border-amber-200"
-                  }`}>
-                    {topic.mastery_score <= 40 ? "Critical Risk" : "Moderate Risk"}
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0 ${
+                      topic.mastery_score <= 40
+                        ? "bg-red-100 text-red-700 border border-red-200"
+                        : "bg-amber-100 text-amber-800 border border-amber-200"
+                    }`}
+                  >
+                    {topic.mastery_score <= 40 ? "Critical" : "Moderate"} Risk
                   </span>
                 </div>
               ))}
@@ -303,29 +306,27 @@ function ExamMode({ user, profile }) {
           </div>
         )}
 
-        {/* Adaptive Exam Quiz Simulation Section */}
+        {/* Adaptive Exam Quiz Simulation */}
         <div className="mt-6">
           {showQuiz ? (
             <ExamQuiz
               exam={exam}
               topics={examTopics}
               user={user}
-              onComplete={() => {
-                loadExamData()
-              }}
+              onComplete={() => loadExamData()}
               onClose={() => setShowQuiz(false)}
             />
           ) : (
-            <div className="rounded-2xl border border-red-200/70 bg-gradient-to-br from-red-50/50 to-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-red-200/70 bg-gradient-to-br from-red-50/50 to-white p-5 sm:p-6 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold tracking-widest text-red-600">
-                    ADAPTIVE EXAM SIMULATION
+                  <p className="text-[11px] font-bold tracking-widest text-red-600 uppercase">
+                    ADAPTIVE SIMULATION
                   </p>
-                  <h3 className="mt-1 text-xl font-bold text-slate-900">
+                  <h3 className="mt-0.5 text-lg font-bold text-slate-900">
                     Test Yourself Before the Exam
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600 max-w-xl">
+                  <p className="mt-1 text-xs text-slate-600 max-w-xl">
                     Take an AI-generated 10-question quiz dynamically focused on your weakest topics in {exam.subject}.
                   </p>
                 </div>
@@ -333,7 +334,7 @@ function ExamMode({ user, profile }) {
                 <button
                   type="button"
                   onClick={() => setShowQuiz(true)}
-                  className="self-start sm:self-center shrink-0 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-700 shadow-md flex items-center gap-2"
+                  className="self-start sm:self-center shrink-0 rounded-xl bg-red-600 px-5 py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-red-700 shadow-md active:scale-[0.98] flex items-center gap-2"
                 >
                   <span>🎯</span>
                   <span>Start Simulation</span>
@@ -343,30 +344,30 @@ function ExamMode({ user, profile }) {
           )}
         </div>
 
-        {/* AI Revision Strategy Section */}
+        {/* AI Revision Strategy Plan */}
         {!showQuiz && (
-          <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900">
+          <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm">
+            <h2 className="text-base font-bold text-slate-900">
               How much revision time do you have right now?
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              We&apos;ll formulate a time-blocked study strategy tailored to this exact session focusing on your highest-risk topics.
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Formulate a time-blocked study strategy tailored to this exact session focusing on your highest-risk topics.
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              {[30, 60, 90, 120].map((value) => (
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {[30, 60, 90, 120].map((val) => (
                 <button
-                  key={value}
+                  key={val}
                   type="button"
-                  onClick={() => setMinutes(value)}
-                  className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                    minutes === value
+                  onClick={() => setMinutes(val)}
+                  className={`rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-[0.98] ${
+                    minutes === val
                       ? "bg-slate-900 text-white shadow-sm"
                       : "border border-slate-200 text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  {value} min
+                  {val} min
                 </button>
               ))}
             </div>
@@ -375,7 +376,7 @@ function ExamMode({ user, profile }) {
               type="button"
               onClick={generatePlan}
               disabled={generating}
-              className="mt-6 w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 transition shadow-sm"
+              className="mt-5 w-full rounded-xl bg-slate-900 px-5 py-3.5 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50 transition shadow-sm active:scale-[0.98]"
             >
               {generating
                 ? "Building your high-yield exam plan..."
@@ -385,11 +386,10 @@ function ExamMode({ user, profile }) {
         )}
 
         {plan && !showQuiz && (
-          <div className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm leading-relaxed text-sm text-slate-800 font-sans">
-            <h2 className="mb-4 text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
+          <div className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm leading-relaxed text-xs sm:text-sm text-slate-800 font-sans">
+            <h2 className="mb-4 text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
               🎯 Your Rapid Exam Strategy ({minutes} mins)
             </h2>
-
             {plan}
           </div>
         )}

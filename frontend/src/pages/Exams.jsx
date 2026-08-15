@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
+import { SkeletonGrid } from "../components/SkeletonLoader"
+import EmptyState from "../components/EmptyState"
+import ErrorState from "../components/ErrorState"
 
 function Exams({ user }) {
   const [exams, setExams] = useState([])
@@ -21,23 +24,24 @@ function Exams({ user }) {
 
   async function fetchExams() {
     setLoading(true)
+    setError("")
 
-    const { data, error } = await supabase
-      .from("exams")
-      .select("*")
-      .eq("user_id", user.id)
-      .gte("exam_date", new Date().toISOString())
-      .order("exam_date", { ascending: true })
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from("exams")
+        .select("id, subject, exam_date, importance, created_at")
+        .eq("user_id", user.id)
+        .gte("exam_date", new Date().toISOString())
+        .order("exam_date", { ascending: true })
 
-    if (error) {
-      console.error(error)
-      setError("Could not load exams.")
-    } else {
+      if (fetchErr) throw fetchErr
       setExams(data || [])
-      setError("")
+    } catch (err) {
+      console.error(err)
+      setError("Could not load upcoming exams.")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   async function addExam(e) {
@@ -48,141 +52,138 @@ function Exams({ user }) {
       return
     }
 
-    if (!user?.id) {
-      setError("You must be logged in to add an exam.")
-      return
-    }
+    if (!user?.id) return
 
-    const { error } = await supabase
-      .from("exams")
-      .insert([
+    try {
+      const { error: insertErr } = await supabase.from("exams").insert([
         {
           user_id: user.id,
-          subject: form.subject,
+          subject: form.subject.trim(),
           exam_date: new Date(form.exam_date).toISOString(),
-          importance: Number(form.importance),
+          importance: Number(form.importance) || 5,
         },
       ])
 
-    if (error) {
-      console.error(error)
-      setError(`Could not add exam: ${error.message}`)
-      return
+      if (insertErr) throw insertErr
+
+      setForm({
+        subject: "",
+        exam_date: "",
+        importance: 5,
+      })
+
+      setShowForm(false)
+      setError("")
+      fetchExams()
+    } catch (err) {
+      console.error(err)
+      setError(`Could not add exam: ${err.message}`)
     }
-
-    setForm({
-      subject: "",
-      exam_date: "",
-      importance: 5,
-    })
-
-    setShowForm(false)
-    setError("")
-    fetchExams()
   }
 
   function getDaysRemaining(date) {
-    const now = new Date()
-    const examDate = new Date(date)
-
-    const difference =
-      examDate.getTime() - now.getTime()
-
-    return Math.max(
-      0,
-      Math.ceil(difference / (1000 * 60 * 60 * 24))
-    )
+    const diff = new Date(date).getTime() - Date.now()
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8">
-          <p className="text-sm font-medium text-blue-600">
-            Academic Calendar
-          </p>
+    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
+              EXAM SCHEDULE & DEADLINES
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Upcoming Exams
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Your exam dates feed directly into the Exam Readiness and Exam Mode engines.
+            </p>
+          </div>
 
-          <h1 className="mt-1 text-3xl font-bold">
-            Upcoming Exams
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Track your exams so the copilot can understand your
-            academic deadlines.
-          </p>
-        </div>
-
-        <div className="mb-6">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.98]"
           >
-            + Add Exam
+            <span>{showForm ? "✕ Close" : "+ New Exam"}</span>
           </button>
         </div>
 
+        {error && (
+          <div className="mb-6">
+            <ErrorState message={error} onRetry={fetchExams} />
+          </div>
+        )}
+
+        {/* Add Exam Modal/Form */}
         {showForm && (
           <form
             onSubmit={addExam}
-            className="mb-6 rounded-2xl border bg-white p-6 shadow-sm"
+            className="mb-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-md"
           >
-            <h2 className="text-lg font-bold">
-              Add Exam
+            <h2 className="text-base font-bold text-slate-900 mb-4">
+              Schedule New Exam
             </h2>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <input
-                type="text"
-                placeholder="Subject"
-                value={form.subject}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    subject: e.target.value,
-                  })
-                }
-                className="rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
-              />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                  Subject Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Data Structures"
+                  value={form.subject}
+                  onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+                />
+              </div>
 
-              <input
-                type="datetime-local"
-                value={form.exam_date}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    exam_date: e.target.value,
-                  })
-                }
-                className="rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
-              />
+              <div>
+                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                  Exam Date & Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={form.exam_date}
+                  onChange={(e) =>
+                    setForm({ ...form, exam_date: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+                />
+              </div>
 
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={form.importance}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    importance: e.target.value,
-                  })
-                }
-                className="rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
-              />
+              <div>
+                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                  Importance (1-10)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={form.importance}
+                  onChange={(e) =>
+                    setForm({ ...form, importance: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+                />
+              </div>
             </div>
 
             <div className="mt-5 flex gap-3">
               <button
                 type="submit"
-                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
+                className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.98]"
               >
                 Save Exam
               </button>
-
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="rounded-xl border px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
                 Cancel
               </button>
@@ -190,68 +191,51 @@ function Exams({ user }) {
           </form>
         )}
 
-        {error && (
-          <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
+        {/* Exams Grid */}
         {loading ? (
-          <div className="rounded-2xl border bg-white p-6">
-            Loading exams...
-          </div>
+          <SkeletonGrid count={3} />
         ) : exams.length === 0 ? (
-          <div className="rounded-2xl border border-dashed bg-white p-10 text-center">
-            <h2 className="font-semibold text-slate-800">
-              No upcoming exams
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Add an exam so the copilot can prioritize your study.
-            </p>
-          </div>
+          <EmptyState
+            icon="📝"
+            title="No upcoming exams scheduled"
+            description="Add your mid-term or end-semester exam dates to trigger adaptive review plans."
+            actionLabel="Add Exam"
+            onAction={() => setShowForm(true)}
+          />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {exams.map((exam) => {
               const days = getDaysRemaining(exam.exam_date)
-
               return (
                 <div
                   key={exam.id}
-                  className="rounded-2xl border bg-white p-6 shadow-sm hover:border-slate-300 transition"
+                  className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:shadow-md"
                 >
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-xs font-bold text-slate-500 uppercase truncate">
                     {exam.subject}
                   </p>
 
-                  <p className="mt-3 text-3xl font-bold">
-                    {days}
-                  </p>
-
-                  <p className="text-sm text-slate-500">
+                  <p className="mt-3 text-3xl font-bold text-slate-900">{days}</p>
+                  <p className="text-xs text-slate-400 font-medium">
                     {days === 1 ? "day remaining" : "days remaining"}
                   </p>
 
-                  <div className="mt-5 space-y-2 text-sm">
+                  <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">
-                        Importance
-                      </span>
-
-                      <span className="font-semibold">
-                        {exam.importance}/10
+                      <span className="text-slate-400">Importance</span>
+                      <span className="font-bold text-slate-800">
+                        {exam.importance || 5}/10
                       </span>
                     </div>
 
                     <div className="flex justify-between">
-                      <span className="text-slate-500">
-                        Exam date
-                      </span>
-
-                      <span className="font-semibold">
-                        {new Date(
-                          exam.exam_date
-                        ).toLocaleDateString()}
+                      <span className="text-slate-400">Date</span>
+                      <span className="font-semibold text-slate-800">
+                        {new Date(exam.exam_date).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
