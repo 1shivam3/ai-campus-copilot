@@ -11,6 +11,7 @@ function StudyMaterial({ user }) {
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState("")
   const [error, setError] = useState("")
+  const [successMsg, setSuccessMsg] = useState("")
   const [extractedText, setExtractedText] = useState("")
 
   useEffect(() => {
@@ -27,7 +28,7 @@ function StudyMaterial({ user }) {
       .list(user.id)
 
     if (error) {
-      console.error(error)
+      console.error("Storage list error:", error)
       setError("Could not load study material.")
       return
     }
@@ -39,12 +40,12 @@ function StudyMaterial({ user }) {
     e.preventDefault()
 
     if (!selectedFile || !subject) {
-      setError("Select a file and enter a subject.")
+      setError("Please select a file and enter a subject.")
       return
     }
 
-    if (selectedFile.type !== "application/pdf") {
-      setError("For now, upload PDF files only.")
+    if (selectedFile.type !== "application/pdf" && !selectedFile.name.endsWith(".pdf")) {
+      setError("Please upload PDF files only.")
       return
     }
 
@@ -55,45 +56,54 @@ function StudyMaterial({ user }) {
 
     setUploading(true)
     setError("")
+    setSuccessMsg("")
 
     try {
-      const text = await extractPdfText(selectedFile)
-      if (!text) {
-        setError("Could not extract text from this PDF.")
-        setUploading(false)
-        return
-      }
-
-      setExtractedText(text)
-      console.log("Extracted PDF text:", text)
-
-      const filePath = `${user.id}/${Date.now()}-${selectedFile.name}`
+      // 1. Upload the file to Supabase Storage
+      const sanitizedName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+      const filePath = `${user.id}/${Date.now()}-${sanitizedName}`
 
       const { error: uploadError } = await supabase.storage
         .from("study-material")
-        .upload(filePath, selectedFile)
+        .upload(filePath, selectedFile, {
+          cacheControl: "3600",
+          upsert: false,
+        })
 
       if (uploadError) {
-        console.error(uploadError)
+        console.error("Storage upload error:", uploadError)
         setError(`Upload failed: ${uploadError.message}`)
         setUploading(false)
         return
       }
 
+      setSuccessMsg("File uploaded successfully!")
+
+      // 2. Extract PDF text for AI analysis
+      try {
+        const text = await extractPdfText(selectedFile)
+        if (text) {
+          setExtractedText(text)
+        }
+      } catch (pdfErr) {
+        console.warn("Text extraction notice:", pdfErr)
+      }
+
       setSelectedFile(null)
       setUploading(false)
 
+      // Refresh list
       await loadFiles()
     } catch (err) {
-      console.error("PDF Extraction error:", err)
-      setError("Failed to parse PDF contents.")
+      console.error("Upload error:", err)
+      setError("An unexpected error occurred during upload. Please try again.")
       setUploading(false)
     }
   }
 
   async function analyzeMaterial() {
     if (!extractedText) {
-      setError("Upload a PDF first.")
+      setError("Upload a readable PDF document first.")
       return
     }
 
@@ -104,13 +114,13 @@ function StudyMaterial({ user }) {
     try {
       const result = await analyzeStudyMaterial(
         extractedText,
-        subject
+        subject || "General Academic Course"
       )
 
       setAnalysis(result)
-    } catch (error) {
-      console.error(error)
-      setError("Could not analyze the study material. Make sure the FastAPI backend is running.")
+    } catch (err) {
+      console.error(err)
+      setError("Could not analyze study material. The backend may be waking up — please try again in a moment.")
     }
 
     setAnalyzing(false)
@@ -133,28 +143,28 @@ function StudyMaterial({ user }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+    <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
           <p className="text-sm font-medium text-blue-600">
             Study Material
           </p>
 
-          <h1 className="mt-1 text-3xl font-bold">
+          <h1 className="mt-1 text-3xl font-bold text-slate-900">
             Your Knowledge Base
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
-            Upload your syllabus, notes and study material securely.
+            Upload your syllabus, notes and study documents securely.
           </p>
         </div>
 
-        {/* Upload */}
+        {/* Upload Form */}
         <form
           onSubmit={uploadFile}
-          className="rounded-2xl border bg-white p-6 shadow-sm"
+          className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
         >
-          <h2 className="text-lg font-bold">
+          <h2 className="text-lg font-bold text-slate-900">
             Upload Material
           </h2>
 
@@ -164,16 +174,19 @@ function StudyMaterial({ user }) {
               placeholder="Subject e.g. Data Structures"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
             />
 
             <input
               type="file"
-              accept=".pdf"
-              onChange={(e) =>
+              accept=".pdf,application/pdf"
+              onChange={(e) => {
                 setSelectedFile(e.target.files?.[0] || null)
-              }
-              className="rounded-xl border bg-white px-4 py-3 text-sm"
+                setExtractedText("")
+                setSuccessMsg("")
+                setError("")
+              }}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white"
             />
           </div>
 
@@ -181,9 +194,9 @@ function StudyMaterial({ user }) {
             <button
               type="submit"
               disabled={uploading}
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 transition"
+              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 transition shadow-sm"
             >
-              {uploading ? "Extracting & Uploading..." : "Upload PDF"}
+              {uploading ? "Uploading PDF..." : "Upload PDF"}
             </button>
 
             {extractedText && (
@@ -199,23 +212,29 @@ function StudyMaterial({ user }) {
           </div>
 
           {error && (
-            <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+            <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 border border-red-200">
               {error}
             </p>
           )}
 
+          {successMsg && (
+            <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800 border border-emerald-200">
+              {successMsg}
+            </p>
+          )}
+
           {extractedText && (
-            <div className="mt-5 rounded-xl bg-emerald-50 p-4 text-xs text-emerald-800 border border-emerald-200">
+            <div className="mt-5 rounded-xl bg-emerald-50/70 p-4 text-xs text-emerald-800 border border-emerald-200">
               <p className="font-semibold">Text extracted successfully ({extractedText.length} characters)!</p>
-              <p className="mt-1 text-emerald-700 truncate">Preview: {extractedText.slice(0, 150)}...</p>
+              <p className="mt-1 text-emerald-700 truncate">Preview: {extractedText.slice(0, 160)}...</p>
             </div>
           )}
         </form>
 
-        {/* Files */}
-        <div className="mt-6 rounded-2xl border bg-white p-6 shadow-sm">
+        {/* Uploaded Documents List */}
+        <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
           <div className="mb-5">
-            <h2 className="text-lg font-bold">
+            <h2 className="text-lg font-bold text-slate-900">
               Uploaded Material
             </h2>
 
@@ -225,7 +244,7 @@ function StudyMaterial({ user }) {
           </div>
 
           {files.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-8 text-center">
+            <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center">
               <p className="font-medium text-slate-700">
                 No study material yet
               </p>
@@ -239,7 +258,7 @@ function StudyMaterial({ user }) {
               {files.map((file) => (
                 <div
                   key={file.id || file.name}
-                  className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between hover:border-slate-300 transition"
+                  className="flex flex-col gap-3 rounded-xl border border-slate-200/80 p-4 sm:flex-row sm:items-center sm:justify-between hover:border-slate-300 transition"
                 >
                   <div>
                     <p className="font-medium text-slate-900">
@@ -254,7 +273,7 @@ function StudyMaterial({ user }) {
                   <button
                     type="button"
                     onClick={() => openFile(file.name)}
-                    className="rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition text-center"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition text-center"
                   >
                     Open PDF
                   </button>
@@ -266,8 +285,8 @@ function StudyMaterial({ user }) {
 
         {/* AI Analysis Result */}
         {analysis && (
-          <div className="mt-6 whitespace-pre-wrap rounded-2xl border bg-white p-6 shadow-sm leading-relaxed text-sm text-slate-800 font-sans">
-            <div className="mb-5 border-b pb-4">
+          <div className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm leading-relaxed text-sm text-slate-800 font-sans">
+            <div className="mb-5 border-b border-slate-100 pb-4">
               <span className="rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-semibold">
                 AI STUDY PACK
               </span>
