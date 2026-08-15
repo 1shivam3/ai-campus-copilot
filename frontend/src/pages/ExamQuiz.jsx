@@ -56,38 +56,156 @@ function ExamQuiz({
     if (!quiz) return
 
     setSubmitting(true)
+    setError("")
 
-    let score = 0
+    let totalScore = 0
     const topicStats = {}
 
-    for (let index = 0; index < quiz.questions.length; index++) {
-      const question = quiz.questions[index]
-      const tName = question.topic || "General"
-      if (!topicStats[tName]) {
-        topicStats[tName] = { correct: 0, total: 0 }
-      }
-      topicStats[tName].total++
+    quiz.questions.forEach((question, index) => {
+      const selected = Number(answers[index])
+      const correct = selected === Number(question.correct_answer)
 
-      if (Number(answers[index]) === Number(question.correct_answer)) {
-        score++
-        topicStats[tName].correct++
+      if (correct) {
+        totalScore++
+      }
+
+      const topic = question.topic || "General"
+
+      if (!topicStats[topic]) {
+        topicStats[topic] = {
+          correct: 0,
+          total: 0,
+        }
+      }
+
+      topicStats[topic].total++
+
+      if (correct) {
+        topicStats[topic].correct++
+      }
+    })
+
+    const totalQuestions = quiz.questions.length
+    const overallPercentage = Math.round((totalScore / totalQuestions) * 100)
+
+    const topicResults = Object.entries(topicStats).map(
+      ([topic, stats]) => ({
+        topic,
+        score: stats.correct,
+        total: stats.total,
+        percentage: Math.round((stats.correct / stats.total) * 100),
+      })
+    )
+
+    /*
+     * Match each quiz topic back to the student's
+     * syllabus topic and update mastery.
+     */
+    for (const res of topicResults) {
+      const matchingTopic = topics.find(
+        (t) =>
+          t.topic_name.trim().toLowerCase() === res.topic.trim().toLowerCase() ||
+          t.topic_name.toLowerCase().includes(res.topic.toLowerCase()) ||
+          res.topic.toLowerCase().includes(t.topic_name.toLowerCase())
+      )
+
+      if (!matchingTopic || !user?.id) {
+        continue
+      }
+
+      try {
+        const { data: existingProgress, error: fetchError } =
+          await supabase
+            .from("student_topic_progress")
+            .select("mastery_score")
+            .eq("user_id", user.id)
+            .eq("syllabus_topic_id", matchingTopic.id)
+            .maybeSingle()
+
+        if (fetchError) {
+          console.error(fetchError)
+          continue
+        }
+
+        const previousMastery = Number(existingProgress?.mastery_score || 0)
+        const newMastery = Math.round(previousMastery * 0.7 + res.percentage * 0.3)
+        const newStatus =
+          newMastery >= 80
+            ? "mastered"
+            : newMastery >= 40
+              ? "learning"
+              : "not_started"
+
+        const { error: updateError } = await supabase
+          .from("student_topic_progress")
+          .upsert(
+            {
+              user_id: user.id,
+              syllabus_topic_id: matchingTopic.id,
+              mastery_score: newMastery,
+              status: newStatus,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: "user_id,syllabus_topic_id",
+            }
+          )
+
+        if (updateError) {
+          console.error("Mastery update error for topic:", matchingTopic.topic_name, updateError)
+        }
+      } catch (e) {
+        console.error("Topic progress update error:", e)
       }
     }
 
-    const total = quiz.questions.length
-    const percentage = Math.round((score / total) * 100)
+    /*
+     * Record the exam quiz attempt in exam_quiz_attempts (with fallback)
+     */
+    if (user?.id) {
+      try {
+        const { error: examAttemptErr } = await supabase
+          .from("exam_quiz_attempts")
+          .insert({
+            user_id: user.id,
+            exam_subject: exam.subject,
+            score: totalScore,
+            total_questions: totalQuestions,
+            topic_results: topicResults,
+          })
+
+        if (examAttemptErr) {
+          // If exam_quiz_attempts table not created yet, fallback to topic_quiz_attempts
+          await supabase
+            .from("topic_quiz_attempts")
+            .insert({
+              user_id: user.id,
+              syllabus_topic_id: topics[0]?.id || null,
+              score: totalScore,
+              total_questions: totalQuestions,
+              answers: {
+                exam: exam.subject,
+                topic_results: topicResults,
+                answers,
+              },
+            })
+        }
+      } catch (err) {
+        console.warn("Attempt record note:", err)
+      }
+    }
 
     setResult({
-      score,
-      total,
-      percentage,
-      topicStats,
+      score: totalScore,
+      total: totalQuestions,
+      percentage: overallPercentage,
+      topicResults,
     })
 
     setSubmitting(false)
 
     if (onComplete) {
-      onComplete(percentage)
+      onComplete(overallPercentage)
     }
   }
 
@@ -156,52 +274,76 @@ function ExamQuiz({
 
   if (result) {
     return (
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-xl">
-        <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-bold tracking-widest text-red-700">
-          EXAM PRACTICE COMPLETE
-        </span>
+      <div className="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm">
+        <div className="text-center">
+          <p className="text-xs font-bold tracking-widest text-red-600">
+            EXAM PRACTICE COMPLETE
+          </p>
 
-        <h2 className="mt-4 text-4xl font-bold text-slate-900">
-          {result.score} / {result.total}
-        </h2>
+          <h2 className="mt-3 text-4xl font-bold text-slate-900">
+            {result.score}/{result.total}
+          </h2>
 
-        <p className="mt-2 text-base font-semibold text-slate-700">
-          Score: {result.percentage}%
-        </p>
+          <p className="mt-2 text-sm text-slate-500 font-semibold">
+            Overall score: {result.percentage}%
+          </p>
+        </div>
 
-        {/* Topic Breakdown */}
-        {result.topicStats && Object.keys(result.topicStats).length > 0 && (
-          <div className="mt-6 text-left rounded-2xl bg-slate-50 border border-slate-100 p-5">
-            <p className="text-xs font-bold tracking-widest text-slate-500 mb-3">
-              TOPIC-BY-TOPIC BREAKDOWN
-            </p>
-            <div className="space-y-2">
-              {Object.entries(result.topicStats).map(([tName, stat]) => {
-                const pct = Math.round((stat.correct / stat.total) * 100)
-                return (
-                  <div key={tName} className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">{tName}</span>
-                    <span className={`font-bold ${pct >= 75 ? "text-emerald-600" : "text-amber-600"}`}>
-                      {stat.correct}/{stat.total} ({pct}%)
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+        <div className="mt-8">
+          <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">
+            Topic-by-Topic Performance
+          </h3>
+
+          <div className="mt-4 space-y-3">
+            {result.topicResults.map((item) => (
+              <div
+                key={item.topic}
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-slate-100/70"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <p className="font-semibold text-slate-900 text-sm">
+                    {item.topic}
+                  </p>
+
+                  <p className="font-bold text-sm text-slate-900">
+                    {item.percentage}%
+                  </p>
+                </div>
+
+                <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      item.percentage >= 80
+                        ? "bg-emerald-500"
+                        : item.percentage >= 50
+                          ? "bg-blue-600"
+                          : "bg-amber-500"
+                    }`}
+                    style={{
+                      width: `${item.percentage}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  {item.score}/{item.total} correct · Weighted mastery updated
+                </p>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        <p className="mt-5 text-sm leading-6 text-slate-500">
-          Use this breakdown to focus your remaining study windows on the topics where you missed marks.
+        <p className="mt-6 text-center text-sm leading-6 text-slate-500">
+          Your topic-level results have been used to update your academic progress across the Copilot engine.
         </p>
 
         {onClose && (
-          <div className="mt-6">
+          <div className="mt-6 flex justify-center">
             <button
               onClick={onClose}
               className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
             >
-              Done & Return to Exam Mode
+              Done & Return
             </button>
           </div>
         )}
