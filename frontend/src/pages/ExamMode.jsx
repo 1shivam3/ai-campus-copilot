@@ -81,9 +81,11 @@ function ExamMode({ user }) {
       })
 
       setPlan(result)
-    } catch (error) {
-      console.error(error)
-      setError("Could not generate exam plan. Make sure the FastAPI backend is running.")
+    } catch (err) {
+      console.error(err)
+      setError(
+        "Could not generate exam plan. The backend may be waking up from cold start — please try again in a few seconds."
+      )
     }
 
     setGenerating(false)

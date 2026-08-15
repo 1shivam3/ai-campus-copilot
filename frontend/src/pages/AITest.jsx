@@ -108,10 +108,10 @@ function AITest({ user, onStartSession }) {
       })
 
       setAnswer(result)
-    } catch (error) {
-      console.error(error)
+    } catch (err) {
+      console.error(err)
       setError(
-        "AI request failed. Make sure the FastAPI backend is running on port 8000."
+        "AI request failed. If using the live backend, it may be waking up from cold start — please try again in a few seconds."
       )
     }
 
