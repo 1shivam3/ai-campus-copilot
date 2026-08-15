@@ -10,6 +10,8 @@ import StudyMaterial from "./pages/StudyMaterial"
 import FocusSession from "./pages/FocusSession"
 import Auth from "./pages/Auth"
 import ProfileSetup from "./pages/ProfileSetup"
+import { getClassSchedule } from "./lib/academicData"
+import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getAcademicRecommendation } from "./utils/academicRecommendation"
 import { getTopicRecommendation, getWeakestTopic } from "./utils/topicRecommendation"
 
@@ -23,6 +25,7 @@ function App() {
   const [dashboardTasks, setDashboardTasks] = useState([])
   const [dashboardExams, setDashboardExams] = useState([])
   const [dashboardTopics, setDashboardTopics] = useState([])
+  const [dashboardSchedule, setDashboardSchedule] = useState([])
   const [dashboardLoading, setDashboardLoading] = useState(true)
 
   useEffect(() => {
@@ -98,6 +101,23 @@ function App() {
       fetchAcademicData()
     }
   }, [user, profile, currentPage])
+
+  useEffect(() => {
+    if (!profile) return
+    loadDashboardSchedule()
+  }, [profile])
+
+  async function loadDashboardSchedule() {
+    try {
+      const data = await getClassSchedule(
+        profile.semester,
+        profile.section
+      )
+      setDashboardSchedule(data || [])
+    } catch (error) {
+      console.error("Dashboard schedule error:", error)
+    }
+  }
 
   async function fetchAcademicData() {
     if (!user?.id) return
@@ -202,6 +222,8 @@ function App() {
     : null
 
   const pendingTasksCount = dashboardTasks.length
+  const todayClasses = getTodaySchedule(dashboardSchedule)
+  const nextClass = getNextClass(dashboardSchedule)
 
   function getTopTopics() {
     return [...dashboardTopics]
@@ -254,6 +276,102 @@ function App() {
                   </p>
                 </div>
               </div>
+
+              {/* Today's Schedule & Academic Context Row */}
+              <section className="mb-8 grid gap-5 lg:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm lg:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold tracking-widest text-blue-600">
+                        TODAY&apos;S SCHEDULE
+                      </p>
+
+                      <h3 className="mt-1 text-xl font-bold text-slate-900">
+                        {todayClasses.length} {todayClasses.length === 1 ? "class" : "classes"} scheduled today
+                      </h3>
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage("My Academics")}
+                      className="text-xs font-semibold text-blue-600 hover:underline"
+                    >
+                      View Timetable →
+                    </button>
+                  </div>
+
+                  {nextClass ? (
+                    <div className="mt-5 rounded-2xl bg-slate-900 p-5 text-white shadow-md">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <p className="text-xs font-bold tracking-wider text-slate-400">
+                          NEXT CLASS
+                        </p>
+                      </div>
+
+                      <h4 className="mt-2 text-xl font-bold">
+                        {nextClass.academic_subjects?.subject_name}
+                      </h4>
+
+                      <p className="mt-1 font-mono text-sm text-slate-300">
+                        {nextClass.start_time?.slice(0, 5)} – {nextClass.end_time?.slice(0, 5)}
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
+                          📍 Room {nextClass.room || "—"}
+                        </span>
+
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
+                          👨‍🏫 {nextClass.teacher_name || "Faculty N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-2xl bg-slate-50 p-5 border border-slate-100">
+                      <p className="font-semibold text-slate-800">
+                        No more classes today 🎉
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        You have open study time. Focus on your highest-priority task or exam revision below!
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs font-bold tracking-widest text-slate-400">
+                      ACADEMIC CONTEXT
+                    </p>
+
+                    <h3 className="mt-1 text-xl font-bold text-slate-900">
+                      Semester {profile.semester}
+                    </h3>
+
+                    <p className="text-sm font-medium text-blue-600">
+                      Section {profile.section}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 space-y-3.5 border-t border-slate-100 pt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Classes today</span>
+                      <span className="font-bold text-slate-900">{todayClasses.length}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Upcoming exams</span>
+                      <span className="font-bold text-slate-900">{dashboardExams.length}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Pending tasks</span>
+                      <span className="font-bold text-slate-900">{dashboardTasks.length}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
               {/* Next Best Action Card */}
               <section className="mb-8 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8">
