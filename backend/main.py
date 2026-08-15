@@ -13,10 +13,14 @@ if not api_key:
 
 app = FastAPI()
 
-# Enable CORS for Vite frontend
+# Enable CORS for Vite frontend (local and deployed on Vercel)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:4173",
+        "https://ai-campus-copilot-one.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
