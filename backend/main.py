@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -11,7 +11,7 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise RuntimeError("GEMINI_API_KEY is not configured.")
 
-app = FastAPI()
+app = FastAPI(title="AI Campus Copilot API", docs_url=None, redoc_url=None)
 
 # Enable CORS for Vite frontend (local and deployed on Vercel)
 app.add_middleware(
@@ -22,9 +22,19 @@ app.add_middleware(
         "https://ai-campus-copilot-one.vercel.app",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 
 # Initialize Gemini SDK
 try:
@@ -57,23 +67,23 @@ class StudyAdviceRequest(BaseModel):
 
 class StudyMaterialRequest(BaseModel):
     subject: str | None = None
-    content: str
+    content: str = Field(..., max_length=100000)
 
 
 class QuizRequest(BaseModel):
-    topic_name: str
-    topic_description: str | None = None
+    topic_name: str = Field(..., min_length=1, max_length=200)
+    topic_description: str | None = Field(None, max_length=1000)
 
 
 class ExamQuizQuestion(BaseModel):
-    topic_name: str
-    mastery_score: int | float
+    topic_name: str = Field(..., min_length=1, max_length=200)
+    mastery_score: int | float = Field(0, ge=0, le=100)
 
 
 class ExamQuizRequest(BaseModel):
-    subject: str
-    topics: list[ExamQuizQuestion]
-    question_count: int = 10
+    subject: str = Field(..., min_length=1, max_length=200)
+    topics: list[ExamQuizQuestion] = Field(default_factory=list)
+    question_count: int = Field(10, ge=1, le=20)
 
 
 @app.get("/")
@@ -81,12 +91,20 @@ def root():
     return {"message": "AI Campus Copilot backend is running"}
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.post("/api/generate-exam-quiz")
 def generate_exam_quiz(request: ExamQuizRequest):
+    if not request.subject.strip():
+        raise HTTPException(status_code=400, detail="Subject name is required.")
+
     topics_text = "\n".join(
         f"- {topic.topic_name}: {topic.mastery_score}% mastery"
         for topic in request.topics
-    )
+    ) if request.topics else f"- {request.subject} Core Topics: 50% mastery"
 
     prompt = f"""
 You are creating an adaptive exam-practice quiz for a B.Tech Computer Science student.
@@ -145,18 +163,19 @@ JSON format:
                 response = model.generate_content(prompt)
                 return {"quiz": response.text}
         except Exception as err:
-            print(f"Model {model_name} failed: {err}")
             last_error = err
 
     raise HTTPException(
         status_code=500,
-        detail=f"Exam quiz generation failed: {last_error}",
+        detail="Exam quiz generation is currently unavailable. Please try again in a few moments.",
     )
-
 
 
 @app.post("/api/generate-quiz")
 def generate_quiz(request: QuizRequest):
+    if not request.topic_name.strip():
+        raise HTTPException(status_code=400, detail="Topic name is required.")
+
     prompt = f"""
 Create a 5-question multiple-choice quiz for a B.Tech Computer Science student.
 
@@ -209,14 +228,12 @@ JSON format:
                 response = model.generate_content(prompt)
                 return {"quiz": response.text}
         except Exception as err:
-            print(f"Model {model_name} failed: {err}")
             last_error = err
 
     raise HTTPException(
         status_code=500,
-        detail=f"Quiz generation failed: {last_error}",
+        detail="Topic quiz generation is currently unavailable. Please try again in a few moments.",
     )
-
 
 
 @app.post("/api/study-advice")
@@ -264,7 +281,7 @@ AVAILABLE STUDY TIME:
 {request.recommended_minutes or request.available_minutes} minutes
 
 CRITICAL SCHEDULING & TOPIC INSTRUCTIONS:
-- Prioritize the student's highest-risk / weakest syllabus topics first ({request.topic_name}).
+- Prioritize the student's highest-risk / weakest syllabus topics first ({request.topic_name or "Core Topics"}).
 - Do not spend most of the available time on topics where mastery is already high; allocate time heavily to the weakest areas.
 - Respect the student's timetable and lecture schedule.
 - Do not recommend studying during their upcoming class period.
@@ -279,7 +296,7 @@ WHY NOW:
 Explain why these specific topics/tasks were prioritized and how this session fits cleanly into today's class schedule.
 
 ACTION PLAN:
-Create a time-blocked action plan that directly targets the highest-risk topics ({request.topic_name}) inside the available study window.
+Create a time-blocked action plan that directly targets the highest-risk topics inside the available study window.
 
 FIRST TASK:
 Give one exact action to begin immediately.
@@ -313,17 +330,19 @@ Do not give generic motivational advice.
                 response = model.generate_content(prompt)
                 return {"answer": response.text}
         except Exception as err:
-            print(f"Model {model_name} failed: {err}")
             last_error = err
 
     raise HTTPException(
         status_code=500,
-        detail=f"AI generation failed: {last_error}",
+        detail="AI study strategy generation is currently unavailable. Please try again in a moment.",
     )
 
 
 @app.post("/api/analyze-material")
 def analyze_material(request: StudyMaterialRequest):
+    if not request.content.strip():
+        raise HTTPException(status_code=400, detail="Document content cannot be empty.")
+
     trimmed_text = request.content[:30000]
 
     prompt = f"""
@@ -382,10 +401,9 @@ Do not invent facts that are not supported by the document.
                 response = model.generate_content(prompt)
                 return {"answer": response.text}
         except Exception as err:
-            print(f"Model {model_name} failed: {err}")
             last_error = err
 
     raise HTTPException(
         status_code=500,
-        detail=f"Material analysis failed: {last_error}",
+        detail="Document analysis is currently unavailable. Please try again in a moment.",
     )

@@ -53,6 +53,11 @@ function StudyMaterial({ user }) {
       return
     }
 
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError("File size exceeds 10MB limit. Please upload a smaller PDF document.")
+      return
+    }
+
     if (!user?.id) return
 
     setUploading(true)
