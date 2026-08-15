@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <!-- Full bleed background for maskable adaptive clipping -->
+  <rect width="512" height="512" fill="#0f172a" />
+  <g transform="translate(64, 64) scale(0.75)">
+    <defs>
+      <linearGradient id="cp_grad_mask" x1="120" y1="120" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#38bdf8"/>
+        <stop offset="0.5" stop-color="#3b82f6"/>
+        <stop offset="1" stop-color="#1d4ed8"/>
+      </linearGradient>
+      <linearGradient id="cp_wing_mask" x1="280" y1="90" x2="420" y2="230" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#93c5fd"/>
+        <stop offset="1" stop-color="#38bdf8"/>
+      </linearGradient>
+    </defs>
+    <!-- Stylized C trajectory curve -->
+    <path d="M305 135C222 135 155 202 155 285C155 368 222 435 305 435C347.5 435 385.5 417.5 412 389L357 342.5C343 356.5 324.5 364.5 305 364.5C261 364.5 225.5 329 225.5 285C225.5 241 261 205.5 305 205.5C324.5 205.5 343 213.5 357 227.5L412 181C385.5 152.5 347.5 135 305 135Z" fill="url(#cp_grad_mask)"/>
+    <!-- Pilot flight vector -->
+    <path d="M300 95L420 215L360 238L278 158L300 95Z" fill="url(#cp_wing_mask)"/>
+    <!-- Central core beacon -->
+    <circle cx="312" cy="285" r="40" fill="#38bdf8" />
+    <circle cx="312" cy="285" r="22" fill="#ffffff" />
+  </g>
+</svg>

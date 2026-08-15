@@ -8,6 +8,7 @@ function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
   const [minutes, setMinutes] = useState(25)
   const [secondsLeft, setSecondsLeft] = useState(25 * 60)
   const [running, setRunning] = useState(false)
+  const [endTime, setEndTime] = useState(null)
   const [completed, setCompleted] = useState(false)
   const [updatingTask, setUpdatingTask] = useState(false)
 
@@ -26,11 +27,34 @@ function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
     }
 
     const timer = setInterval(() => {
-      setSecondsLeft((prev) => prev - 1)
+      if (endTime) {
+        const remaining = Math.max(0, Math.round((endTime - Date.now()) / 1000))
+        setSecondsLeft(remaining)
+        if (remaining === 0) {
+          finishSession()
+        }
+      } else {
+        setSecondsLeft((prev) => Math.max(0, prev - 1))
+      }
     }, 1000)
 
-    return () => clearInterval(timer)
-  }, [running, secondsLeft])
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && running && endTime) {
+        const remaining = Math.max(0, Math.round((endTime - Date.now()) / 1000))
+        setSecondsLeft(remaining)
+        if (remaining === 0) {
+          finishSession()
+        }
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [running, secondsLeft, endTime])
 
   async function loadTasks() {
     if (!user?.id) return
@@ -66,12 +90,15 @@ function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
   function changeDuration(val) {
     setMinutes(val)
     setSecondsLeft(val * 60)
+    setEndTime(null)
     setRunning(false)
     setCompleted(false)
   }
 
   function startSession() {
     if (!selectedTask) return
+    const targetEnd = Date.now() + minutes * 60 * 1000
+    setEndTime(targetEnd)
     setCompleted(false)
     setSecondsLeft(minutes * 60)
     setRunning(true)
@@ -79,16 +106,19 @@ function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
 
   function pauseSession() {
     setRunning(false)
+    setEndTime(null)
   }
 
   function resetSession() {
     setRunning(false)
+    setEndTime(null)
     setSecondsLeft(minutes * 60)
     setCompleted(false)
   }
 
   async function finishSession() {
     setRunning(false)
+    setEndTime(null)
     setCompleted(true)
 
     if (!user?.id) return
@@ -207,6 +237,7 @@ function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
                 onChange={(e) => {
                   setSelectedTask(e.target.value)
                   setRunning(false)
+                  setEndTime(null)
                   setCompleted(false)
                 }}
                 className="mt-2 w-full rounded-xl bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-slate-900 outline-none shadow-sm"

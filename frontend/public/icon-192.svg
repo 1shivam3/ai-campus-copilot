@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192" fill="none">
+  <rect width="192" height="192" rx="48" fill="#0f172a" />
+  <defs>
+    <linearGradient id="cp_grad_192" x1="45" y1="45" x2="150" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset="0.5" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="cp_wing_192" x1="105" y1="35" x2="160" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#93c5fd"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <!-- Stylized C trajectory curve -->
+  <path d="M115 50C83.5 50 58 75.5 58 107C58 138.5 83.5 164 115 164C131 164 145.5 157.5 155.5 146.5L134.5 129C129.5 134.5 122.5 137.5 115 137.5C98.5 137.5 85 124 85 107C85 90 98.5 76.5 115 76.5C122.5 76.5 129.5 79.5 134.5 85L155.5 67.5C145.5 56.5 131 50 115 50Z" fill="url(#cp_grad_192)"/>
+  <!-- Pilot flight vector -->
+  <path d="M112 35L158 81L135 90L104 59L112 35Z" fill="url(#cp_wing_192)"/>
+  <!-- Central core beacon -->
+  <circle cx="118" cy="107" r="15" fill="#38bdf8" />
+  <circle cx="118" cy="107" r="8" fill="#ffffff" />
+</svg>

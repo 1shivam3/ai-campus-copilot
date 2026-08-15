@@ -1,0 +1,32 @@
+{
+  "name": "CoursePilot — Your AI-Powered Academic Co-Pilot",
+  "short_name": "CoursePilot",
+  "description": "Your AI-powered academic co-pilot.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f172a",
+  "background_color": "#f8fafc",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "productivity"]
+}

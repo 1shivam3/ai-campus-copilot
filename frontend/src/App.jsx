@@ -23,6 +23,7 @@ import { runNextBestActionEngine, getDaysRemaining } from "./utils/nextBestActio
 import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/SkeletonLoader"
 import EmptyState from "./components/EmptyState"
 import { CoursePilotMark } from "./components/CoursePilotLogo"
+import PWAInstallBanner from "./components/PWAInstallBanner"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -366,33 +367,42 @@ function App() {
   if (!user) {
     if (authView === "login" || authView === "signup") {
       return (
-        <Auth
-          initialMode={authView}
-          onLogin={(newUser) => {
-            setUser(newUser)
-            setAuthView(null)
-          }}
-          onBackToLanding={() => setAuthView(null)}
-        />
+        <>
+          <PWAInstallBanner />
+          <Auth
+            initialMode={authView}
+            onLogin={(newUser) => {
+              setUser(newUser)
+              setAuthView(null)
+            }}
+            onBackToLanding={() => setAuthView(null)}
+          />
+        </>
       )
     }
 
     return (
-      <LandingPage
-        user={user}
-        onGetStarted={() => setAuthView("signup")}
-        onSignIn={() => setAuthView("login")}
-        onGoToDashboard={() => setCurrentPage("Dashboard")}
-      />
+      <>
+        <PWAInstallBanner />
+        <LandingPage
+          user={user}
+          onGetStarted={() => setAuthView("signup")}
+          onSignIn={() => setAuthView("login")}
+          onGoToDashboard={() => setCurrentPage("Dashboard")}
+        />
+      </>
     )
   }
 
   if (!profile) {
     return (
-      <ProfileSetup
-        user={user}
-        onComplete={() => fetchProfile(user)}
-      />
+      <>
+        <PWAInstallBanner />
+        <ProfileSetup
+          user={user}
+          onComplete={() => fetchProfile(user)}
+        />
+      </>
     )
   }
 
@@ -402,6 +412,7 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+      <PWAInstallBanner />
       {/* Sidebar Navigation */}
       <Sidebar
         currentPage={currentPage}
