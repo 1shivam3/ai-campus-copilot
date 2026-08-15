@@ -18,7 +18,7 @@ import { getFreeWindows, getBestStudyWindow } from "./utils/freeTime"
 import { buildDailyPlan } from "./utils/dailyPlan"
 import { getWeakestSyllabusTopic, calculateSyllabusMastery } from "./utils/syllabusProgress"
 import { calculateExamReadiness } from "./utils/examReadiness"
-import { getNextBestAction, getDaysRemaining } from "./utils/nextBestAction"
+import { runNextBestActionEngine, getDaysRemaining } from "./utils/nextBestActionEngine"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -156,7 +156,7 @@ function App() {
       const { data: topicData, error: topicError } =
         await supabase
           .from("syllabus_topics")
-          .select("*")
+          .select("*, academic_subjects(subject_name, subject_code)")
           .in("subject_id", subjectIds)
 
       if (topicError) {
@@ -188,7 +188,14 @@ function App() {
         progressMap[item.syllabus_topic_id] = item
       })
 
-      setSyllabusTopics(topicData || [])
+      // Normalize topic subject_name
+      const normalizedTopics = (topicData || []).map((t) => ({
+        ...t,
+        subject_name: t.academic_subjects?.subject_name || "",
+        subject_code: t.academic_subjects?.subject_code || "",
+      }))
+
+      setSyllabusTopics(normalizedTopics)
       setTopicProgress(progressMap)
     } catch (err) {
       console.error("Syllabus progress loading error:", err)
@@ -298,15 +305,14 @@ function App() {
 
   const recommendedStudyWindow = getBestStudyWindow(dashboardSchedule, 45)
 
-  // Unified Next Best Action Decision Engine
-  const nextBestAction = getNextBestAction({
+  // Unified Next Best Action Decision Engine (Step 95)
+  const { bestAction, otherPriorities } = runNextBestActionEngine({
+    profile,
+    schedule: dashboardSchedule,
     tasks: dashboardTasks,
     exams: dashboardExams,
-    weakTopics: syllabusTopics.map((topic) => ({
-      ...topic,
-      mastery_score: Number(topicProgress?.[topic.id]?.mastery_score || 0),
-    })),
-    schedule: dashboardSchedule,
+    syllabusTopics,
+    topicProgress,
     studyWindow: recommendedStudyWindow,
   })
 
@@ -356,10 +362,25 @@ function App() {
       })
     : null
 
-  function getTopTopics() {
-    return [...dashboardTopics]
-      .sort((a, b) => b.mastery_score - a.mastery_score)
-      .slice(0, 4)
+  function handleActionNavigation(action) {
+    if (!action) return
+
+    if (action.page === "Focus Session") {
+      if (action.payload?.id) {
+        setRecommendedTaskId(action.payload.id)
+      }
+      setCurrentPage("Focus Session")
+    } else if (action.page === "Exam Mode") {
+      setCurrentPage("Exam Mode")
+    } else if (action.page === "Progress") {
+      setCurrentPage("Progress")
+    } else if (action.page === "My Academics") {
+      setCurrentPage("My Academics")
+    } else if (action.page === "Tasks") {
+      setCurrentPage("Tasks")
+    } else {
+      setCurrentPage("Dashboard")
+    }
   }
 
   return (
@@ -504,157 +525,118 @@ function App() {
                 </div>
               </section>
 
-              {/* Unified Next Best Action Card */}
-              <section className="mb-8 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8">
-                <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                  <div className="flex-1">
-                    {dashboardLoading ? (
-                      <p className="text-slate-300">
-                        Analyzing your academic workload...
-                      </p>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                          <p className="text-xs font-bold tracking-widest text-slate-400">
-                            NEXT BEST ACTION
-                          </p>
-                        </div>
-
-                        <h3 className="mt-3 text-3xl font-bold tracking-tight">
-                          {nextBestAction.title}
-                        </h3>
-
-                        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-                          {nextBestAction.reason}
+              {/* Step 95: Unified Next Best Action Card */}
+              {bestAction && (
+                <section className="mb-8 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8">
+                  <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <p className="text-xs font-bold tracking-widest text-slate-400">
+                          🎯 YOUR NEXT BEST ACTION
                         </p>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider ${
+                          bestAction.priority === "CRITICAL"
+                            ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                            : bestAction.priority === "HIGH"
+                              ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                              : "bg-blue-400/20 text-blue-300 border border-blue-400/30"
+                        }`}>
+                          {bestAction.priority} PRIORITY ({bestAction.score}/100)
+                        </span>
+                      </div>
 
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-400/20">
-                            Priority {nextBestAction.score}/10
-                          </span>
+                      <h3 className="text-3xl font-bold tracking-tight text-white">
+                        {bestAction.title}
+                      </h3>
 
-                          <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300 uppercase tracking-wider font-semibold">
-                            {nextBestAction.type === "topic"
-                              ? "Syllabus Mastery"
-                              : nextBestAction.type === "task"
-                                ? "Academic Task"
-                                : nextBestAction.type === "class"
-                                  ? "Scheduled Class"
-                                  : "General Review"}
-                          </span>
+                      <p className="mt-1 text-sm font-semibold text-blue-400">
+                        {bestAction.subject}
+                      </p>
+
+                      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">
+                        {bestAction.description}
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200 font-semibold">
+                          ⏱️ {bestAction.estimated_minutes} min
+                        </span>
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300 font-medium">
+                          Source: {bestAction.source}
+                        </span>
+                      </div>
+
+                      {/* Why This? Breakdown */}
+                      {bestAction.whyThis && bestAction.whyThis.length > 0 && (
+                        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                          <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase mb-2">
+                            Why this now?
+                          </p>
+                          <ul className="space-y-1.5 text-xs text-slate-300">
+                            {bestAction.whyThis.map((point, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <span className="text-emerald-400 font-bold">•</span>
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
+                      )}
+                    </div>
 
-                        {/* Best Study Window Card */}
-                        {recommendedStudyWindow && nextBestAction.type !== "class" && (
-                          <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-950/40 p-4">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-bold tracking-widest text-emerald-400">
-                                BEST STUDY WINDOW
-                              </p>
-                              <span className="rounded-full bg-emerald-400/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300 border border-emerald-400/20">
-                                {recommendedStudyWindow.minutes} min free
+                    {/* Action Trigger Button */}
+                    <div className="self-start md:self-center shrink-0">
+                      <button
+                        onClick={() => handleActionNavigation(bestAction)}
+                        className="rounded-xl bg-white px-7 py-4 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-lg flex items-center gap-2"
+                      >
+                        <span>Start Now</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Other Priorities List */}
+                  {otherPriorities && otherPriorities.length > 0 && (
+                    <div className="mt-8 border-t border-white/10 pt-6">
+                      <p className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-3">
+                        OTHER PRIORITIES TODAY
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {otherPriorities.map((item, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleActionNavigation(item)}
+                            className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.09]"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase truncate">
+                                {item.subject}
+                              </span>
+                              <span className={`text-[10px] font-bold ${
+                                item.priority === "CRITICAL"
+                                  ? "text-red-400"
+                                  : item.priority === "HIGH"
+                                    ? "text-amber-400"
+                                    : "text-blue-400"
+                              }`}>
+                                {item.priority}
                               </span>
                             </div>
-
-                            <p className="mt-2 text-lg font-bold text-white font-mono">
-                              {recommendedStudyWindow.start} – {recommendedStudyWindow.end}
-                            </p>
-
-                            <p className="mt-1 text-xs text-slate-300">
-                              Optimal free slot between your classes to complete this session without scheduling conflicts.
+                            <h4 className="mt-1 font-bold text-sm text-white line-clamp-1">
+                              {item.title}
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-400 line-clamp-1">
+                              {item.description}
                             </p>
                           </div>
-                        )}
-
-                        {/* Current Weakest Syllabus Topic Card */}
-                        {weakestSyllabusTopic && (
-                          <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-5">
-                            <p className="text-xs font-bold tracking-widest text-slate-400">
-                              CURRENT WEAKEST TOPIC
-                            </p>
-
-                            <div className="mt-3 flex items-end justify-between gap-4">
-                              <div>
-                                <p className="text-lg font-semibold">
-                                  {weakestSyllabusTopic.topic_name}
-                                </p>
-
-                                <p className="mt-1 text-xs text-slate-400">
-                                  {weakestSyllabusTopic.status === "not_started"
-                                    ? "Not started"
-                                    : weakestSyllabusTopic.status === "learning"
-                                      ? "Currently learning"
-                                      : "Mastered"}
-                                </p>
-                              </div>
-
-                              <p className="text-2xl font-bold text-amber-400">
-                                {weakestSyllabusTopic.mastery_score}%
-                              </p>
-                            </div>
-
-                            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                              <div
-                                className="h-full rounded-full bg-amber-400 transition-all duration-500"
-                                style={{
-                                  width: `${weakestSyllabusTopic.mastery_score}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Context-aware Action Trigger Button */}
-                  <div className="self-start md:self-center shrink-0">
-                    {nextBestAction.type === "task" && (
-                      <button
-                        onClick={() => {
-                          setRecommendedTaskId(nextBestAction.item.id)
-                          setCurrentPage("Focus Session")
-                        }}
-                        className="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-md flex items-center gap-2"
-                      >
-                        <span>Start This Task</span>
-                        <span>→</span>
-                      </button>
-                    )}
-
-                    {nextBestAction.type === "topic" && (
-                      <button
-                        onClick={() => setCurrentPage("Progress")}
-                        className="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-md flex items-center gap-2"
-                      >
-                        <span>Practice This Topic</span>
-                        <span>→</span>
-                      </button>
-                    )}
-
-                    {nextBestAction.type === "class" && (
-                      <button
-                        onClick={() => setCurrentPage("My Academics")}
-                        className="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-md flex items-center gap-2"
-                      >
-                        <span>View Today&apos;s Timetable</span>
-                        <span>→</span>
-                      </button>
-                    )}
-
-                    {nextBestAction.type === "general" && (
-                      <button
-                        onClick={() => setCurrentPage("Progress")}
-                        className="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-md flex items-center gap-2"
-                      >
-                        <span>Review Progress</span>
-                        <span>→</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </section>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* Today's Academic Plan Timeline */}
               <section className="mb-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
