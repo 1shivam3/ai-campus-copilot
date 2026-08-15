@@ -15,7 +15,7 @@ import ProfileSetup from "./pages/ProfileSetup"
 import LandingPage from "./pages/LandingPage"
 import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
-import { getFreeWindows, getBestStudyWindow } from "./utils/freeTime"
+import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
 import { buildDailyPlan } from "./utils/dailyPlan"
 import { getWeakestSyllabusTopic, calculateSyllabusMastery } from "./utils/syllabusProgress"
 import { calculateExamReadiness } from "./utils/examReadiness"
@@ -24,6 +24,8 @@ import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/Skeleto
 import EmptyState from "./components/EmptyState"
 import { CoursePilotMark } from "./components/CoursePilotLogo"
 import PWAInstallBanner from "./components/PWAInstallBanner"
+import CalendarIntegrationModal from "./components/CalendarIntegrationModal"
+import { fetchCalendarEvents, submitCalendarOAuthCode } from "./lib/api"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -42,6 +44,8 @@ function App() {
   const [syllabusTopics, setSyllabusTopics] = useState([])
   const [topicProgress, setTopicProgress] = useState({})
   const [dashboardLoading, setDashboardLoading] = useState(true)
+  const [calendarEvents, setCalendarEvents] = useState([])
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false)
 
   useEffect(() => {
     checkUser()
@@ -54,8 +58,10 @@ function App() {
 
       if (currentUser) {
         await fetchProfile(currentUser)
+        loadCalendar(currentUser.id)
       } else {
         setProfile(null)
+        setCalendarEvents([])
       }
     })
 
@@ -63,6 +69,28 @@ function App() {
       subscription.unsubscribe()
     }
   }, [])
+
+  async function loadCalendar(userId) {
+    if (!userId) return
+    try {
+      // Check if URL has Google OAuth code callback
+      const params = new URLSearchParams(window.location.search)
+      const oauthCode = params.get("code")
+
+      if (oauthCode) {
+        // Clean URL query params to preserve clean routing
+        window.history.replaceState({}, document.title, window.location.pathname)
+        await submitCalendarOAuthCode(oauthCode, userId)
+      }
+
+      const res = await fetchCalendarEvents(userId)
+      if (res.connected && res.events) {
+        setCalendarEvents(res.events)
+      }
+    } catch (err) {
+      console.warn("Calendar load notice:", err)
+    }
+  }
 
   async function checkUser() {
     try {
@@ -268,12 +296,18 @@ function App() {
   }, [dashboardSchedule])
 
   const freeWindows = useMemo(() => {
-    return getFreeWindows(dashboardSchedule)
-  }, [dashboardSchedule])
+    return getMergedFreeWindows({
+      schedule: dashboardSchedule,
+      calendarEvents,
+      date: new Date(),
+      dayStart: "08:00",
+      dayEnd: "22:00",
+    })
+  }, [dashboardSchedule, calendarEvents])
 
   const recommendedStudyWindow = useMemo(() => {
-    return getBestStudyWindow(dashboardSchedule, 45)
-  }, [dashboardSchedule])
+    return getBestStudyWindow(dashboardSchedule, 45, new Date(), calendarEvents)
+  }, [dashboardSchedule, calendarEvents])
 
   const dailyPlan = useMemo(() => {
     return buildDailyPlan({
@@ -420,6 +454,7 @@ function App() {
         user={user}
         profile={profile}
         onLogout={handleLogout}
+        onOpenCalendar={() => setCalendarModalOpen(true)}
         mobileOpen={mobileNavOpen}
         setMobileOpen={setMobileNavOpen}
       />
@@ -444,6 +479,14 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCalendarModalOpen(true)}
+              className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition"
+            >
+              <span>📅</span>
+              <span className="hidden sm:inline">Calendar</span>
+            </button>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
               Sem {profile.semester}
             </span>
@@ -468,14 +511,25 @@ function App() {
                   </p>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-sm">
-                  <span className="text-sm">🗓️</span>
-                  <div className="text-xs font-semibold text-slate-800">
-                    {new Date().toLocaleDateString(undefined, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
+                  >
+                    <span>📅</span>
+                    <span>Calendar Sync</span>
+                  </button>
+
+                  <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-xs">
+                    <span className="text-sm">🗓️</span>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {new Date().toLocaleDateString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -525,6 +579,16 @@ function App() {
                           Source: {bestAction.source}
                         </span>
                       </div>
+
+                      {/* Suggested Study Window from Calendar & Timetable */}
+                      {recommendedStudyWindow && (
+                        <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-500/15 border border-blue-400/20 px-3.5 py-2 text-xs text-blue-200">
+                          <span>📅</span>
+                          <span>
+                            <strong className="font-semibold text-white">Suggested Study Window:</strong> Today {recommendedStudyWindow.start} – {recommendedStudyWindow.end} ({recommendedStudyWindow.minutes}m free) · Fits your available time.
+                          </span>
+                        </div>
+                      )}
 
                       {/* Decision Rationale */}
                       {bestAction.whyThis && bestAction.whyThis.length > 0 && (
@@ -927,6 +991,15 @@ function App() {
           )}
         </main>
       </div>
+
+      {/* Google Calendar Integration Modal */}
+      <CalendarIntegrationModal
+        isOpen={calendarModalOpen}
+        onClose={() => setCalendarModalOpen(false)}
+        user={user}
+        schedule={dashboardSchedule}
+        onCalendarUpdated={(newEvents) => setCalendarEvents(newEvents)}
+      />
     </div>
   )
 }

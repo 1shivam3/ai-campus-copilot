@@ -122,3 +122,97 @@ export async function generateExamQuiz(data) {
   const result = await response.json()
   return result.quiz
 }
+
+// ---------------------------------------------------------
+// GOOGLE CALENDAR API CLIENT METHODS
+// ---------------------------------------------------------
+
+export async function fetchCalendarAuthUrl(userId) {
+  const redirect = window.location.origin
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/calendar/auth-url?user_id=${encodeURIComponent(userId)}&redirect_uri=${encodeURIComponent(redirect)}`,
+    { method: "GET" },
+    15000
+  )
+
+  if (!response.ok) {
+    throw new Error("Could not retrieve Google Calendar authorization URL.")
+  }
+
+  return response.json()
+}
+
+export async function submitCalendarOAuthCode(code, userId) {
+  const redirect = window.location.origin
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/calendar/oauth-callback`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        user_id: userId,
+        redirect_uri: redirect,
+      }),
+    },
+    20000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Google Calendar connection failed.")
+  }
+
+  return response.json()
+}
+
+export async function fetchCalendarStatus(userId) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/calendar/status?user_id=${encodeURIComponent(userId)}`,
+    { method: "GET" },
+    10000
+  )
+
+  if (!response.ok) {
+    return { connected: false }
+  }
+
+  return response.json()
+}
+
+export async function fetchCalendarEvents(userId) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/calendar/events?user_id=${encodeURIComponent(userId)}`,
+    { method: "GET" },
+    15000
+  )
+
+  if (!response.ok) {
+    return { connected: false, events: [] }
+  }
+
+  return response.json()
+}
+
+export async function disconnectCalendarService(userId) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/calendar/disconnect`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_id: userId }),
+    },
+    15000
+  )
+
+  if (!response.ok) {
+    throw new Error("Could not disconnect Google Calendar.")
+  }
+
+  return response.json()
+}
+
