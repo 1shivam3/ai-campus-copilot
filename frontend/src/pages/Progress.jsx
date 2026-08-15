@@ -10,7 +10,7 @@ function Progress({ profile, user }) {
   const [loading, setLoading] = useState(true)
   const [topicsLoading, setTopicsLoading] = useState(false)
   const [savingId, setSavingId] = useState(null)
-  const [activeQuizTopic, setActiveQuizTopic] = useState(null)
+  const [quizTopic, setQuizTopic] = useState(null)
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -75,10 +75,7 @@ function Progress({ profile, user }) {
 
     setTopics(topicData || [])
 
-    const topicIds = (topicData || []).map(
-      (topic) => topic.id
-    )
-
+    const topicIds = (topicData || []).map((topic) => topic.id)
     const progressMap = {}
 
     if (topicIds.length > 0 && user?.id) {
@@ -90,7 +87,7 @@ function Progress({ profile, user }) {
           .in("syllabus_topic_id", topicIds)
 
         if (error) {
-          console.warn("Notice: student_topic_progress table query error (run SQL in Supabase if not created yet):", error.message)
+          console.warn("Notice: student_topic_progress query notice:", error.message)
         } else if (data) {
           for (const item of data) {
             progressMap[item.syllabus_topic_id] = item
@@ -118,7 +115,7 @@ function Progress({ profile, user }) {
 
     const masteryScore = masteryByStatus[status]
 
-    // Optimistic state update
+    // Optimistic UI update
     setProgress((current) => ({
       ...current,
       [topic.id]: {
@@ -149,7 +146,6 @@ function Progress({ profile, user }) {
 
       if (error) {
         console.error("Supabase progress error:", error)
-        setError("Could not save to database. Please ensure the student_topic_progress table was created in Supabase SQL editor.")
       } else if (data) {
         setProgress((current) => ({
           ...current,
@@ -161,18 +157,6 @@ function Progress({ profile, user }) {
     }
 
     setSavingId(null)
-  }
-
-  function handleQuizCompleted(topicId, newScore, newStatus) {
-    setProgress((current) => ({
-      ...current,
-      [topicId]: {
-        ...(current[topicId] || {}),
-        mastery_score: newScore,
-        status: newStatus,
-        syllabus_topic_id: topicId,
-      },
-    }))
   }
 
   const overallMastery = useMemo(() => {
@@ -190,24 +174,20 @@ function Progress({ profile, user }) {
     return Math.round(total / topics.length)
   }, [topics, progress])
 
-  const groupedTopics = topics.reduce(
-    (groups, topic) => {
-      const unit = topic.unit_number || 0
+  const groupedTopics = topics.reduce((groups, topic) => {
+    const unit = topic.unit_number || 0
 
-      if (!groups[unit]) {
-        groups[unit] = []
-      }
+    if (!groups[unit]) {
+      groups[unit] = []
+    }
 
-      groups[unit].push(topic)
+    groups[unit].push(topic)
 
-      return groups
-    },
-    {}
-  )
+    return groups
+  }, {})
 
   const selectedSubjectData = subjects.find(
-    (subject) =>
-      String(subject.id) === selectedSubject
+    (subject) => String(subject.id) === selectedSubject
   )
 
   return (
@@ -216,7 +196,7 @@ function Progress({ profile, user }) {
 
         <div className="mb-8">
           <p className="text-xs font-bold tracking-widest text-blue-600">
-            LEARNING PROGRESS & ADAPTIVE QUIZZES
+            LEARNING PROGRESS
           </p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
@@ -224,25 +204,9 @@ function Progress({ profile, user }) {
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Track what you have studied and validate your mastery with AI-generated conceptual quizzes.
+            Track what you have studied so the Copilot can understand your actual strengths and weaknesses.
           </p>
         </div>
-
-        {/* Modal/Overlay for Active Topic Quiz */}
-        {activeQuizTopic && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm overflow-y-auto">
-            <div className="my-8 w-full max-w-3xl">
-              <TopicQuiz
-                topic={activeQuizTopic}
-                user={user}
-                onComplete={(score, status) => {
-                  handleQuizCompleted(activeQuizTopic.id, score, status)
-                }}
-                onClose={() => setActiveQuizTopic(null)}
-              />
-            </div>
-          </div>
-        )}
 
         {loading ? (
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
@@ -271,12 +235,8 @@ function Progress({ profile, user }) {
                   className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 transition"
                 >
                   {subjects.map((subject) => (
-                    <option
-                      key={subject.id}
-                      value={subject.id}
-                    >
-                      {subject.subject_code} —{" "}
-                      {subject.subject_name}
+                    <option key={subject.id} value={subject.id}>
+                      {subject.subject_code} — {subject.subject_name}
                     </option>
                   ))}
                 </select>
@@ -309,7 +269,7 @@ function Progress({ profile, user }) {
                 </div>
 
                 <p className="mt-3 text-xs text-slate-400">
-                  Updated automatically by quiz scores and status.
+                  Based on your current topic progress.
                 </p>
               </div>
             </div>
@@ -331,163 +291,166 @@ function Progress({ profile, user }) {
                 </div>
               ) : (
                 <div className="space-y-5">
-                  {Object.entries(groupedTopics).map(
-                    ([unit, unitTopics]) => (
-                      <section
-                        key={unit}
-                        className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
-                      >
-                        <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3">
-                          <div>
-                            <p className="text-xs font-bold tracking-widest text-blue-600">
-                              UNIT {unit}
-                            </p>
+                  {Object.entries(groupedTopics).map(([unit, unitTopics]) => (
+                    <section
+                      key={unit}
+                      className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+                    >
+                      <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                          <p className="text-xs font-bold tracking-widest text-blue-600">
+                            UNIT {unit}
+                          </p>
 
-                            <h2 className="mt-1 text-xl font-bold text-slate-900">
-                              Unit {unit}
-                            </h2>
-                          </div>
-
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                            {unitTopics.length} {unitTopics.length === 1 ? "topic" : "topics"}
-                          </span>
+                          <h2 className="mt-1 text-xl font-bold text-slate-900">
+                            Unit {unit}
+                          </h2>
                         </div>
 
-                        <div className="space-y-4">
-                          {unitTopics.map((topic) => {
-                            const current =
-                              progress[topic.id]
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                          {unitTopics.length} {unitTopics.length === 1 ? "topic" : "topics"}
+                        </span>
+                      </div>
 
-                            const status =
-                              current?.status ||
-                              "not_started"
+                      <div className="space-y-4">
+                        {unitTopics.map((topic) => {
+                          const current = progress[topic.id]
+                          const status = current?.status || "not_started"
+                          const mastery = Number(current?.mastery_score || 0)
 
-                            const mastery =
-                              Number(
-                                current?.mastery_score || 0
-                              )
+                          return (
+                            <div
+                              key={topic.id}
+                              className={`rounded-2xl border p-5 transition ${
+                                status === "mastered"
+                                  ? "border-emerald-200 bg-emerald-50/40"
+                                  : status === "learning"
+                                    ? "border-amber-200 bg-amber-50/40"
+                                    : "border-slate-100 bg-slate-50/70"
+                              }`}
+                            >
+                              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 
-                            return (
-                              <div
-                                key={topic.id}
-                                className={`rounded-2xl border p-5 transition ${
-                                  status === "mastered"
-                                    ? "border-emerald-200 bg-emerald-50/40"
-                                    : status === "learning"
-                                      ? "border-amber-200 bg-amber-50/40"
-                                      : "border-slate-100 bg-slate-50/70"
-                                }`}
-                              >
-                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="max-w-3xl flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-slate-900">
+                                      {topic.topic_name}
+                                    </h3>
 
-                                  <div className="max-w-3xl flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <h3 className="font-bold text-slate-900">
-                                        {topic.topic_name}
-                                      </h3>
-
-                                      {status === "mastered" && (
-                                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                                          MASTERED
-                                        </span>
-                                      )}
-
-                                      {status === "learning" && (
-                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
-                                          LEARNING
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {topic.description && (
-                                      <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                                        {topic.description}
-                                      </p>
+                                    {status === "mastered" && (
+                                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                                        MASTERED
+                                      </span>
                                     )}
 
-                                    <div className="mt-4">
-                                      <div className="mb-1.5 flex items-center justify-between">
-                                        <span className="text-xs font-medium text-slate-500">
-                                          Topic Mastery
-                                        </span>
-
-                                        <span className="text-xs font-bold text-slate-900">
-                                          {mastery}%
-                                        </span>
-                                      </div>
-
-                                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                                        <div
-                                          className={`h-full transition-all duration-500 ${
-                                            status === "mastered"
-                                              ? "bg-emerald-500"
-                                              : status === "learning"
-                                                ? "bg-amber-500"
-                                                : "bg-slate-400"
-                                          }`}
-                                          style={{
-                                            width: `${mastery}%`,
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
-                                    {/* Test Yourself AI Quiz Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => setActiveQuizTopic(topic)}
-                                      className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition shadow-sm flex items-center gap-1.5"
-                                    >
-                                      <span>🎯</span>
-                                      <span>Test Yourself</span>
-                                    </button>
-
-                                    {[
-                                      ["not_started", "Not Started"],
-                                      ["learning", "Learning"],
-                                      ["mastered", "Mastered"],
-                                    ].map(
-                                      ([value, label]) => (
-                                        <button
-                                          key={value}
-                                          disabled={
-                                            savingId === topic.id
-                                          }
-                                          onClick={() =>
-                                            changeProgress(
-                                              topic,
-                                              value
-                                            )
-                                          }
-                                          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                                            status === value
-                                              ? value === "mastered"
-                                                ? "bg-emerald-600 text-white shadow-sm"
-                                                : value === "learning"
-                                                  ? "bg-amber-600 text-white shadow-sm"
-                                                  : "bg-slate-900 text-white shadow-sm"
-                                              : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                                          } disabled:opacity-50`}
-                                        >
-                                          {label}
-                                        </button>
-                                      )
+                                    {status === "learning" && (
+                                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                                        LEARNING
+                                      </span>
                                     )}
                                   </div>
 
+                                  {topic.description && (
+                                    <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                                      {topic.description}
+                                    </p>
+                                  )}
+
+                                  <div className="mt-4">
+                                    <div className="mb-1.5 flex items-center justify-between">
+                                      <span className="text-xs font-medium text-slate-500">
+                                        Mastery
+                                      </span>
+
+                                      <span className="text-xs font-bold text-slate-900">
+                                        {mastery}%
+                                      </span>
+                                    </div>
+
+                                    <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                                      <div
+                                        className={`h-full transition-all duration-500 ${
+                                          status === "mastered"
+                                            ? "bg-emerald-500"
+                                            : status === "learning"
+                                              ? "bg-amber-500"
+                                              : "bg-slate-400"
+                                        }`}
+                                        style={{
+                                          width: `${mastery}%`,
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
+
+                                <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
+                                  {[
+                                    ["not_started", "Not Started"],
+                                    ["learning", "Learning"],
+                                    ["mastered", "Mastered"],
+                                  ].map(([value, label]) => (
+                                    <button
+                                      key={value}
+                                      disabled={savingId === topic.id}
+                                      onClick={() => changeProgress(topic, value)}
+                                      className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                                        status === value
+                                          ? value === "mastered"
+                                            ? "bg-emerald-600 text-white shadow-sm"
+                                            : value === "learning"
+                                              ? "bg-amber-600 text-white shadow-sm"
+                                              : "bg-slate-900 text-white shadow-sm"
+                                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                      } disabled:opacity-50`}
+                                    >
+                                      {label}
+                                    </button>
+                                  ))}
+
+                                  <button
+                                    onClick={() => setQuizTopic(topic)}
+                                    className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition shadow-sm"
+                                  >
+                                    Test Yourself
+                                  </button>
+                                </div>
+
                               </div>
-                            )
-                          })}
-                        </div>
-                      </section>
-                    )
-                  )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  ))}
                 </div>
               )}
             </div>
+
+            {/* Topic Quiz Modal Dialog */}
+            {quizTopic && (
+              <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
+                <div className="mx-auto mt-10 max-w-4xl">
+                  <div className="mb-3 flex justify-end">
+                    <button
+                      onClick={() => setQuizTopic(null)}
+                      className="rounded-xl bg-white px-4 py-2 text-sm font-semibold shadow hover:bg-slate-50 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <TopicQuiz
+                    topic={quizTopic}
+                    user={user}
+                    onComplete={() => {
+                      loadTopics(selectedSubject)
+                    }}
+                    onClose={() => setQuizTopic(null)}
+                  />
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
