@@ -59,7 +59,7 @@ function MyAcademics({ profile }) {
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
-              CAMPUS TIMETABLE & COURSES
+              ACADEMIC TIMETABLE & COURSES
             </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               Semester {profile?.semester} · Section {profile?.section}

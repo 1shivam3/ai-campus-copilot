@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { supabase } from "../lib/supabase"
+import { CoursePilotLogo } from "../components/CoursePilotLogo"
 
 function Auth({ onLogin }) {
   const [mode, setMode] = useState("login")
@@ -47,65 +48,73 @@ function Auth({ onLogin }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md rounded-3xl border bg-white p-8 shadow-sm">
-        <div className="mb-8">
-          <p className="text-sm font-medium text-blue-600">
-            AI Campus Copilot
-          </p>
+    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-4 sm:p-6">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+        <div className="mb-6">
+          <CoursePilotLogo size="md" showTagline={true} />
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">
-            {mode === "login"
-              ? "Welcome back"
-              : "Create your account"}
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            {mode === "login" ? "Welcome back" : "Create your account"}
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
-            Your personalized academic command center.
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-500">
+            {mode === "login"
+              ? "Sign in to access your Next Best Action and study schedule."
+              : "Set up your student profile and start optimizing your study time."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
-          />
+          <div>
+            <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              Email Address
+            </label>
+            <input
+              type="email"
+              placeholder="student@university.edu"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+            />
+          </div>
 
-          <input
-            type="password"
-            placeholder="Password (minimum 6 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900"
-          />
+          <div>
+            <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="Minimum 6 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+            />
+          </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 transition"
+            className="mt-2 w-full rounded-xl bg-slate-900 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50 transition active:scale-[0.98]"
           >
             {loading
               ? "Please wait..."
               : mode === "login"
-                ? "Log In"
+                ? "Log In to CoursePilot"
                 : "Create Account"}
           </button>
         </form>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+          <div className="mt-4 rounded-xl bg-red-50 p-3 text-xs sm:text-sm font-semibold text-red-700 border border-red-200">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 border border-emerald-200">
+          <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs sm:text-sm font-semibold text-emerald-700 border border-emerald-200">
             {message}
           </div>
         )}
@@ -117,7 +126,7 @@ function Auth({ onLogin }) {
             setError("")
             setMessage("")
           }}
-          className="mt-6 w-full text-center text-sm font-medium text-blue-600 hover:underline"
+          className="mt-6 w-full text-center text-xs sm:text-sm font-semibold text-blue-600 hover:underline"
         >
           {mode === "login"
             ? "Don't have an account? Sign up"

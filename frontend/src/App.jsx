@@ -21,6 +21,7 @@ import { calculateExamReadiness } from "./utils/examReadiness"
 import { runNextBestActionEngine, getDaysRemaining } from "./utils/nextBestActionEngine"
 import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/SkeletonLoader"
 import EmptyState from "./components/EmptyState"
+import { CoursePilotMark } from "./components/CoursePilotLogo"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -352,11 +353,9 @@ function App() {
   if (authLoading || (user && profileLoading && !profile)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8fafc] p-6 text-slate-900">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-2xl text-white shadow-md animate-pulse">
-          ⚡
-        </div>
+        <CoursePilotMark className="h-12 w-12 shadow-md animate-pulse" />
         <p className="mt-4 text-sm font-semibold tracking-wide text-slate-600">
-          Loading AI Campus Copilot...
+          Loading CoursePilot...
         </p>
       </div>
     )
@@ -395,7 +394,7 @@ function App() {
       <div className="min-w-0 flex-1 flex flex-col">
         {/* Mobile Top Header */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md lg:hidden">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => setMobileNavOpen(true)}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 transition"
@@ -405,7 +404,10 @@ function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="text-sm font-bold text-slate-900">{currentPage}</span>
+            <div className="flex items-center gap-2">
+              <CoursePilotMark className="h-6 w-6" />
+              <span className="text-sm font-bold text-slate-900">{currentPage}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

@@ -11,7 +11,7 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise RuntimeError("GEMINI_API_KEY is not configured.")
 
-app = FastAPI(title="AI Campus Copilot API", docs_url=None, redoc_url=None)
+app = FastAPI(title="CoursePilot API", docs_url=None, redoc_url=None)
 
 # Enable CORS for Vite frontend (local and deployed on Vercel)
 app.add_middleware(
@@ -88,7 +88,7 @@ class ExamQuizRequest(BaseModel):
 
 @app.get("/")
 def root():
-    return {"message": "AI Campus Copilot backend is running"}
+    return {"message": "CoursePilot backend is running"}
 
 
 @app.get("/health")
@@ -107,7 +107,7 @@ def generate_exam_quiz(request: ExamQuizRequest):
     ) if request.topics else f"- {request.subject} Core Topics: 50% mastery"
 
     prompt = f"""
-You are creating an adaptive exam-practice quiz for a B.Tech Computer Science student.
+You are creating an adaptive exam-practice quiz for a B.Tech Computer Science student using CoursePilot.
 
 SUBJECT:
 {request.subject}
@@ -177,7 +177,7 @@ def generate_quiz(request: QuizRequest):
         raise HTTPException(status_code=400, detail="Topic name is required.")
 
     prompt = f"""
-Create a 5-question multiple-choice quiz for a B.Tech Computer Science student.
+Create a 5-question multiple-choice quiz for a B.Tech Computer Science student using CoursePilot.
 
 TOPIC:
 {request.topic_name}
@@ -243,7 +243,7 @@ def study_advice(request: StudyAdviceRequest):
     task_minutes_str = f"{request.task_minutes} minutes" if request.task_minutes else "N/A"
 
     prompt = f"""
-You are an academic AI campus copilot.
+You are CoursePilot, an academic AI study co-pilot for university students.
 
 Student context:
 

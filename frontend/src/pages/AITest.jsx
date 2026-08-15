@@ -136,7 +136,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
             <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
-              AI ACADEMIC COPILOT
+              COURSEPILOT AI INTELLIGENCE
             </p>
           </div>
 
@@ -169,7 +169,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
                 </span>
 
                 <span className="text-xs text-slate-400 font-medium">
-                  {profile ? `Sem ${profile.semester} · Section ${profile.section}` : "Campus Context"}
+                  {profile ? `Sem ${profile.semester} · Section ${profile.section}` : "Academic Context"}
                 </span>
               </div>
 
@@ -244,7 +244,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
               <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-sm">
                 <div className="mb-4 border-b border-slate-100 pb-3">
                   <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase">
-                    COPILOT STRATEGY
+                    COURSEPILOT STRATEGY
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-slate-900">
                     Your Personalized Action Plan

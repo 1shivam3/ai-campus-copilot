@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
+import { CoursePilotMark } from "../components/CoursePilotLogo"
 
 function ProfileSetup({ user, onComplete }) {
   const [fullName, setFullName] = useState("")
@@ -21,7 +22,7 @@ function ProfileSetup({ user, onComplete }) {
     { value: 8, label: "8th Semester" },
   ]
 
-  // If the user already has profile details, pre-populate them
+  // Pre-populate if existing profile is found
   useEffect(() => {
     async function loadExistingProfile() {
       if (!user?.id) return
@@ -126,10 +127,8 @@ function ProfileSetup({ user, onComplete }) {
     <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-4 sm:p-6">
       <div className="w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-bold">
-              ⚡
-            </span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <CoursePilotMark className="h-7 w-7 shrink-0" />
             <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
               STUDENT ONBOARDING
             </p>
@@ -140,7 +139,7 @@ function ProfileSetup({ user, onComplete }) {
           </h1>
 
           <p className="mt-2 text-xs sm:text-sm leading-relaxed text-slate-500">
-            This configures your academic timetable, enrolled subjects, faculty list, and syllabus topics automatically.
+            This configures your academic timetable, enrolled subjects, faculty list, and syllabus topics automatically in CoursePilot.
           </p>
         </div>
 
@@ -221,7 +220,7 @@ function ProfileSetup({ user, onComplete }) {
             disabled={loading}
             className="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50 transition shadow-sm active:scale-[0.98]"
           >
-            {loading ? "Saving Profile..." : "Continue to Campus Copilot →"}
+            {loading ? "Saving Profile..." : "Continue to CoursePilot →"}
           </button>
         </form>
       </div>

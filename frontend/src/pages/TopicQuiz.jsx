@@ -224,7 +224,7 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
         </div>
 
         <p className="mt-4 text-sm text-slate-500">
-          Your Copilot will use this updated mastery when recommending what to study next.
+          CoursePilot will use this updated mastery when recommending what to study next.
         </p>
 
         <div className="mt-6 flex justify-center gap-3">

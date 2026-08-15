@@ -1,3 +1,5 @@
+import { CoursePilotLogo } from "./CoursePilotLogo"
+
 function Sidebar({
   currentPage,
   setCurrentPage,
@@ -93,21 +95,9 @@ function Sidebar({
   const navContent = (
     <div className="flex h-full flex-col justify-between p-5">
       <div>
-        {/* Brand Logo */}
+        {/* Brand Logo Wordmark */}
         <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white font-bold shadow-sm">
-              ⚡
-            </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight text-slate-900">
-                AI Campus Copilot
-              </h1>
-              <p className="text-[11px] font-medium text-slate-500">
-                Academic Command Center
-              </p>
-            </div>
-          </div>
+          <CoursePilotLogo size="sm" showTagline={false} />
 
           {/* Close button for mobile drawer */}
           <button

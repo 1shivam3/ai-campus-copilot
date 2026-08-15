@@ -334,7 +334,7 @@ function ExamQuiz({
         </div>
 
         <p className="mt-6 text-center text-sm leading-6 text-slate-500">
-          Your topic-level results have been used to update your academic progress across the Copilot engine.
+          Your topic-level results have been used to update your academic progress across CoursePilot.
         </p>
 
         {onClose && (
