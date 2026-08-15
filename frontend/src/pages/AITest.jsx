@@ -2,9 +2,11 @@ import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { getAcademicRecommendation } from "../utils/academicRecommendation"
 import { getTopicRecommendation } from "../utils/topicRecommendation"
+import { getNextClass } from "../lib/todaySchedule"
+import { getBestStudyWindow } from "../utils/freeTime"
 import { generateStudyAdvice } from "../lib/api"
 
-function AITest({ user, onStartSession }) {
+function AITest({ user, onStartSession, schedule, profile }) {
   const [recommendation, setRecommendation] = useState(null)
   const [topicRecommendation, setTopicRecommendation] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -96,6 +98,16 @@ function AITest({ user, onStartSession }) {
           ? recommendation.item
           : null
 
+      const nextClass = getNextClass(schedule)
+      const recommendedWindow = getBestStudyWindow(
+        schedule,
+        task ? Math.min(Number(task.estimated_minutes || 30), 60) : 30
+      )
+
+      const todayWeekday = new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+      })
+
       const result = await generateStudyAdvice({
         exam_subject: exam?.subject || null,
         exam_date: exam?.exam_date || null,
@@ -104,7 +116,14 @@ function AITest({ user, onStartSession }) {
         mastery_score: topic?.mastery_score ?? null,
         task_title: task?.title || null,
         task_minutes: task?.estimated_minutes || null,
-        available_minutes: 60,
+        available_minutes: recommendedWindow?.minutes || 60,
+        today: todayWeekday,
+        next_class_subject: nextClass?.academic_subjects?.subject_name || null,
+        next_class_start: nextClass?.start_time?.slice(0, 5) || null,
+        next_class_end: nextClass?.end_time?.slice(0, 5) || null,
+        recommended_start: recommendedWindow?.start || null,
+        recommended_end: recommendedWindow?.end || null,
+        recommended_minutes: recommendedWindow?.minutes || null,
       })
 
       setAnswer(result)
@@ -130,22 +149,21 @@ function AITest({ user, onStartSession }) {
             </p>
           </div>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
             Don&apos;t plan your day.
             <br />
-            Let your academic data plan it.
+            Let your campus timetable plan it.
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-            The Copilot combines your exams, deadlines and topic mastery
-            to determine what deserves your attention and how you should
-            study it.
+            The Copilot combines your exams, lecture schedule, deadlines and topic mastery
+            to determine what deserves your attention and how to structure your open study windows.
           </p>
         </div>
 
         {loading && (
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-            Analyzing your academic situation...
+            Analyzing your academic schedule and workload...
           </div>
         )}
 
@@ -160,11 +178,11 @@ function AITest({ user, onStartSession }) {
             <div className="overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8">
               <div className="mb-6 flex items-center justify-between">
                 <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-400/20">
-                  AI ANALYZED
+                  AI SCHEDULE-AWARE
                 </span>
 
-                <span className="text-xs text-slate-500">
-                  Updated from your latest academic data
+                <span className="text-xs text-slate-400">
+                  {profile ? `Sem ${profile.semester} · Section ${profile.section}` : "Campus Context Active"}
                 </span>
               </div>
 
@@ -230,7 +248,7 @@ function AITest({ user, onStartSession }) {
                 className="mt-6 w-full rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 disabled:opacity-50 shadow-md"
               >
                 {aiLoading
-                  ? "Analyzing your academic situation..."
+                  ? "Aligning strategy with your timetable..."
                   : "Generate My Personalized Strategy"}
               </button>
             </div>

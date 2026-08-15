@@ -46,6 +46,13 @@ class StudyAdviceRequest(BaseModel):
     task_title: str | None = None
     task_minutes: int | None = None
     available_minutes: int = 60
+    today: str | None = None
+    next_class_subject: str | None = None
+    next_class_start: str | None = None
+    next_class_end: str | None = None
+    recommended_start: str | None = None
+    recommended_end: str | None = None
+    recommended_minutes: int | None = None
 
 
 class StudyMaterialRequest(BaseModel):
@@ -61,49 +68,64 @@ def root():
 @app.post("/api/study-advice")
 def study_advice(request: StudyAdviceRequest):
     prompt = f"""
-You are an academic AI copilot.
+You are an academic AI campus copilot.
 
 Student context:
 
+TODAY:
+{request.today or "Today"}
+
+NEXT SCHEDULED CLASS:
+{request.next_class_subject or "No more classes today"} {f"({request.next_class_start} - {request.next_class_end})" if request.next_class_start else ""}
+
+RECOMMENDED FREE STUDY WINDOW:
+{f"{request.recommended_start} - {request.recommended_end} ({request.recommended_minutes} mins available)" if request.recommended_start else f"{request.available_minutes} mins available"}
+
 EXAM SUBJECT:
-{request.exam_subject}
+{request.exam_subject or "None upcoming"}
 
 EXAM DATE:
-{request.exam_date}
+{request.exam_date or "N/A"}
 
 EXAM IMPORTANCE:
-{request.exam_importance}/10
+{request.exam_importance}/10 if request.exam_importance else "N/A"
 
 WEAKEST TOPIC:
-{request.topic_name}
+{request.topic_name or "N/A"}
 
 CURRENT MASTERY:
-{request.mastery_score}%
+{request.mastery_score}% if request.mastery_score is not None else "N/A"
 
-CURRENT TASK:
-{request.task_title}
+CURRENT PRIORITY TASK:
+{request.task_title or "None"}
 
 TASK TIME:
-{request.task_minutes} minutes
+{request.task_minutes} minutes if request.task_minutes else "N/A"
 
 AVAILABLE STUDY TIME:
-{request.available_minutes} minutes
+{request.recommended_minutes or request.available_minutes} minutes
 
-Create a practical study strategy.
+CRITICAL SCHEDULING INSTRUCTIONS:
+- Respect the student's timetable and lecture schedule.
+- Do not recommend studying during their upcoming class period.
+- If a recommended free study window exists ({request.recommended_start} - {request.recommended_end}), explicitly structure the action plan to fit inside that exact window.
+- Do not invent conflicting times.
+
+Create a high-yield study strategy tailored to this exact time slot.
 
 Return exactly:
 
 WHY NOW:
-Explain why this should be prioritized.
+Explain why this task/topic was prioritized and how it fits cleanly into today's class schedule.
 
 ACTION PLAN:
-Create a time-blocked plan that fits within the available time.
+Create a time-blocked action plan that fits directly inside the available study window.
 
 FIRST TASK:
 Give one exact action to begin immediately.
 
 AVOID:
-Give one thing the student should not waste time doing.
+Give one specific thing the student should avoid doing during this session.
 
 Do not give generic motivational advice.
 """

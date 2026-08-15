@@ -684,6 +684,8 @@ function App() {
           {currentPage === "AI Copilot" && (
             <AITest
               user={user}
+              schedule={dashboardSchedule}
+              profile={profile}
               onStartSession={(taskId) => {
                 setRecommendedTaskId(taskId)
                 setCurrentPage("Focus Session")
