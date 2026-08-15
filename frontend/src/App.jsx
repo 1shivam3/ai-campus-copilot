@@ -86,7 +86,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from("student_profiles")
-        .select("id, full_name, roll_number, semester, section, batch, branch")
+        .select("*")
         .eq("id", currentUser.id)
         .maybeSingle()
 
