@@ -221,6 +221,10 @@ JSON format:
 
 @app.post("/api/study-advice")
 def study_advice(request: StudyAdviceRequest):
+    exam_importance_str = f"{request.exam_importance}/10" if request.exam_importance else "N/A"
+    mastery_score_str = f"{request.mastery_score}%" if request.mastery_score is not None else "N/A"
+    task_minutes_str = f"{request.task_minutes} minutes" if request.task_minutes else "N/A"
+
     prompt = f"""
 You are an academic AI campus copilot.
 
@@ -242,19 +246,19 @@ EXAM DATE:
 {request.exam_date or "N/A"}
 
 EXAM IMPORTANCE:
-{request.exam_importance}/10 if request.exam_importance else "N/A"
+{exam_importance_str}
 
 WEAKEST TOPIC:
 {request.topic_name or "N/A"}
 
 CURRENT MASTERY:
-{request.mastery_score}% if request.mastery_score is not None else "N/A"
+{mastery_score_str}
 
 CURRENT PRIORITY TASK:
 {request.task_title or "None"}
 
 TASK TIME:
-{request.task_minutes} minutes if request.task_minutes else "N/A"
+{task_minutes_str}
 
 AVAILABLE STUDY TIME:
 {request.recommended_minutes or request.available_minutes} minutes

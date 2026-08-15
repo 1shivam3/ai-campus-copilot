@@ -11,8 +11,8 @@ export function buildDailyPlan({
     classes.forEach((item) => {
       plan.push({
         type: "class",
-        start: item.start_time?.slice(0, 5),
-        end: item.end_time?.slice(0, 5),
+        start: item.start_time?.slice(0, 5) || "09:00",
+        end: item.end_time?.slice(0, 5) || "10:00",
         title:
           item.academic_subjects?.subject_name ||
           "Class",
@@ -23,7 +23,7 @@ export function buildDailyPlan({
   }
 
   const sortedWindows = [...(studyWindows || [])].sort(
-    (a, b) => a.start.localeCompare(b.start)
+    (a, b) => (a.start || "").localeCompare(b.start || "")
   )
 
   const pendingTasks = [...(tasks || [])]
@@ -37,7 +37,9 @@ export function buildDailyPlan({
         return importanceDiff
       }
 
-      return new Date(a.deadline) - new Date(b.deadline)
+      const aTime = a.deadline ? new Date(a.deadline).getTime() : 0
+      const bTime = b.deadline ? new Date(b.deadline).getTime() : 0
+      return aTime - bTime
     })
 
   sortedWindows.forEach((window, index) => {
@@ -67,29 +69,33 @@ export function buildDailyPlan({
     })
   })
 
-  // Sort timed items (classes and study slots) chronologically by start time
-  const timedItems = plan.filter((p) => p.start).sort((a, b) => a.start.localeCompare(b.start))
+  // Sort timed items chronologically
+  const timedItems = plan.filter((p) => p.start).sort((a, b) => (a.start || "").localeCompare(b.start || ""))
   const untimedItems = []
 
   if (exams && exams.length > 0) {
     const closestExam = [...exams].sort(
-      (a, b) =>
-        new Date(a.exam_date) -
-        new Date(b.exam_date)
+      (a, b) => {
+        const aTime = a.exam_date ? new Date(a.exam_date).getTime() : 0
+        const bTime = b.exam_date ? new Date(b.exam_date).getTime() : 0
+        return aTime - bTime
+      }
     )[0]
 
-    untimedItems.push({
-      type: "exam",
-      title: `Upcoming: ${closestExam.subject} Exam`,
-      subtitle: `Exam date: ${new Date(closestExam.exam_date).toLocaleDateString()} · Importance ${closestExam.importance}/10`,
-    })
+    if (closestExam) {
+      untimedItems.push({
+        type: "exam",
+        title: `Upcoming: ${closestExam.subject} Exam`,
+        subtitle: `Exam date: ${new Date(closestExam.exam_date).toLocaleDateString()} · Importance ${closestExam.importance || 5}/10`,
+      })
+    }
   }
 
   if (weakestTopic) {
     untimedItems.push({
       type: "weakness",
       title: `Weak Topic Focus: ${weakestTopic.topic_name}`,
-      subtitle: `${weakestTopic.subject} · Current Mastery ${weakestTopic.mastery_score}%`,
+      subtitle: `${weakestTopic.subject_name || weakestTopic.subject || "Syllabus"} · Current Mastery ${weakestTopic.mastery_score || 0}%`,
     })
   }
 

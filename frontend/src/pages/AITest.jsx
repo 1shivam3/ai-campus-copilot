@@ -5,6 +5,9 @@ import { getTopicRecommendation } from "../utils/topicRecommendation"
 import { getNextClass } from "../lib/todaySchedule"
 import { getBestStudyWindow } from "../utils/freeTime"
 import { generateStudyAdvice } from "../lib/api"
+import { SkeletonBanner, SkeletonCard } from "../components/SkeletonLoader"
+import EmptyState from "../components/EmptyState"
+import ErrorState from "../components/ErrorState"
 
 function AITest({ user, onStartSession, schedule, profile }) {
   const [recommendation, setRecommendation] = useState(null)
@@ -24,57 +27,50 @@ function AITest({ user, onStartSession, schedule, profile }) {
     if (!user?.id) return
 
     setLoading(true)
+    setError("")
 
-    const [tasksResult, examsResult, topicsResult] =
-      await Promise.all([
+    try {
+      const [tasksResult, examsResult, topicsResult] = await Promise.all([
         supabase
           .from("tasks")
-          .select("*")
+          .select("id, user_id, title, subject, deadline, importance, estimated_minutes, status")
           .eq("user_id", user.id)
           .eq("status", "pending"),
 
         supabase
           .from("exams")
-          .select("*")
+          .select("id, user_id, subject, exam_date, importance")
           .eq("user_id", user.id)
           .gte("exam_date", new Date().toISOString()),
 
         supabase
           .from("topics")
-          .select("*")
+          .select("id, user_id, subject, topic_name, mastery_score")
           .eq("user_id", user.id),
       ])
 
-    if (
-      tasksResult.error ||
-      examsResult.error ||
-      topicsResult.error
-    ) {
-      console.error(
-        tasksResult.error ||
-          examsResult.error ||
-          topicsResult.error
-      )
+      if (tasksResult.error || examsResult.error || topicsResult.error) {
+        throw tasksResult.error || examsResult.error || topicsResult.error
+      }
 
-      setError("Could not load academic data.")
-      setLoading(false)
-      return
-    }
-
-    const recommendationResult =
-      getAcademicRecommendation(
+      const recommendationResult = getAcademicRecommendation(
         tasksResult.data || [],
         examsResult.data || []
       )
 
-    const topicResult = getTopicRecommendation(
-      examsResult.data || [],
-      topicsResult.data || []
-    )
+      const topicResult = getTopicRecommendation(
+        examsResult.data || [],
+        topicsResult.data || []
+      )
 
-    setRecommendation(recommendationResult)
-    setTopicRecommendation(topicResult)
-    setLoading(false)
+      setRecommendation(recommendationResult)
+      setTopicRecommendation(topicResult)
+    } catch (err) {
+      console.error("Context load error:", err)
+      setError("Could not load academic data.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function askAI() {
@@ -87,16 +83,12 @@ function AITest({ user, onStartSession, schedule, profile }) {
     try {
       const exam =
         topicRecommendation?.exam ||
-        (recommendation.type === "exam"
-          ? recommendation.item
-          : null)
+        (recommendation.type === "exam" ? recommendation.item : null)
 
       const topic = topicRecommendation?.topic
 
       const task =
-        recommendation.type === "task"
-          ? recommendation.item
-          : null
+        recommendation.type === "task" ? recommendation.item : null
 
       const nextClass = getNextClass(schedule)
       const recommendedWindow = getBestStudyWindow(
@@ -130,105 +122,99 @@ function AITest({ user, onStartSession, schedule, profile }) {
     } catch (err) {
       console.error(err)
       setError(
-        "AI request failed. If using the live backend, it may be waking up from cold start — please try again in a few seconds."
+        "AI request failed. The backend service may be waking up from cold start — please try again in a moment."
       )
+    } finally {
+      setAiLoading(false)
     }
-
-    setAiLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-8">
+    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-600" />
-
-            <p className="text-xs font-bold tracking-widest text-blue-600">
+            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
               AI ACADEMIC COPILOT
             </p>
           </div>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Don&apos;t plan your day.
-            <br />
-            Let your campus timetable plan it.
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Schedule-Aware Study Intelligence
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-            The Copilot combines your exams, lecture schedule, deadlines and topic mastery
-            to determine what deserves your attention and how to structure your open study windows.
+          <p className="mt-1.5 max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-500">
+            Synthesizes your timetable, active deadlines, and topic risks into a time-blocked study strategy for your next free window.
           </p>
         </div>
 
-        {loading && (
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-            Analyzing your academic schedule and workload...
-          </div>
-        )}
-
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
-            {error}
+          <div className="mb-6">
+            <ErrorState message={error} onRetry={loadAcademicContext} />
           </div>
         )}
 
-        {!loading && !error && recommendation && (
+        {loading ? (
+          <div className="space-y-6">
+            <SkeletonBanner />
+            <SkeletonCard />
+          </div>
+        ) : recommendation ? (
           <>
             <div className="overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8">
-              <div className="mb-6 flex items-center justify-between">
-                <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-400/20">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 border border-emerald-400/20">
                   AI SCHEDULE-AWARE
                 </span>
 
-                <span className="text-xs text-slate-400">
-                  {profile ? `Sem ${profile.semester} · Section ${profile.section}` : "Campus Context Active"}
+                <span className="text-xs text-slate-400 font-medium">
+                  {profile ? `Sem ${profile.semester} · Section ${profile.section}` : "Campus Context"}
                 </span>
               </div>
 
-              <p className="text-xs font-bold tracking-widest text-slate-400">
+              <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
                 CURRENT PRIORITY
               </p>
 
-              <h2 className="mt-3 text-3xl font-bold tracking-tight">
+              <h2 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-white">
                 {recommendation.type === "exam"
                   ? `${recommendation.item.subject} Exam`
                   : recommendation.item.title}
               </h2>
 
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-1 text-xs sm:text-sm text-slate-300">
                 {recommendation.type === "exam"
                   ? "Highest urgency exam in your academic calendar."
                   : `Target task (${recommendation.item.estimated_minutes} mins) with priority score ${recommendation.score}/10.`}
               </p>
 
               {/* Current Weakness Card */}
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-5">
-                <p className="text-xs font-bold tracking-widest text-slate-400">
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-4 sm:p-5">
+                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
                   CURRENT WEAKNESS
                 </p>
 
                 {topicRecommendation?.topic ? (
                   <>
-                    <div className="mt-3 flex items-end justify-between">
+                    <div className="mt-2 flex items-end justify-between">
                       <div>
-                        <p className="text-lg font-semibold">
+                        <p className="text-base font-bold text-white">
                           {topicRecommendation.topic.topic_name}
                         </p>
-
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-0.5 text-xs text-slate-400">
                           {topicRecommendation.topic.subject}
                         </p>
                       </div>
 
-                      <p className="text-2xl font-bold text-amber-400">
+                      <p className="text-xl sm:text-2xl font-bold text-amber-400">
                         {topicRecommendation.topic.mastery_score}%
                       </p>
                     </div>
 
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                       <div
-                        className="h-full rounded-full bg-white transition-all duration-500"
+                        className="h-full rounded-full bg-amber-400 transition-all duration-500"
                         style={{
                           width: `${topicRecommendation.topic.mastery_score}%`,
                         }}
@@ -236,8 +222,8 @@ function AITest({ user, onStartSession, schedule, profile }) {
                     </div>
                   </>
                 ) : (
-                  <p className="mt-3 text-sm text-slate-400">
-                    No weak topic detected yet.
+                  <p className="mt-2 text-xs text-slate-400">
+                    All topics on track or no weak topics recorded yet.
                   </p>
                 )}
               </div>
@@ -245,58 +231,49 @@ function AITest({ user, onStartSession, schedule, profile }) {
               <button
                 onClick={askAI}
                 disabled={aiLoading}
-                className="mt-6 w-full rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 disabled:opacity-50 shadow-md"
+                className="mt-6 w-full rounded-xl bg-white px-5 py-3.5 text-xs sm:text-sm font-bold text-slate-950 transition hover:bg-slate-100 disabled:opacity-50 shadow-md active:scale-[0.98]"
               >
                 {aiLoading
                   ? "Aligning strategy with your timetable..."
-                  : "Generate My Personalized Strategy"}
+                  : "Generate Time-Blocked Strategy ✨"}
               </button>
             </div>
 
             {/* AI Strategy Result */}
             {answer && (
-              <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:p-8">
-                <div className="mb-6 border-b border-slate-100 pb-4">
-                  <p className="text-xs font-bold tracking-widest text-blue-600">
+              <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-sm">
+                <div className="mb-4 border-b border-slate-100 pb-3">
+                  <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase">
                     COPILOT STRATEGY
                   </p>
-
-                  <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                    Your personalized action plan
+                  <h2 className="mt-1 text-xl font-bold text-slate-900">
+                    Your Personalized Action Plan
                   </h2>
                 </div>
 
-                <div className="whitespace-pre-wrap text-sm leading-7 text-slate-700 font-sans">
+                <div className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-slate-700 font-sans">
                   {answer}
                 </div>
 
-                {recommendation?.type === "task" && (
-                  <div className="mt-6 border-t border-slate-100 pt-6">
+                {recommendation?.type === "task" && onStartSession && (
+                  <div className="mt-6 border-t border-slate-100 pt-5">
                     <button
-                      onClick={() =>
-                        onStartSession && onStartSession(recommendation.item.id)
-                      }
-                      className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
+                      onClick={() => onStartSession(recommendation.item.id)}
+                      className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition shadow-sm active:scale-[0.98]"
                     >
-                      Start Recommended Session →
+                      Start Recommended Focus Session →
                     </button>
                   </div>
                 )}
               </div>
             )}
           </>
-        )}
-
-        {!loading && !error && !recommendation && (
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-sm">
-            <h2 className="text-xl font-bold text-slate-900">
-              You&apos;re all caught up 🎉
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Add a pending task or upcoming exam to get an AI study plan.
-            </p>
-          </div>
+        ) : (
+          <EmptyState
+            icon="🎉"
+            title="You're all caught up"
+            description="Add an assignment or upcoming exam in Tasks or Exams to activate AI personalized study strategies."
+          />
         )}
       </div>
     </div>

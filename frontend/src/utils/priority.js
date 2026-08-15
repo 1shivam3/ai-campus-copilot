@@ -1,19 +1,18 @@
 export function calculatePriority(task) {
-  if (task.status === "completed") {
+  if (!task || task.status === "completed") {
     return 0
   }
 
-  const now = new Date()
-  const deadline = new Date(task.deadline)
+  const now = Date.now()
+  const deadlineTime = task.deadline ? new Date(task.deadline).getTime() : now + 86400000 * 7
 
-  const hoursRemaining = Math.max(
-    1,
-    (deadline - now) / (1000 * 60 * 60)
-  )
+  const hoursRemaining = (deadlineTime - now) / (1000 * 60 * 60)
 
-  let urgency
+  let urgency = 3
 
-  if (hoursRemaining <= 12) {
+  if (hoursRemaining <= 0) {
+    urgency = 10 // Overdue gets maximum urgency
+  } else if (hoursRemaining <= 12) {
     urgency = 10
   } else if (hoursRemaining <= 24) {
     urgency = 9
@@ -21,12 +20,9 @@ export function calculatePriority(task) {
     urgency = 7
   } else if (hoursRemaining <= 96) {
     urgency = 5
-  } else {
-    urgency = 3
   }
 
-  const importance = Number(task.importance || 5)
-
+  const importance = Math.max(1, Math.min(10, Number(task.importance || 5)))
   const effort = Math.min(
     10,
     Math.max(1, Number(task.estimated_minutes || 30) / 30)
@@ -37,11 +33,12 @@ export function calculatePriority(task) {
     importance * 0.35 +
     effort * 0.20
 
-  return Math.round(score * 10) / 10
+  return Math.max(0, Math.min(10, Math.round(score * 10) / 10))
 }
 
 export function getPriorityLabel(score) {
-  if (score >= 8) return "High"
-  if (score >= 6) return "Medium"
+  const num = Number(score || 0)
+  if (num >= 8) return "High"
+  if (num >= 6) return "Medium"
   return "Low"
 }

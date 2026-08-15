@@ -40,7 +40,7 @@ function StudyMaterial({ user }) {
   async function uploadFile(e) {
     e.preventDefault()
 
-    if (!selectedFile || !subject) {
+    if (!selectedFile || !subject.trim()) {
       setError("Please select a PDF file and specify a subject name.")
       return
     }
@@ -90,6 +90,24 @@ function StudyMaterial({ user }) {
       setError(`Upload failed: ${err.message}`)
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function deleteFile(fileName) {
+    if (!user?.id) return
+    if (!window.confirm(`Delete ${fileName}?`)) return
+
+    try {
+      const { error: delErr } = await supabase.storage
+        .from("study-material")
+        .remove([`${user.id}/${fileName}`])
+
+      if (delErr) throw delErr
+
+      setFiles((curr) => curr.filter((f) => f.name !== fileName))
+    } catch (err) {
+      console.error("Delete error:", err)
+      setError("Could not delete file.")
     }
   }
 
@@ -278,13 +296,23 @@ function StudyMaterial({ user }) {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => openFile(file.name)}
-                    className="self-start sm:self-center shrink-0 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
-                  >
-                    Open PDF ↗
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openFile(file.name)}
+                      className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
+                    >
+                      Open PDF ↗
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteFile(file.name)}
+                      className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+                      title="Delete document"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

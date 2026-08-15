@@ -10,6 +10,7 @@ function Tasks({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [sortByPriority, setSortByPriority] = useState(false)
+  const [filterTab, setFilterTab] = useState("all") // "all" | "pending" | "completed"
   const [showForm, setShowForm] = useState(false)
 
   const [form, setForm] = useState({
@@ -50,7 +51,7 @@ function Tasks({ user }) {
   async function addTask(e) {
     e.preventDefault()
 
-    if (!form.title || !form.subject || !form.deadline) {
+    if (!form.title.trim() || !form.subject.trim() || !form.deadline) {
       setError("Please fill in all required fields.")
       return
     }
@@ -66,8 +67,8 @@ function Tasks({ user }) {
             title: form.title.trim(),
             subject: form.subject.trim(),
             deadline: new Date(form.deadline).toISOString(),
-            estimated_minutes: Number(form.estimated_minutes) || 30,
-            importance: Number(form.importance) || 5,
+            estimated_minutes: Math.max(5, Number(form.estimated_minutes) || 30),
+            importance: Math.max(1, Math.min(10, Number(form.importance) || 5)),
             status: "pending",
           },
         ])
@@ -91,17 +92,19 @@ function Tasks({ user }) {
     }
   }
 
-  async function completeTask(taskId) {
+  async function toggleTaskStatus(task) {
+    const nextStatus = task.status === "completed" ? "pending" : "completed"
+
     try {
       // Optimistic update
       setTasks((curr) =>
-        curr.map((t) => (t.id === taskId ? { ...t, status: "completed" } : t))
+        curr.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
       )
 
       const { error: updateErr } = await supabase
         .from("tasks")
-        .update({ status: "completed" })
-        .eq("id", taskId)
+        .update({ status: nextStatus })
+        .eq("id", task.id)
 
       if (updateErr) throw updateErr
     } catch (err) {
@@ -111,9 +114,35 @@ function Tasks({ user }) {
     }
   }
 
+  async function deleteTask(taskId) {
+    if (!window.confirm("Are you sure you want to delete this task?")) return
+
+    try {
+      setTasks((curr) => curr.filter((t) => t.id !== taskId))
+
+      const { error: delErr } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId)
+        .eq("user_id", user.id)
+
+      if (delErr) throw delErr
+    } catch (err) {
+      console.error(err)
+      setError("Could not delete task.")
+      fetchTasks()
+    }
+  }
+
+  const filteredTasks = tasks.filter((t) => {
+    if (filterTab === "pending") return t.status !== "completed"
+    if (filterTab === "completed") return t.status === "completed"
+    return true
+  })
+
   const displayedTasks = sortByPriority
-    ? [...tasks].sort((a, b) => calculatePriority(b) - calculatePriority(a))
-    : tasks
+    ? [...filteredTasks].sort((a, b) => calculatePriority(b) - calculatePriority(a))
+    : filteredTasks
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
@@ -150,6 +179,27 @@ function Tasks({ user }) {
               {sortByPriority ? "Sorted by Priority ✓" : "Sort by Priority"}
             </button>
           </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="mb-5 flex items-center gap-2 border-b border-slate-200/80 pb-3">
+          {[
+            { key: "all", label: `All (${tasks.length})` },
+            { key: "pending", label: `Pending (${tasks.filter((t) => t.status !== "completed").length})` },
+            { key: "completed", label: `Completed (${tasks.filter((t) => t.status === "completed").length})` },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterTab(tab.key)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                filterTab === tab.key
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {error && (
@@ -269,7 +319,7 @@ function Tasks({ user }) {
         ) : displayedTasks.length === 0 ? (
           <EmptyState
             icon="✍️"
-            title="No academic tasks recorded"
+            title={filterTab === "all" ? "No academic tasks recorded" : `No ${filterTab} tasks`}
             description="Create your first assignment or lab record to keep your priorities synchronized."
             actionLabel="Add Task"
             onAction={() => setShowForm(true)}
@@ -277,7 +327,12 @@ function Tasks({ user }) {
         ) : (
           <div className="space-y-3">
             {displayedTasks.map((task) => (
-              <TaskRow key={task.id} task={task} completeTask={completeTask} />
+              <TaskRow
+                key={task.id}
+                task={task}
+                toggleTaskStatus={toggleTaskStatus}
+                deleteTask={deleteTask}
+              />
             ))}
           </div>
         )}
@@ -286,7 +341,7 @@ function Tasks({ user }) {
   )
 }
 
-function TaskRow({ task, completeTask }) {
+function TaskRow({ task, toggleTaskStatus, deleteTask }) {
   const priorityScore = calculatePriority(task)
   const priority = getPriorityLabel(priorityScore)
 
@@ -331,7 +386,7 @@ function TaskRow({ task, completeTask }) {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
           <div>
             <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
               Deadline
@@ -350,17 +405,26 @@ function TaskRow({ task, completeTask }) {
             </p>
           </div>
 
-          <button
-            onClick={() => completeTask(task.id)}
-            disabled={task.status === "completed"}
-            className={`rounded-xl px-4 py-2 text-xs font-bold transition active:scale-[0.98] ${
-              task.status === "completed"
-                ? "cursor-not-allowed bg-emerald-50 text-emerald-700 border border-emerald-200"
-                : "bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
-            }`}
-          >
-            {task.status === "completed" ? "Completed ✓" : "Mark Done"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleTaskStatus(task)}
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition active:scale-[0.98] ${
+                task.status === "completed"
+                  ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
+              }`}
+            >
+              {task.status === "completed" ? "Reopen ↺" : "Mark Done ✓"}
+            </button>
+
+            <button
+              onClick={() => deleteTask(task.id)}
+              className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+              title="Delete task"
+            >
+              🗑️
+            </button>
+          </div>
         </div>
       </div>
     </div>

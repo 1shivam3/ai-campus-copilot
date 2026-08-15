@@ -31,7 +31,7 @@ function Exams({ user }) {
         .from("exams")
         .select("id, subject, exam_date, importance, created_at")
         .eq("user_id", user.id)
-        .gte("exam_date", new Date().toISOString())
+        .gte("exam_date", new Date(Date.now() - 86400000).toISOString()) // Include today
         .order("exam_date", { ascending: true })
 
       if (fetchErr) throw fetchErr
@@ -47,7 +47,7 @@ function Exams({ user }) {
   async function addExam(e) {
     e.preventDefault()
 
-    if (!form.subject || !form.exam_date) {
+    if (!form.subject.trim() || !form.exam_date) {
       setError("Please fill in all required fields.")
       return
     }
@@ -60,7 +60,7 @@ function Exams({ user }) {
           user_id: user.id,
           subject: form.subject.trim(),
           exam_date: new Date(form.exam_date).toISOString(),
-          importance: Number(form.importance) || 5,
+          importance: Math.max(1, Math.min(10, Number(form.importance) || 5)),
         },
       ])
 
@@ -78,6 +78,26 @@ function Exams({ user }) {
     } catch (err) {
       console.error(err)
       setError(`Could not add exam: ${err.message}`)
+    }
+  }
+
+  async function deleteExam(examId) {
+    if (!window.confirm("Are you sure you want to remove this exam?")) return
+
+    try {
+      setExams((curr) => curr.filter((e) => e.id !== examId))
+
+      const { error: delErr } = await supabase
+        .from("exams")
+        .delete()
+        .eq("id", examId)
+        .eq("user_id", user.id)
+
+      if (delErr) throw delErr
+    } catch (err) {
+      console.error(err)
+      setError("Could not delete exam.")
+      fetchExams()
     }
   }
 
@@ -209,13 +229,22 @@ function Exams({ user }) {
               return (
                 <div
                   key={exam.id}
-                  className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:shadow-md"
+                  className="relative rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:shadow-md"
                 >
-                  <p className="text-xs font-bold text-slate-500 uppercase truncate">
-                    {exam.subject}
-                  </p>
+                  <div className="flex items-start justify-between">
+                    <p className="text-xs font-bold text-slate-500 uppercase truncate pr-2">
+                      {exam.subject}
+                    </p>
+                    <button
+                      onClick={() => deleteExam(exam.id)}
+                      className="text-slate-300 hover:text-red-600 transition text-xs p-1"
+                      title="Delete exam"
+                    >
+                      ✕
+                    </button>
+                  </div>
 
-                  <p className="mt-3 text-3xl font-bold text-slate-900">{days}</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">{days}</p>
                   <p className="text-xs text-slate-400 font-medium">
                     {days === 1 ? "day remaining" : "days remaining"}
                   </p>
