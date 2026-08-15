@@ -26,6 +26,9 @@ import { CoursePilotMark } from "./components/CoursePilotLogo"
 import PWAInstallBanner from "./components/PWAInstallBanner"
 import CalendarIntegrationModal from "./components/CalendarIntegrationModal"
 import { fetchCalendarEvents, submitCalendarOAuthCode } from "./lib/api"
+import { generateSmartNotifications, DEFAULT_NOTIFICATION_PREFERENCES } from "./utils/notificationEngine"
+import { dispatchNativeBrowserNotification } from "./lib/notifications"
+import NotificationCenter from "./components/NotificationCenter"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -46,6 +49,38 @@ function App() {
   const [dashboardLoading, setDashboardLoading] = useState(true)
   const [calendarEvents, setCalendarEvents] = useState([])
   const [calendarModalOpen, setCalendarModalOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [deliveredKeys, setDeliveredKeys] = useState(() => new Set())
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false)
+  const [notificationPreferences, setNotificationPreferences] = useState(() => {
+    try {
+      const saved = localStorage.getItem("coursepilot_notif_prefs")
+      return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATION_PREFERENCES
+    } catch {
+      return DEFAULT_NOTIFICATION_PREFERENCES
+    }
+  })
+
+  function updateNotificationPreferences(newPrefs) {
+    setNotificationPreferences(newPrefs)
+    try {
+      localStorage.setItem("coursepilot_notif_prefs", JSON.stringify(newPrefs))
+    } catch {}
+  }
+
+  function handleMarkNotificationAsRead(id) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+    )
+  }
+
+  function handleMarkAllNotificationsAsRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+  }
+
+  function handleClearAllNotifications() {
+    setNotifications([])
+  }
 
   useEffect(() => {
     checkUser()
@@ -366,6 +401,54 @@ function App() {
     })
   }, [closestExam, academicSubjects, syllabusTopics, topicProgress, dashboardTopics])
 
+  useEffect(() => {
+    if (!user || dashboardLoading) return
+
+    const newNotifs = generateSmartNotifications({
+      tasks: dashboardTasks,
+      exams: dashboardExams,
+      syllabusTopics,
+      topicProgress,
+      studyWindows: freeWindows,
+      bestAction,
+      preferences: notificationPreferences,
+      deliveredKeys,
+      now: new Date(),
+    })
+
+    if (newNotifs.length > 0) {
+      setNotifications((prev) => [...newNotifs, ...prev])
+      setDeliveredKeys((prev) => {
+        const nextSet = new Set(prev)
+        newNotifs.forEach((n) => nextSet.add(n.dedup_key))
+        return nextSet
+      })
+
+      // Dispatch native browser notification for CRITICAL / HIGH
+      newNotifs.forEach((n) => {
+        if (n.priority === "CRITICAL" || n.priority === "HIGH") {
+          dispatchNativeBrowserNotification({
+            title: n.title,
+            message: n.message,
+            url: window.location.origin,
+            priority: n.priority,
+            preferences: notificationPreferences,
+          })
+        }
+      })
+    }
+  }, [
+    user,
+    dashboardLoading,
+    dashboardTasks,
+    dashboardExams,
+    syllabusTopics,
+    topicProgress,
+    freeWindows,
+    bestAction,
+    notificationPreferences,
+  ])
+
   function handleActionNavigation(action) {
     if (!action) return
 
@@ -444,6 +527,8 @@ function App() {
     ? getDaysRemaining(closestExam.exam_date)
     : 0
 
+  const unreadNotifCount = notifications.filter((n) => !n.is_read).length
+
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
       <PWAInstallBanner />
@@ -455,6 +540,8 @@ function App() {
         profile={profile}
         onLogout={handleLogout}
         onOpenCalendar={() => setCalendarModalOpen(true)}
+        onOpenNotifications={() => setNotificationModalOpen(true)}
+        unreadCount={unreadNotifCount}
         mobileOpen={mobileNavOpen}
         setMobileOpen={setMobileNavOpen}
       />
@@ -479,6 +566,20 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setNotificationModalOpen(true)}
+              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition shadow-xs"
+              aria-label="Notifications"
+            >
+              <span className="text-xs">🔔</span>
+              {unreadNotifCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white shadow-xs">
+                  {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setCalendarModalOpen(true)}
@@ -512,6 +613,20 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNotificationModalOpen(true)}
+                    className="relative flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
+                  >
+                    <span>🔔</span>
+                    <span>Alerts</span>
+                    {unreadNotifCount > 0 && (
+                      <span className="rounded-full bg-red-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                        {unreadNotifCount}
+                      </span>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setCalendarModalOpen(true)}
@@ -999,6 +1114,24 @@ function App() {
         user={user}
         schedule={dashboardSchedule}
         onCalendarUpdated={(newEvents) => setCalendarEvents(newEvents)}
+      />
+
+      {/* Smart Notification Center Modal */}
+      <NotificationCenter
+        isOpen={notificationModalOpen}
+        onClose={() => setNotificationModalOpen(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkNotificationAsRead}
+        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+        onClearAll={handleClearAllNotifications}
+        onNavigate={(page, entityId) => {
+          if (page === "Focus Session" && entityId) {
+            setRecommendedTaskId(entityId)
+          }
+          setCurrentPage(page)
+        }}
+        preferences={notificationPreferences}
+        onUpdatePreferences={updateNotificationPreferences}
       />
     </div>
   )

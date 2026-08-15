@@ -7,6 +7,8 @@ function Sidebar({
   profile,
   onLogout,
   onOpenCalendar = () => {},
+  onOpenNotifications = () => {},
+  unreadCount = 0,
   mobileOpen = false,
   setMobileOpen = () => {},
 }) {
@@ -148,6 +150,27 @@ function Sidebar({
 
       {/* Student Profile Card */}
       <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 shadow-sm">
+        <button
+          type="button"
+          onClick={() => {
+            if (onOpenNotifications) onOpenNotifications()
+            if (setMobileOpen) setMobileOpen(false)
+          }}
+          className="mb-2 flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition active:scale-[0.98]"
+        >
+          <div className="flex items-center gap-2">
+            <span>🔔</span>
+            <span>Notifications</span>
+          </div>
+          {unreadCount > 0 ? (
+            <span className="rounded-full bg-red-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
+              {unreadCount} new
+            </span>
+          ) : (
+            <span className="text-[10px] text-slate-400 font-semibold">Feed →</span>
+          )}
+        </button>
+
         <button
           type="button"
           onClick={() => {

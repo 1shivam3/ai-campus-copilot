@@ -98,3 +98,30 @@ self.addEventListener("fetch", (event) => {
     return
   }
 })
+
+// Handle Notification Click Events
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+
+  const targetUrl = event.notification.data?.url || "/"
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        // If a window is already open, focus it
+        for (const client of windowClients) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            if (client.navigate && targetUrl !== "/") {
+              client.navigate(targetUrl)
+            }
+            return client.focus()
+          }
+        }
+        // Otherwise open a new window
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl)
+        }
+      })
+  )
+})
