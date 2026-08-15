@@ -1,4 +1,4 @@
-function Sidebar({ currentPage, setCurrentPage, user, onLogout }) {
+function Sidebar({ currentPage, setCurrentPage, user, profile, onLogout }) {
   const menuItems = [
     "Dashboard",
     "Tasks",
@@ -38,13 +38,19 @@ function Sidebar({ currentPage, setCurrentPage, user, onLogout }) {
         </div>
 
         <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200/80">
-          <p className="text-xs font-semibold text-slate-400">
-            LOGGED IN AS
+          <p className="text-xs font-semibold tracking-wider text-slate-400">
+            STUDENT PROFILE
           </p>
 
-          <p className="mt-1 truncate text-sm font-semibold text-slate-900" title={user?.email}>
-            {user?.email || "Student"}
+          <p className="mt-1 truncate text-sm font-bold text-slate-900" title={profile?.full_name || user?.email}>
+            {profile?.full_name || user?.email || "Student"}
           </p>
+
+          {profile && (
+            <p className="mt-0.5 text-xs text-slate-500 font-medium">
+              Sem {profile.semester} • Section {profile.section}
+            </p>
+          )}
 
           <button
             type="button"

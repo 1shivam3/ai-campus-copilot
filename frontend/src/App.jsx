@@ -8,12 +8,15 @@ import AITest from "./pages/AITest"
 import StudyMaterial from "./pages/StudyMaterial"
 import FocusSession from "./pages/FocusSession"
 import Auth from "./pages/Auth"
+import ProfileSetup from "./pages/ProfileSetup"
 import { getAcademicRecommendation } from "./utils/academicRecommendation"
 import { getTopicRecommendation, getWeakestTopic } from "./utils/topicRecommendation"
 
 function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [profile, setProfile] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState("Dashboard")
   const [recommendedTaskId, setRecommendedTaskId] = useState(null)
   const [dashboardTasks, setDashboardTasks] = useState([])
@@ -26,8 +29,15 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null)
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user || null
+      setUser(currentUser)
+
+      if (currentUser) {
+        await fetchProfile(currentUser)
+      } else {
+        setProfile(null)
+      }
     })
 
     return () => {
@@ -40,26 +50,53 @@ function App() {
       data: { session },
     } = await supabase.auth.getSession()
 
-    setUser(session?.user || null)
+    const currentUser = session?.user || null
+    setUser(currentUser)
+
+    if (currentUser) {
+      await fetchProfile(currentUser)
+    }
+
     setAuthLoading(false)
+  }
+
+  async function fetchProfile(currentUser) {
+    if (!currentUser?.id) return
+    setProfileLoading(true)
+
+    const { data, error } = await supabase
+      .from("student_profiles")
+      .select("*")
+      .eq("id", currentUser.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error("Profile load error:", error)
+      setProfile(null)
+    } else {
+      setProfile(data || null)
+    }
+
+    setProfileLoading(false)
   }
 
   async function handleLogout() {
     const { error } = await supabase.auth.signOut()
 
     if (error) {
-      console.error(error)
+      console.error("Sign out error:", error)
       return
     }
 
     setUser(null)
+    setProfile(null)
   }
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && profile) {
       fetchAcademicData()
     }
-  }, [user, currentPage])
+  }, [user, profile, currentPage])
 
   async function fetchAcademicData() {
     if (!user?.id) return
@@ -125,7 +162,7 @@ function App() {
     setDashboardLoading(false)
   }
 
-  if (authLoading) {
+  if (authLoading || (user && profileLoading && !profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] text-slate-600 font-medium">
         Loading AI Campus Copilot...
@@ -135,6 +172,15 @@ function App() {
 
   if (!user) {
     return <Auth onLogin={setUser} />
+  }
+
+  if (!profile) {
+    return (
+      <ProfileSetup
+        user={user}
+        onComplete={() => fetchProfile(user)}
+      />
+    )
   }
 
   const recommendation = getAcademicRecommendation(
@@ -168,6 +214,7 @@ function App() {
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         user={user}
+        profile={profile}
         onLogout={handleLogout}
       />
 
@@ -179,7 +226,7 @@ function App() {
               <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
                 <div>
                   <p className="text-sm font-medium text-blue-600">
-                    Your academic command center
+                    Welcome back, {profile.full_name.split(" ")[0]} • Sem {profile.semester} ({profile.section})
                   </p>
 
                   <h2 className="mt-1 text-3xl font-bold tracking-tight">
