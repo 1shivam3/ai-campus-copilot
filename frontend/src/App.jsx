@@ -12,6 +12,7 @@ import StudyMaterial from "./pages/StudyMaterial"
 import FocusSession from "./pages/FocusSession"
 import Auth from "./pages/Auth"
 import ProfileSetup from "./pages/ProfileSetup"
+import LandingPage from "./pages/LandingPage"
 import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getFreeWindows, getBestStudyWindow } from "./utils/freeTime"
@@ -26,6 +27,7 @@ import { CoursePilotMark } from "./components/CoursePilotLogo"
 function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [authView, setAuthView] = useState(null) // null (landing), "login", "signup"
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState("Dashboard")
@@ -362,7 +364,27 @@ function App() {
   }
 
   if (!user) {
-    return <Auth onLogin={setUser} />
+    if (authView === "login" || authView === "signup") {
+      return (
+        <Auth
+          initialMode={authView}
+          onLogin={(newUser) => {
+            setUser(newUser)
+            setAuthView(null)
+          }}
+          onBackToLanding={() => setAuthView(null)}
+        />
+      )
+    }
+
+    return (
+      <LandingPage
+        user={user}
+        onGetStarted={() => setAuthView("signup")}
+        onSignIn={() => setAuthView("login")}
+        onGoToDashboard={() => setCurrentPage("Dashboard")}
+      />
+    )
   }
 
   if (!profile) {

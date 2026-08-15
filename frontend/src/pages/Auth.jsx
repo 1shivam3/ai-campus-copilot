@@ -2,8 +2,8 @@ import { useState } from "react"
 import { supabase } from "../lib/supabase"
 import { CoursePilotLogo } from "../components/CoursePilotLogo"
 
-function Auth({ onLogin }) {
-  const [mode, setMode] = useState("login")
+function Auth({ onLogin, initialMode = "login", onBackToLanding }) {
+  const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -50,6 +50,16 @@ function Auth({ onLogin }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-4 sm:p-6">
       <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+        {onBackToLanding && (
+          <button
+            type="button"
+            onClick={onBackToLanding}
+            className="mb-5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition"
+          >
+            <span>← Back to Home</span>
+          </button>
+        )}
+
         <div className="mb-6">
           <CoursePilotLogo size="md" showTagline={true} />
 
