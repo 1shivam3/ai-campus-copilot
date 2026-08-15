@@ -12,6 +12,7 @@ import Auth from "./pages/Auth"
 import ProfileSetup from "./pages/ProfileSetup"
 import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
+import { getFreeWindows, getBestStudyWindow } from "./utils/freeTime"
 import { getAcademicRecommendation } from "./utils/academicRecommendation"
 import { getTopicRecommendation, getWeakestTopic } from "./utils/topicRecommendation"
 
@@ -224,6 +225,14 @@ function App() {
   const pendingTasksCount = dashboardTasks.length
   const todayClasses = getTodaySchedule(dashboardSchedule)
   const nextClass = getNextClass(dashboardSchedule)
+  const nextBestTask = recommendation?.type === "task" ? recommendation.item : null
+
+  const recommendedStudyWindow = getBestStudyWindow(
+    dashboardSchedule,
+    nextBestTask
+      ? Math.min(Number(nextBestTask.estimated_minutes || 30), 60)
+      : 30
+  )
 
   function getTopTopics() {
     return [...dashboardTopics]
@@ -258,7 +267,7 @@ function App() {
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                     Your priorities are calculated from deadlines, exams,
-                    importance and current topic mastery.
+                    importance, current topic mastery and available free study windows.
                   </p>
                 </div>
 
@@ -425,6 +434,28 @@ function App() {
                             </span>
                           )}
                         </div>
+
+                        {/* Best Study Window Card */}
+                        {recommendedStudyWindow && (
+                          <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-950/40 p-4">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-bold tracking-widest text-emerald-400">
+                                BEST STUDY WINDOW
+                              </p>
+                              <span className="rounded-full bg-emerald-400/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300 border border-emerald-400/20">
+                                {recommendedStudyWindow.minutes} min free
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-lg font-bold text-white font-mono">
+                              {recommendedStudyWindow.start} – {recommendedStudyWindow.end}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-300">
+                              Optimal free slot between your classes to complete this session without scheduling conflicts.
+                            </p>
+                          </div>
+                        )}
 
                         {/* WHY THIS? Section */}
                         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-5">
