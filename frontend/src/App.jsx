@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import Sidebar from "./components/Sidebar"
+import MyAcademics from "./pages/MyAcademics"
 import Tasks from "./pages/Tasks"
 import Exams from "./pages/Exams"
 import ExamMode from "./pages/ExamMode"
@@ -526,6 +527,7 @@ function App() {
             </div>
           )}
 
+          {currentPage === "My Academics" && <MyAcademics profile={profile} />}
           {currentPage === "Tasks" && <Tasks user={user} />}
           {currentPage === "Exams" && <Exams user={user} />}
           {currentPage === "Exam Mode" && <ExamMode user={user} />}

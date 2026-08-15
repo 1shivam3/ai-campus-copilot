@@ -1,6 +1,7 @@
 function Sidebar({ currentPage, setCurrentPage, user, profile, onLogout }) {
   const menuItems = [
     "Dashboard",
+    "My Academics",
     "Tasks",
     "Exams",
     "Exam Mode",
