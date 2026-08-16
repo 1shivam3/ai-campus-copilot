@@ -265,22 +265,38 @@ function App() {
         try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(mergedHist)) } catch {}
       }
 
-      // Immediately push consolidated state to cloud backend
-      syncUserLearningStats({
-        user_id: currentUser.id,
-        full_name: data?.full_name || currentUser.email?.split("@")[0] || "Student",
-        public_display_name: finalDisplayName,
-        avatar_url: finalAvatar,
-        semester: data?.semester || 3,
-        section: data?.section || "B2",
-        total_xp: xpSum.totalXP,
-        this_week_xp: xpSum.thisWeekXP,
-        streak: cloudStats?.streak || 0,
-        reputation: cloudStats?.reputation || 91,
-        solved_count: Math.floor(xpSum.totalXP / 25),
-        xp_transactions: mergedTxs,
-        challenge_history: mergedHist,
-      }).catch(() => {})
+      // Immediately push consolidated state to cloud backend and receive authoritative unified stats
+      try {
+        const syncResult = await syncUserLearningStats({
+          user_id: currentUser.id,
+          full_name: data?.full_name || currentUser.email?.split("@")[0] || "Student",
+          public_display_name: finalDisplayName,
+          avatar_url: finalAvatar,
+          semester: data?.semester || 3,
+          section: data?.section || "B2",
+          total_xp: xpSum.totalXP,
+          this_week_xp: xpSum.thisWeekXP,
+          streak: cloudStats?.streak || 0,
+          reputation: cloudStats?.reputation || 91,
+          solved_count: Math.floor(xpSum.totalXP / 25),
+          xp_transactions: mergedTxs,
+          challenge_history: mergedHist,
+        })
+
+        if (syncResult?.stats) {
+          const auth = syncResult.stats
+          if (Array.isArray(auth.xp_transactions) && auth.xp_transactions.length > 0) {
+            setXpTransactions(auth.xp_transactions)
+            try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(auth.xp_transactions)) } catch {}
+          }
+          if (Array.isArray(auth.challenge_history) && auth.challenge_history.length > 0) {
+            setChallengeHistory(auth.challenge_history)
+            try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(auth.challenge_history)) } catch {}
+          }
+        }
+      } catch (syncErr) {
+        console.warn("Stats cloud synchronization notice:", syncErr)
+      }
     } catch (err) {
       console.error("Profile fetch error:", err)
     } finally {

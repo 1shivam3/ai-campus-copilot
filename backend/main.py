@@ -2684,23 +2684,61 @@ async def sync_user_stats(request: SyncUserStatsRequest):
 
     existing = CAMPUS_LEADERBOARD_STORE.get(request.user_id, {})
     
-    # Merge existing transactions/history if new request does not supply them
+    # 1. Union and deduplicate XP transactions across all devices
+    existing_txs = existing.get("xp_transactions", [])
+    incoming_txs = request.xp_transactions or []
+
+    tx_map = {}
+    for tx in existing_txs:
+        key = tx.get("reference_key") or tx.get("id") or f"{tx.get('reason')}_{tx.get('created_at')}"
+        tx_map[key] = tx
+
+    for tx in incoming_txs:
+        key = tx.get("reference_key") or tx.get("id") or f"{tx.get('reason')}_{tx.get('created_at')}"
+        tx_map[key] = tx
+
+    merged_xp_txs = list(tx_map.values())
+    computed_tx_xp = sum(int(tx.get("amount", 0)) for tx in merged_xp_txs)
+    final_total_xp = max(computed_tx_xp, request.total_xp, existing.get("total_xp", 0))
+
+    if final_total_xp > computed_tx_xp:
+        remainder = final_total_xp - computed_tx_xp
+        merged_xp_txs.append({
+            "user_id": request.user_id,
+            "amount": remainder,
+            "reason": "Previous Progression Sync",
+            "reference_key": f"legacy_sync_{request.user_id}_{final_total_xp}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        computed_tx_xp = final_total_xp
+
+    # 2. Union challenge history across all devices
+    existing_hist = existing.get("challenge_history", [])
+    incoming_hist = request.challenge_history or []
+    hist_map = {h.get("challenge_id"): h for h in existing_hist if h.get("challenge_id")}
+    for h in incoming_hist:
+        cid = h.get("challenge_id")
+        if cid:
+            if cid in hist_map and hist_map[cid].get("passed"):
+                continue
+            hist_map[cid] = h
+    merged_history = list(hist_map.values())
+
     merged_avatar = request.avatar_url or existing.get("avatar_url")
-    merged_xp_txs = request.xp_transactions if request.xp_transactions is not None else existing.get("xp_transactions", [])
-    merged_history = request.challenge_history if request.challenge_history is not None else existing.get("challenge_history", [])
+    merged_name = request.public_display_name or existing.get("display_name") or request.full_name or f"Learner_{request.user_id[:6]}"
 
     CAMPUS_LEADERBOARD_STORE[request.user_id] = {
         "id": request.user_id,
         "full_name": request.full_name,
-        "display_name": request.public_display_name or request.full_name or f"Learner_{request.user_id[:6]}",
+        "display_name": merged_name,
         "avatar_url": merged_avatar,
-        "semester": request.semester,
-        "section": request.section,
-        "total_xp": max(request.total_xp, existing.get("total_xp", 0)),
-        "this_week_xp": max(request.this_week_xp, existing.get("this_week_xp", 0)),
+        "semester": request.semester or existing.get("semester", 3),
+        "section": request.section or existing.get("section", "B2"),
+        "total_xp": final_total_xp,
+        "this_week_xp": max(request.this_week_xp, existing.get("this_week_xp", 0), final_total_xp),
         "streak": max(request.streak, existing.get("streak", 0)),
         "reputation": request.reputation or existing.get("reputation", 91),
-        "solved_count": max(request.solved_count, existing.get("solved_count", 0)),
+        "solved_count": max(len([h for h in merged_history if h.get("passed")]), Math_floor := (final_total_xp // 25)),
         "xp_transactions": merged_xp_txs,
         "challenge_history": merged_history,
         "last_active": datetime.now(timezone.utc).isoformat(),
