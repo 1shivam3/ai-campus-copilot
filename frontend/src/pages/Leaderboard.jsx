@@ -7,50 +7,18 @@ const TIMEFRAMES = [
   { id: "monthly", label: "Monthly" },
 ]
 
-const SKILL_FILTERS = [
-  { id: "all", label: "All Subjects" },
-  { id: "dsa", label: "DSA" },
-  { id: "python", label: "Python" },
-  { id: "dbms", label: "DBMS" },
-  { id: "se", label: "Software Eng." },
-  { id: "ai", label: "Generative AI" },
-]
-
 export default function Leaderboard({
   user,
   profile,
   totalXP = 0,
   thisWeekXP = 0,
   streak = 0,
-  reputation = 0,
+  reputation = 91,
   onNavigate,
 }) {
   const [timeframe, setTimeframe] = useState("global")
-  const [skillFilter, setSkillFilter] = useState("all")
-  const [realProfiles, setRealProfiles] = useState([])
+  const [remoteRankings, setRemoteRankings] = useState([])
   const [loading, setLoading] = useState(true)
-
-  // Load real students from database
-  useEffect(() => {
-    async function loadRealLearners() {
-      setLoading(true)
-      try {
-        const { data, error } = await supabase
-          .from("student_profiles")
-          .select("id, full_name, semester, section")
-          .order("created_at", { ascending: true })
-
-        if (!error && data) {
-          setRealProfiles(data)
-        }
-      } catch (err) {
-        console.error("Leaderboard fetch error:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadRealLearners()
-  }, [])
 
   // Safe display name for current student
   const userDisplayName = useMemo(() => {
@@ -59,34 +27,107 @@ export default function Leaderboard({
     return `Learner_${(user?.id || "student").slice(0, 6)}`
   }, [profile, user])
 
-  // Compute deterministic ranking list from REAL registered students ONLY
+  // Sync current student's stats to campus leaderboard store & fetch live standings
+  useEffect(() => {
+    async function syncAndFetchLeaderboard() {
+      setLoading(true)
+
+      // 1. Sync current student metrics to the live server
+      if (user?.id) {
+        try {
+          const syncUrl = import.meta.env.VITE_BACKEND_URL
+            ? `${import.meta.env.VITE_BACKEND_URL}/api/sync-user-stats`
+            : "/api/sync-user-stats"
+
+          await fetch(syncUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: user.id,
+              full_name: profile?.full_name || "Student",
+              public_display_name: userDisplayName,
+              avatar_url: profile?.avatar_url || null,
+              semester: profile?.semester || 3,
+              section: profile?.section || "B2",
+              total_xp: totalXP,
+              this_week_xp: thisWeekXP,
+              streak: streak,
+              reputation: profile?.reputation || reputation || 91,
+              solved_count: Math.floor(totalXP / 25),
+            }),
+          }).catch(() => {})
+        } catch {
+          // Ignore network errors on local sync
+        }
+      }
+
+      // 2. Fetch all real students from server
+      try {
+        const lbUrl = import.meta.env.VITE_BACKEND_URL
+          ? `${import.meta.env.VITE_BACKEND_URL}/api/leaderboard?timeframe=${timeframe}`
+          : `/api/leaderboard?timeframe=${timeframe}`
+
+        const res = await fetch(lbUrl)
+        if (res.ok) {
+          const json = await res.json()
+          if (json.leaderboard && json.leaderboard.length > 0) {
+            setRemoteRankings(json.leaderboard)
+            setLoading(false)
+            return
+          }
+        }
+      } catch {
+        // Fallback to Supabase direct query
+      }
+
+      // 3. Fallback: Supabase direct query
+      try {
+        const { data } = await supabase
+          .from("student_profiles")
+          .select("id, full_name, semester, section")
+          .order("created_at", { ascending: true })
+
+        if (data) {
+          setRemoteRankings(
+            data.map((p, i) => ({
+              id: p.id,
+              display_name: p.full_name || `Learner_${p.id.slice(0, 6)}`,
+              avatar_url: p.id === user?.id ? profile?.avatar_url : null,
+              semester: p.semester,
+              section: p.section,
+              xp: p.id === user?.id ? (timeframe === "weekly" ? thisWeekXP : totalXP) : 0,
+              streak: p.id === user?.id ? streak : 0,
+              reputation: 90,
+              solved: p.id === user?.id ? Math.floor(totalXP / 25) : 0,
+              rank: i + 1,
+            }))
+          )
+        }
+      } catch (err) {
+        console.error("Leaderboard fallback note:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    syncAndFetchLeaderboard()
+  }, [user, profile, userDisplayName, totalXP, thisWeekXP, streak, reputation, timeframe])
+
+  // Map and mark the current user in the live list
   const rankedList = useMemo(() => {
-    const studentsMap = new Map()
-
-    // Add all real registered students from database
-    realProfiles.forEach((p) => {
-      const isSelf = p.id === user?.id
-      const pDisplayName = isSelf
-        ? userDisplayName
-        : p.full_name || `Learner_${p.id.slice(0, 6)}`
-
-      studentsMap.set(p.id, {
-        id: p.id,
-        display_name: pDisplayName,
-        avatar_url: isSelf ? profile?.avatar_url || null : null,
-        semester: p.semester,
-        section: p.section,
-        xp: isSelf ? (timeframe === "weekly" ? thisWeekXP : totalXP) : 0,
-        streak: isSelf ? streak : 0,
-        reputation: isSelf ? reputation : 0,
-        solved: isSelf ? Math.floor(totalXP / 25) : 0,
-        isCurrentUser: isSelf,
-      })
+    const list = remoteRankings.map((item) => {
+      const isCurrentUser = item.id === user?.id
+      return {
+        ...item,
+        isCurrentUser,
+        display_name: isCurrentUser ? userDisplayName : item.display_name,
+        avatar_url: isCurrentUser ? profile?.avatar_url || item.avatar_url : item.avatar_url,
+      }
     })
 
-    // Ensure current user is present
-    if (user?.id && !studentsMap.has(user.id)) {
-      studentsMap.set(user.id, {
+    // If current user not in remote list, append them
+    if (user?.id && !list.some((it) => it.id === user.id)) {
+      list.push({
         id: user.id,
         display_name: userDisplayName,
         avatar_url: profile?.avatar_url || null,
@@ -100,14 +141,14 @@ export default function Leaderboard({
       })
     }
 
-    const list = Array.from(studentsMap.values()).sort((a, b) => {
+    // Sort descending by XP
+    list.sort((a, b) => {
       if (b.xp !== a.xp) return b.xp - a.xp
-      if (b.solved !== a.solved) return b.solved - a.solved
-      return b.reputation - a.reputation
+      return (b.solved || 0) - (a.solved || 0)
     })
 
-    return list.map((entry, idx) => ({ ...entry, rank: idx + 1 }))
-  }, [realProfiles, user, profile, userDisplayName, totalXP, thisWeekXP, streak, reputation, timeframe])
+    return list.map((item, idx) => ({ ...item, rank: idx + 1 }))
+  }, [remoteRankings, user, profile, userDisplayName, totalXP, thisWeekXP, streak, reputation, timeframe])
 
   // Current student rank entry
   const currentUserRankEntry = useMemo(() => {
@@ -116,9 +157,10 @@ export default function Leaderboard({
         rank: 1,
         xp: totalXP,
         display_name: userDisplayName,
+        streak: streak,
       }
     )
-  }, [rankedList, totalXP, userDisplayName])
+  }, [rankedList, totalXP, userDisplayName, streak])
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:py-8 space-y-6">
@@ -132,7 +174,7 @@ export default function Leaderboard({
             Leaderboard
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Real peer learning rankings based on verified challenge completions and XP.
+            Live cross-device learning rankings for you and your classmates.
           </p>
         </div>
 
@@ -196,7 +238,7 @@ export default function Leaderboard({
       <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
         <div className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-            Ranked Peers ({rankedList.length} Active Learners)
+            Campus Standings ({rankedList.length} Active {rankedList.length === 1 ? "Learner" : "Learners"})
           </h3>
           <span className="text-[11px] font-medium text-slate-400">
             Real Student Data Only
@@ -216,7 +258,6 @@ export default function Leaderboard({
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {rankedList.map((peer) => {
-              const isTop3 = peer.rank <= 3
               const medal = peer.rank === 1 ? "🥇" : peer.rank === 2 ? "🥈" : peer.rank === 3 ? "🥉" : null
 
               return (
@@ -269,7 +310,7 @@ export default function Leaderboard({
                   <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-right">
                     <div>
                       <span className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                        ⭐ {peer.xp.toLocaleString()} XP
+                        ⭐ {peer.xp?.toLocaleString()} XP
                       </span>
                       <span className="text-[10px] text-slate-400">
                         {peer.streak > 0 ? `🔥 ${peer.streak}d streak` : "0d streak"}

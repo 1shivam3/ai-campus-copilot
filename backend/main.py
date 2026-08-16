@@ -2619,3 +2619,111 @@ async def award_xp_endpoint(request: XpAwardRequest):
         "amount": clamped_amount,
         "reference_key": reference_key,
     }
+
+
+# In-memory fast cache for live multi-device campus learning standings
+CAMPUS_LEADERBOARD_STORE: Dict[str, Dict[str, Any]] = {}
+
+
+class SyncUserStatsRequest(BaseModel):
+    user_id: str
+    full_name: Optional[str] = "Student"
+    public_display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    semester: Optional[int] = 3
+    section: Optional[str] = "B2"
+    total_xp: int = 0
+    this_week_xp: int = 0
+    streak: int = 0
+    reputation: int = 91
+    solved_count: int = 0
+
+
+@app.post("/api/sync-user-stats")
+async def sync_user_stats(request: SyncUserStatsRequest):
+    """
+    Sync student learning stats across devices and students for live campus leaderboard.
+    """
+    if not request.user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id")
+
+    CAMPUS_LEADERBOARD_STORE[request.user_id] = {
+        "id": request.user_id,
+        "full_name": request.full_name,
+        "display_name": request.public_display_name or request.full_name or f"Learner_{request.user_id[:6]}",
+        "avatar_url": request.avatar_url,
+        "semester": request.semester,
+        "section": request.section,
+        "total_xp": request.total_xp,
+        "this_week_xp": request.this_week_xp,
+        "streak": request.streak,
+        "reputation": request.reputation,
+        "solved_count": request.solved_count,
+        "last_active": datetime.now(timezone.utc).isoformat(),
+    }
+
+    return {"status": "success", "synced": True}
+
+
+@app.get("/api/leaderboard")
+async def get_campus_leaderboard(timeframe: str = "global"):
+    """
+    Retrieve real campus leaderboard across all registered students and active devices.
+    Bypasses Supabase client-side RLS to return verified public learning profiles.
+    """
+    students_map: Dict[str, Dict[str, Any]] = {}
+
+    # 1. Load all registered student profiles from Supabase database
+    if supabase_client:
+        try:
+            res = supabase_client.table("student_profiles").select("id, full_name, semester, section").execute()
+            if res.data:
+                for row in res.data:
+                    u_id = row.get("id")
+                    if not u_id: continue
+                    students_map[u_id] = {
+                        "id": u_id,
+                        "display_name": row.get("full_name") or f"Learner_{u_id[:6]}",
+                        "avatar_url": None,
+                        "semester": row.get("semester", 3),
+                        "section": row.get("section", "B2"),
+                        "xp": 0,
+                        "this_week_xp": 0,
+                        "streak": 0,
+                        "reputation": 90,
+                        "solved": 0,
+                    }
+        except Exception as e:
+            logger.warning(f"[LEADERBOARD] Profile load note: {e}")
+
+    # 2. Merge active live synced learning metrics from memory store
+    for u_id, live_data in CAMPUS_LEADERBOARD_STORE.items():
+        chosen_xp = live_data.get("this_week_xp", 0) if timeframe == "weekly" else live_data.get("total_xp", 0)
+        students_map[u_id] = {
+            "id": u_id,
+            "display_name": live_data.get("display_name") or f"Learner_{u_id[:6]}",
+            "avatar_url": live_data.get("avatar_url"),
+            "semester": live_data.get("semester", 3),
+            "section": live_data.get("section", "B2"),
+            "xp": chosen_xp,
+            "this_week_xp": live_data.get("this_week_xp", 0),
+            "streak": live_data.get("streak", 0),
+            "reputation": live_data.get("reputation", 91),
+            "solved": live_data.get("solved_count", 0),
+        }
+
+    # 3. Sort deterministically by XP -> solved -> reputation
+    ranked = list(students_map.values())
+    ranked.sort(key=lambda s: (s.get("xp", 0), s.get("solved", 0), s.get("reputation", 0)), reverse=True)
+
+    # Assign 1-indexed ranks
+    for idx, item in enumerate(ranked):
+        item["rank"] = idx + 1
+
+    return {
+        "status": "success",
+        "timeframe": timeframe,
+        "total_active_learners": len(ranked),
+        "leaderboard": ranked,
+    }
+
