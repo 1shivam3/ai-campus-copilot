@@ -2,10 +2,17 @@ import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { CoursePilotMark } from "../components/CoursePilotLogo"
 
+const DEFAULT_SECTIONS = [
+  "A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2",
+  "E1", "E2", "F1", "F2", "A", "B", "C", "D"
+]
+
 function ProfileSetup({ user, onComplete }) {
   const [fullName, setFullName] = useState("")
   const [semester, setSemester] = useState("")
   const [section, setSection] = useState("")
+  const [isCustomSection, setIsCustomSection] = useState(false)
+  const [customSectionValue, setCustomSectionValue] = useState("")
   const [sections, setSections] = useState([])
   const [sectionsLoading, setSectionsLoading] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -39,7 +46,9 @@ function ProfileSetup({ user, onComplete }) {
             setSemester(String(data.semester))
             await loadSections(data.semester)
           }
-          if (data.section) setSection(data.section)
+          if (data.section) {
+            setSection(data.section)
+          }
         }
       } catch (err) {
         console.warn("Notice: could not load existing profile values", err)
@@ -50,6 +59,8 @@ function ProfileSetup({ user, onComplete }) {
 
   async function loadSections(selectedSemester) {
     setSection("")
+    setIsCustomSection(false)
+    setCustomSectionValue("")
     setSections([])
 
     if (!selectedSemester) return
@@ -64,14 +75,15 @@ function ProfileSetup({ user, onComplete }) {
         .eq("semester", Number(selectedSemester))
         .order("section")
 
-      if (fetchError) {
-        console.error("Sections fetch error:", fetchError)
-        setError("Could not load sections for the selected semester.")
+      if (fetchError || !data || data.length === 0) {
+        // Use standard default sections fallback
+        setSections(DEFAULT_SECTIONS.map((sec) => ({ section: sec })))
       } else {
-        setSections(data || [])
+        setSections(data)
       }
     } catch (err) {
-      console.error(err)
+      console.warn("Using fallback sections:", err)
+      setSections(DEFAULT_SECTIONS.map((sec) => ({ section: sec })))
     } finally {
       setSectionsLoading(false)
     }
@@ -80,7 +92,9 @@ function ProfileSetup({ user, onComplete }) {
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!fullName.trim() || !semester || !section) {
+    const finalSection = isCustomSection ? customSectionValue.trim() : section.trim()
+
+    if (!fullName.trim() || !semester || !finalSection) {
       setError("Please complete all fields.")
       return
     }
@@ -101,7 +115,7 @@ function ProfileSetup({ user, onComplete }) {
             id: user.id,
             full_name: fullName.trim(),
             semester: Number(semester),
-            section: section.trim(),
+            section: finalSection,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "id" }
@@ -185,28 +199,61 @@ function ProfileSetup({ user, onComplete }) {
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
               Assigned Section *
             </label>
-            <select
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-              disabled={!semester || sectionsLoading}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 disabled:bg-slate-50 disabled:text-slate-400"
-              required
-            >
-              <option value="">
-                {!semester
-                  ? "Select semester first"
-                  : sectionsLoading
-                    ? "Loading sections..."
-                    : sections.length === 0
-                      ? "No sections registered for this semester"
+            {!isCustomSection ? (
+              <select
+                value={section}
+                onChange={(e) => {
+                  if (e.target.value === "__custom__") {
+                    setIsCustomSection(true)
+                    setSection("")
+                  } else {
+                    setSection(e.target.value)
+                  }
+                }}
+                disabled={!semester || sectionsLoading}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 disabled:bg-slate-50 disabled:text-slate-400"
+                required={!isCustomSection}
+              >
+                <option value="">
+                  {!semester
+                    ? "Select semester first"
+                    : sectionsLoading
+                      ? "Loading sections..."
                       : "Select your section"}
-              </option>
-              {sections.map((item) => (
-                <option key={item.section} value={item.section}>
-                  Section {item.section}
                 </option>
-              ))}
-            </select>
+                {sections.map((item) => (
+                  <option key={item.section} value={item.section}>
+                    Section {item.section}
+                  </option>
+                ))}
+                {semester && (
+                  <option value="__custom__">✏️ Other / Custom Section...</option>
+                )}
+              </select>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customSectionValue}
+                  onChange={(e) => setCustomSectionValue(e.target.value)}
+                  placeholder="e.g. A1, CSE-1, or Alpha"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomSection(false)
+                    setCustomSectionValue("")
+                  }}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                  title="Choose from list"
+                >
+                  List ▾
+                </button>
+              </div>
+            )}
           </div>
 
           {error && (
