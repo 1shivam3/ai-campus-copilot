@@ -61,9 +61,9 @@ def generate_search_terms(query: str) -> List[str]:
 
 
 async def search_academic_workspace(
-    supabase_client,
-    query: str,
-    user_id: str,
+    supabase_client=None,
+    query: str = "",
+    user_id: str = "",
     semester: Optional[int] = None,
     limit: int = 25,
 ) -> List[Dict[str, Any]]:
@@ -72,6 +72,13 @@ async def search_academic_workspace(
     previous-year examination papers, flashcards, pending tasks, and exams.
     Combines deterministic PostgreSQL keyword matching with semantic RAG vector retrieval.
     """
+    if supabase_client is None:
+        try:
+            from services.database import get_database_client
+            supabase_client = get_database_client()
+        except Exception:
+            pass
+
     clean_q = query.strip()
     if not clean_q or len(clean_q) < 2:
         return []

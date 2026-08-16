@@ -34,42 +34,21 @@ google_client_id = os.getenv("GOOGLE_CLIENT_ID", "")
 google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
 google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "")
 
-# Initialize Supabase client for backend database operations
-supabase_url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL")
-supabase_key = (
-    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    or os.getenv("SUPABASE_SERVICE_KEY")
-    or os.getenv("SUPABASE_KEY")
-    or os.getenv("VITE_SUPABASE_ANON_KEY")
-    or os.getenv("SUPABASE_ANON_KEY")
-)
-supabase_client: Client | None = None
+# Initialize centralized Supabase client from services.database
+from services.database import get_database_client, init_database_client
 
-def get_supabase_client() -> Client | None:
-    global supabase_client
-    if supabase_client:
-        return supabase_client
-    url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL")
-    key = (
-        os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        or os.getenv("SUPABASE_SERVICE_KEY")
-        or os.getenv("SUPABASE_KEY")
-        or os.getenv("VITE_SUPABASE_ANON_KEY")
-        or os.getenv("SUPABASE_ANON_KEY")
-    )
-    if url and key:
-        try:
-            supabase_client = create_client(url, key)
-            return supabase_client
-        except Exception as e:
-            logger.warning(f"Could not initialize Supabase backend client: {e}")
-    return None
+def get_supabase_client() -> Client:
+    """
+    Thread-safe getter for the single server-side Supabase client.
+    Works seamlessly across sync/async request handlers and background tasks.
+    """
+    return get_database_client()
 
-if supabase_url and supabase_key:
-    try:
-        supabase_client = create_client(supabase_url, supabase_key)
-    except Exception as e:
-        logger.warning(f"Could not initialize Supabase backend client: {e}")
+try:
+    supabase_client: Client | None = get_database_client()
+except Exception as e:
+    supabase_client = None
+    logger.warning(f"Could not initialize Supabase backend client on module import: {e}")
 
 # In-memory secure token store for calendar OAuth (user_id -> tokens)
 calendar_token_store = {}
@@ -78,6 +57,18 @@ if not api_key:
     logger.warning("GEMINI_API_KEY is not configured in environment. AI endpoints will operate with graceful fallbacks.")
 
 app = FastAPI(title="CoursePilot API", docs_url=None, redoc_url=None)
+
+@app.on_event("startup")
+async def on_startup():
+    """
+    Validates server-side database configuration on startup so that
+    foreground endpoints and background workers never fail with unconfigured clients.
+    """
+    try:
+        client = get_database_client()
+        logger.info("[STARTUP] Server-side Supabase client verified and ready for all foreground and background tasks.")
+    except Exception as err:
+        logger.error(f"[STARTUP] Critical: Supabase client initialization failed: {err}")
 
 # Enable CORS for Vite frontend (local, preview, and production Vercel domains)
 frontend_env_url = os.getenv("FRONTEND_URL")
@@ -1047,11 +1038,13 @@ async def match_study_material(request: MatchStudyMaterialRequest):
     """
     logger.info(f"[TOPIC_MATCH] Request received for material_id={request.study_material_id}, user={request.user_id[:8]}...")
 
-    if not supabase_client:
-        logger.error("[TOPIC_MATCH] Supabase client is not configured on the backend.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[TOPIC_MATCH] Database client unavailable: {db_err}")
         raise HTTPException(
             status_code=500,
-            detail="Database client is not configured on the backend.",
+            detail="The service is temporarily unable to access the database. Please try again.",
         )
 
     # 1. Fetch study material and verify ownership
@@ -1278,10 +1271,13 @@ async def index_study_material(request: IndexStudyMaterialRequest):
     """
     logger.info(f"[RAG_INDEX] Indexing material_id={request.study_material_id}, user={request.user_id[:8]}...")
 
-    if not supabase_client:
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[RAG_INDEX] Database client unavailable: {db_err}")
         raise HTTPException(
             status_code=500,
-            detail="Database client is not configured on the backend.",
+            detail="The service is temporarily unable to access the database. Please try again.",
         )
 
     # 1. Verify ownership and retrieve extracted text
@@ -1391,11 +1387,13 @@ async def ask_study_material(request: AskStudyMaterialRequest):
     """
     logger.info(f"[RAG_QUERY] Action={request.action_type}, material_id={request.study_material_id}, user={request.user_id[:8]}...")
 
-    if not supabase_client:
-        logger.error("[RAG_QUERY] Supabase client is not configured on the backend.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[RAG_QUERY] Database client unavailable: {db_err}")
         raise HTTPException(
             status_code=500,
-            detail="Database client is not configured on the backend.",
+            detail="The service is temporarily unable to access the database. Please try again.",
         )
 
     # 1. Fetch study material and verify ownership
@@ -1863,8 +1861,14 @@ async def generate_study_pack(request: GenerateStudyPackRequest):
     """
     logger.info(f"[STUDY_PACK] Request for material_id={request.study_material_id}, user={request.user_id[:8]}, force={request.force_regenerate}")
 
-    if not supabase_client:
-        raise HTTPException(status_code=500, detail="Database client not configured.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[STUDY_PACK] Database client unavailable: {db_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="The study pack could not be generated right now. Please try again.",
+        )
 
     # 1. Verify user ownership of study_materials
     try:
@@ -2136,8 +2140,14 @@ async def generate_flashcards(request: GenerateFlashcardsRequest):
     """
     logger.info(f"[FLASHCARDS] Request for material_id={request.study_material_id}, user={request.user_id[:8]}, count={request.count}, force={request.force_regenerate}")
 
-    if not supabase_client:
-        raise HTTPException(status_code=500, detail="Database client not configured.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[FLASHCARDS] Database client unavailable: {db_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="Flashcard generation could not access the database. Please try again.",
+        )
 
     # 1. Verify user ownership of study_materials
     try:
@@ -2364,8 +2374,14 @@ async def review_flashcard(request: ReviewFlashcardRequest):
     """
     logger.info(f"[FLASHCARD_REVIEW] Card {request.flashcard_id}, rating={request.rating}, user={request.user_id[:8]}...")
 
-    if not supabase_client:
-        raise HTTPException(status_code=500, detail="Database client not configured.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[FLASHCARD_REVIEW] Database client unavailable: {db_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="Flashcard review could not access the database. Please try again.",
+        )
 
     # 1. Fetch flashcard and verify ownership
     try:
@@ -2449,8 +2465,14 @@ async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
     """
     logger.info(f"[EXAM_ANALYZER] Request for material_id={request.study_material_id}, user={request.user_id[:8]}, force={request.force_regenerate}")
 
-    if not supabase_client:
-        raise HTTPException(status_code=500, detail="Database client not configured.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[EXAM_ANALYZER] Database client unavailable: {db_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="Exam paper analyzer could not access the database. Please try again.",
+        )
 
     # 1. Verify user ownership of study_materials
     try:
@@ -2710,9 +2732,10 @@ async def academic_search(request: AcademicSearchRequest):
     """
     logger.info(f"[ACADEMIC_SEARCH] Query='{request.query[:30]}', user={request.user_id[:8]}..., sem={request.semester}")
 
-    db_client = get_supabase_client()
-    if not db_client:
-        logger.warning("[ACADEMIC_SEARCH] Database client not configured.")
+    try:
+        db_client = get_database_client()
+    except Exception as db_err:
+        logger.warning(f"[ACADEMIC_SEARCH] Database client unavailable: {db_err}")
         return {
             "status": "success",
             "query": request.query,
@@ -2778,8 +2801,14 @@ async def copilot_chat(request: CopilotChatRequest):
 
     logger.info(f"[COPILOT_CHAT] User={request.user_id[:8]}..., conv={request.conversation_id}, msg='{clean_msg[:35]}'")
 
-    if not supabase_client:
-        raise HTTPException(status_code=500, detail="Database client not configured.")
+    try:
+        supabase_client = get_database_client()
+    except Exception as db_err:
+        logger.error(f"[COPILOT_CHAT] Database client unavailable: {db_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="The study assistant is temporarily unable to access the database. Please try again.",
+        )
 
     # 1. Manage Conversation Record
     conv_id = request.conversation_id

@@ -40,11 +40,17 @@ def format_minutes_time(mins: int) -> str:
     return f"{display_h:02d}:{m:02d} {am_pm}"
 
 
-async def build_copilot_context(supabase_client, user_id: str) -> Dict[str, Any]:
+async def build_copilot_context(supabase_client=None, user_id: str = "") -> Dict[str, Any]:
     """
     Builds a structured, authoritative, and compact academic context snapshot
     for the authenticated student to guide AI Copilot answers.
     """
+    if supabase_client is None:
+        try:
+            from services.database import get_database_client
+            supabase_client = get_database_client()
+        except Exception:
+            pass
     context: Dict[str, Any] = {
         "student": {
             "name": "Student",
