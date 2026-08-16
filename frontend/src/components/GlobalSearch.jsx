@@ -79,6 +79,12 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
         return
       }
 
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setError("You're offline. Search requires an internet connection.")
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       setError("")
 
@@ -91,13 +97,17 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
           limit: 25,
         })
 
-        if (res?.results) {
+        if (res && Array.isArray(res.results)) {
           setResults(res.results)
           setSelectedIndex(0)
+        } else {
+          setResults([])
         }
       } catch (err) {
-        console.error("Global search error:", err)
-        setError("Search request failed. Please try again.")
+        if (import.meta.env.DEV) {
+          console.error("[GlobalSearch] Diagnostic search error:", err)
+        }
+        setError("Search is temporarily unavailable. Please try again.")
       } finally {
         setLoading(false)
       }

@@ -45,9 +45,48 @@ async def search_academic_workspace(
     is_paper_intent = bool(re.search(r"\b(paper|papers|previous year|pyq|question paper|previous papers)\b", norm_q))
     is_weak_topic_intent = bool(re.search(r"\b(weak|weak topics|revise|revision|mastery|low score)\b", norm_q))
 
+    # Acronym aliases
+    search_terms = [clean_q]
+    if norm_q == "dbms":
+        search_terms.append("Database Management")
+    elif norm_q == "dsa":
+        search_terms.append("Data Structure")
+    elif norm_q == "os":
+        search_terms.append("Operating System")
+    elif norm_q == "cn":
+        search_terms.append("Computer Networks")
+    elif norm_q in ("coa", "cao"):
+        search_terms.append("Computer Organization")
+    elif norm_q in ("de", "del"):
+        search_terms.append("Digital Electronics")
+
     # ---------------------------------------------------------
-    # 2. SYLLABUS TOPICS SEARCH (Filtered by Semester & Section)
+    # 2. ACADEMIC SUBJECTS & SYLLABUS TOPICS SEARCH
     # ---------------------------------------------------------
+    try:
+        sub_filter = ",".join([f"subject_name.ilike.%{term}%,subject_code.ilike.%{term}%" for term in search_terms])
+        sub_query = supabase_client.table("academic_subjects").select("id, subject_name, subject_code, semester, section")
+        if semester is not None:
+            sub_query = sub_query.eq("semester", semester)
+        sub_res = sub_query.or_(sub_filter).limit(5).execute()
+        if sub_res.data:
+            for s in sub_res.data:
+                sub_name = s.get("subject_name", "Subject")
+                sub_code = f" ({s.get('subject_code')})" if s.get("subject_code") else ""
+                results.append({
+                    "type": "syllabus",
+                    "title": f"{sub_name}{sub_code}",
+                    "subtitle": f"Semester {s.get('semester', 3)} · Course Curriculum",
+                    "score": 0.95,
+                    "metadata": {
+                        "subject_id": s["id"],
+                        "subject_name": sub_name,
+                        "subject_code": s.get("subject_code"),
+                    },
+                })
+    except Exception as sub_err:
+        logger.warning(f"[ACADEMIC_SEARCH] Subjects query notice: {sub_err}")
+
     try:
         topic_query = supabase_client.table("syllabus_topics").select(
             "id, topic_name, unit_number, description, subject_id, academic_subjects!inner(id, subject_name, subject_code, semester)"

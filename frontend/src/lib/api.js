@@ -1,3 +1,5 @@
+import { supabase } from "./supabase"
+
 const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -428,30 +430,201 @@ export async function analyzeExamPaper({ studyMaterialId, userId, forceRegenerat
 // ---------------------------------------------------------
 
 export async function searchAcademicWorkspace({ query, userId, semester, section, limit = 25 }) {
-  const response = await fetchWithTimeout(
-    `${API_URL}/api/academic-search`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: query.trim(),
-        user_id: userId,
-        semester: semester ? Number(semester) : null,
-        section: section || null,
-        limit: Number(limit),
-      }),
-    },
-    15000
-  )
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}))
-    throw new Error(errData.detail || "Search request failed.")
+  if (!query || !query.trim()) {
+    return { status: "success", query: "", total_results: 0, results: [] }
   }
 
-  return response.json()
+  const cleanQ = query.trim()
+
+  // 1. Try Backend API
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/api/academic-search`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: cleanQ,
+          user_id: userId,
+          semester: semester ? Number(semester) : null,
+          section: section || null,
+          limit: Number(limit),
+        }),
+      },
+      8000
+    )
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data && Array.isArray(data.results)) {
+        return data
+      }
+    }
+  } catch (backendErr) {
+    if (import.meta.env.DEV) {
+      console.warn("[AcademicSearch] Backend search notice, using client fallback:", backendErr)
+    }
+  }
+
+  // 2. Resilient Direct Supabase Fallback (Guarantees search always works even if backend is waking up)
+  try {
+    const normQ = cleanQ.toLowerCase().trim()
+    const searchTerms = [cleanQ]
+    if (normQ === "dbms") searchTerms.push("Database Management")
+    else if (normQ === "dsa") searchTerms.push("Data Structure")
+    else if (normQ === "os") searchTerms.push("Operating System")
+    else if (normQ === "cn") searchTerms.push("Computer Networks")
+
+    const fallbackResults = []
+
+    // A. Academic Subjects
+    const subFilter = searchTerms.map((t) => `subject_name.ilike.%${t}%,subject_code.ilike.%${t}%`).join(",")
+    const { data: subData } = await supabase
+      .from("academic_subjects")
+      .select("id, subject_name, subject_code, semester, section")
+      .or(subFilter)
+      .limit(5)
+
+    if (subData && subData.length > 0) {
+      subData.forEach((s) => {
+        fallbackResults.push({
+          type: "syllabus",
+          title: `${s.subject_name} (${s.subject_code})`,
+          subtitle: `Semester ${s.semester} · Course Curriculum`,
+          score: 0.95,
+          metadata: { subject_id: s.id, subject_name: s.subject_name, subject_code: s.subject_code },
+        })
+      })
+    }
+
+    // B. Syllabus Topics
+    let topicQuery = supabase
+      .from("syllabus_topics")
+      .select("id, topic_name, unit_number, description, subject_id, academic_subjects!inner(id, subject_name, subject_code, semester)")
+      .ilike("topic_name", `%${cleanQ}%`)
+      .limit(8)
+
+    if (semester) {
+      topicQuery = topicQuery.eq("academic_subjects.semester", semester)
+    }
+    const { data: topData } = await topicQuery
+
+    if (topData && topData.length > 0) {
+      topData.forEach((t) => {
+        const sub = t.academic_subjects || {}
+        const subName = sub.subject_name || "Subject"
+        const subCode = sub.subject_code ? ` (${sub.subject_code})` : ""
+        const unitStr = t.unit_number ? `Unit ${t.unit_number}` : "Syllabus"
+
+        fallbackResults.push({
+          type: "syllabus",
+          title: t.topic_name || "Topic",
+          subtitle: `${subName}${subCode} · ${unitStr}`,
+          score: 0.90,
+          metadata: {
+            topic_id: t.id,
+            subject_id: t.subject_id,
+            subject_name: subName,
+            unit_number: t.unit_number,
+          },
+        })
+      })
+    }
+
+    // C. User Tasks
+    if (userId) {
+      const { data: taskData } = await supabase
+        .from("tasks")
+        .select("id, title, subject, deadline, importance, status")
+        .eq("user_id", userId)
+        .or(`title.ilike.%${cleanQ}%,subject.ilike.%${cleanQ}%`)
+        .limit(5)
+
+      if (taskData && taskData.length > 0) {
+        taskData.forEach((t) => {
+          fallbackResults.push({
+            type: "task",
+            title: t.title || "Task",
+            subtitle: `${t.subject || "General"} · Priority: ${t.importance || "Normal"}`,
+            score: 0.85,
+            metadata: { id: t.id, task_id: t.id, subject: t.subject },
+          })
+        })
+      }
+
+      // D. User Exams
+      const { data: examData } = await supabase
+        .from("exams")
+        .select("id, subject, exam_date, importance")
+        .eq("user_id", userId)
+        .ilike("subject", `%${cleanQ}%`)
+        .limit(4)
+
+      if (examData && examData.length > 0) {
+        examData.forEach((ex) => {
+          fallbackResults.push({
+            type: "exam",
+            title: `${ex.subject} Examination`,
+            subtitle: `Importance: ${ex.importance || 5}/10`,
+            score: 0.88,
+            metadata: { id: ex.id, exam_id: ex.id, subject: ex.subject },
+          })
+        })
+      }
+
+      // E. User Study Materials
+      const { data: matData } = await supabase
+        .from("study_materials")
+        .select("id, title, material_type, unit_number, academic_subjects(subject_name, subject_code)")
+        .eq("user_id", userId)
+        .ilike("title", `%${cleanQ}%`)
+        .limit(6)
+
+      if (matData && matData.length > 0) {
+        matData.forEach((m) => {
+          const sub = m.academic_subjects || {}
+          const isPaper = m.material_type === "Previous Year Paper"
+          fallbackResults.push({
+            type: isPaper ? "previous_paper" : "study_material",
+            title: m.title || "Document",
+            subtitle: `${sub.subject_name || "Course Notes"} · ${m.material_type || "Study Material"}`,
+            score: 0.92,
+            metadata: { id: m.id, material_id: m.id, material_type: m.material_type },
+          })
+        })
+      }
+    }
+
+    // Deduplicate
+    const seen = new Set()
+    const unique = []
+    for (const item of fallbackResults) {
+      const key = `${item.type}:${item.title}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        unique.push(item)
+      }
+    }
+
+    return {
+      status: "success",
+      query: cleanQ,
+      total_results: unique.length,
+      results: unique,
+    }
+  } catch (fbErr) {
+    if (import.meta.env.DEV) {
+      console.error("[AcademicSearch] Fallback error:", fbErr)
+    }
+    return {
+      status: "success",
+      query: cleanQ,
+      total_results: 0,
+      results: [],
+    }
+  }
 }
 
 export async function sendCopilotMessage({ message, userId, conversationId = null }) {

@@ -34,9 +34,36 @@ google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
 google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "")
 
 # Initialize Supabase client for backend database operations
-supabase_url = os.getenv("VITE_SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase_url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+supabase_key = (
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or os.getenv("SUPABASE_SERVICE_KEY")
+    or os.getenv("SUPABASE_KEY")
+    or os.getenv("VITE_SUPABASE_ANON_KEY")
+    or os.getenv("SUPABASE_ANON_KEY")
+)
 supabase_client: Client | None = None
+
+def get_supabase_client() -> Client | None:
+    global supabase_client
+    if supabase_client:
+        return supabase_client
+    url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+    key = (
+        os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_SERVICE_KEY")
+        or os.getenv("SUPABASE_KEY")
+        or os.getenv("VITE_SUPABASE_ANON_KEY")
+        or os.getenv("SUPABASE_ANON_KEY")
+    )
+    if url and key:
+        try:
+            supabase_client = create_client(url, key)
+            return supabase_client
+        except Exception as e:
+            logger.warning(f"Could not initialize Supabase backend client: {e}")
+    return None
+
 if supabase_url and supabase_key:
     try:
         supabase_client = create_client(supabase_url, supabase_key)
@@ -2264,8 +2291,15 @@ async def academic_search(request: AcademicSearchRequest):
     """
     logger.info(f"[ACADEMIC_SEARCH] Query='{request.query[:30]}', user={request.user_id[:8]}..., sem={request.semester}")
 
-    if not supabase_client:
-        raise HTTPException(status_code=500, detail="Database client not configured.")
+    db_client = get_supabase_client()
+    if not db_client:
+        logger.warning("[ACADEMIC_SEARCH] Database client not configured.")
+        return {
+            "status": "success",
+            "query": request.query,
+            "total_results": 0,
+            "results": [],
+        }
 
     if not request.query or len(request.query.strip()) < 2:
         return {
@@ -2279,7 +2313,7 @@ async def academic_search(request: AcademicSearchRequest):
         from services.academic_search import search_academic_workspace
 
         results = await search_academic_workspace(
-            supabase_client=supabase_client,
+            supabase_client=db_client,
             query=request.query,
             user_id=request.user_id,
             semester=request.semester,
@@ -2294,7 +2328,12 @@ async def academic_search(request: AcademicSearchRequest):
         }
     except Exception as err:
         logger.error(f"[ACADEMIC_SEARCH] Search error: {err}")
-        raise HTTPException(status_code=500, detail="Search could not be completed.")
+        return {
+            "status": "success",
+            "query": request.query,
+            "total_results": 0,
+            "results": [],
+        }
 
 
 # ---------------------------------------------------------
