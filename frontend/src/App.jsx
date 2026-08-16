@@ -34,6 +34,12 @@ import NotificationCenter from "./components/NotificationCenter"
 import GlobalSearch from "./components/GlobalSearch"
 import MobileBottomNav from "./components/MobileBottomNav"
 import { initTheme } from "./utils/theme"
+import HomeHeader from "./components/HomeHeader"
+import TodayTimetableStrip from "./components/TodayTimetableStrip"
+import SocialFeed from "./components/SocialFeed"
+import { getXPTransactions, calculateXPSummary } from "./utils/xpEngine"
+import { calculateLearningStreak } from "./utils/streakEngine"
+import { evaluateAndAwardBadges } from "./utils/badgeEngine"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -41,7 +47,7 @@ function App() {
   const [authView, setAuthView] = useState(null) // null (landing), "login", "signup"
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
-  const [currentPage, setCurrentPage] = useState("Dashboard")
+  const [currentPage, setCurrentPage] = useState("Home")
   const [selectedMaterialIdForReader, setSelectedMaterialIdForReader] = useState(null)
   const [selectedMaterialIdForStudyPack, setSelectedMaterialIdForStudyPack] = useState(null)
   const [selectedMaterialIdForFlashcards, setSelectedMaterialIdForFlashcards] = useState(null)
@@ -58,6 +64,9 @@ function App() {
   const [academicSubjects, setAcademicSubjects] = useState([])
   const [syllabusTopics, setSyllabusTopics] = useState([])
   const [topicProgress, setTopicProgress] = useState({})
+  const [xpTransactions, setXpTransactions] = useState([])
+  const [studySessions, setStudySessions] = useState([])
+  const [quizAttempts, setQuizAttempts] = useState([])
   const [dashboardLoading, setDashboardLoading] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [deliveredKeys, setDeliveredKeys] = useState(() => new Set())
@@ -271,26 +280,39 @@ function App() {
     if (!user?.id) return
 
     try {
-      const [tasksResult, examsResult, topicsResult] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("id, title, subject, deadline, importance, estimated_minutes, status")
-          .eq("user_id", user.id)
-          .eq("status", "pending")
-          .order("deadline", { ascending: true }),
+      const [tasksResult, examsResult, topicsResult, sessionsResult, quizzesResult, xpData] =
+        await Promise.all([
+          supabase
+            .from("tasks")
+            .select("id, title, subject, deadline, importance, estimated_minutes, status, is_completed, completed_at, updated_at")
+            .eq("user_id", user.id)
+            .eq("status", "pending")
+            .order("deadline", { ascending: true }),
 
-        supabase
-          .from("exams")
-          .select("id, subject, exam_date, importance")
-          .eq("user_id", user.id)
-          .gte("exam_date", new Date().toISOString())
-          .order("exam_date", { ascending: true }),
+          supabase
+            .from("exams")
+            .select("id, subject, exam_date, importance")
+            .eq("user_id", user.id)
+            .gte("exam_date", new Date().toISOString())
+            .order("exam_date", { ascending: true }),
 
-        supabase
-          .from("student_topic_progress")
-          .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
-          .eq("user_id", user.id),
-      ])
+          supabase
+            .from("student_topic_progress")
+            .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
+            .eq("user_id", user.id),
+
+          supabase
+            .from("study_sessions")
+            .select("id, duration_minutes, completed_at, created_at")
+            .eq("user_id", user.id),
+
+          supabase
+            .from("topic_quiz_attempts")
+            .select("id, score_percentage, attempted_at, created_at")
+            .eq("user_id", user.id),
+
+          getXPTransactions(user.id),
+        ])
 
       const formattedTopics = (topicsResult.data || []).map((p) => ({
         id: p.syllabus_topic_id || p.id,
@@ -303,6 +325,9 @@ function App() {
       setDashboardTasks(tasksResult.data || [])
       setDashboardExams(examsResult.data || [])
       setDashboardTopics(formattedTopics)
+      setStudySessions(sessionsResult.data || [])
+      setQuizAttempts(quizzesResult.data || [])
+      setXpTransactions(xpData || [])
 
       // Check for due flashcards
       try {
@@ -327,6 +352,21 @@ function App() {
       console.error("Academic data error:", err)
     }
   }
+
+  // Derived Social Learning & Streak Stats
+  const xpSummary = useMemo(() => {
+    return calculateXPSummary(xpTransactions)
+  }, [xpTransactions])
+
+  const learningStreak = useMemo(() => {
+    return calculateLearningStreak({
+      studySessions,
+      quizAttempts,
+      xpTransactions,
+      tasks: dashboardTasks,
+      profile,
+    })
+  }, [studySessions, quizAttempts, xpTransactions, dashboardTasks, profile])
 
   // Memoized computations for performance
   const weakestSyllabusTopic = useMemo(() => {
@@ -648,152 +688,41 @@ function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 pb-24 lg:pb-0">
-          {currentPage === "Dashboard" && (
+          {(currentPage === "Home" || currentPage === "Dashboard") && (
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-              {/* Dashboard Greeting Header */}
-              <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-                <div>
-                  <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
-                    WELCOME BACK, {profile.full_name.split(" ")[0]}
-                  </p>
-                  <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                    What deserves your attention right now?
-                  </h2>
-                  <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                    Deterministic priorities synthesized from your timetable, assignments, exams, and real syllabus mastery.
-                  </p>
-                </div>
+              {/* 1. Student Mini-Profile Strip & Stats Header */}
+              <HomeHeader
+                user={user}
+                profile={profile}
+                totalXP={xpSummary.totalXP}
+                thisWeekXP={xpSummary.thisWeekXP}
+                streak={learningStreak.currentStreak}
+                reputation={profile.reputation || 91}
+                unreadCount={unreadNotifCount}
+                onOpenProfile={() => setCurrentPage("Profile")}
+                onOpenNotifications={() => setNotificationModalOpen(true)}
+                onOpenSearch={() => setSearchModalOpen(true)}
+              />
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSearchModalOpen(true)}
-                    className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs group"
-                  >
-                    <span>🔍</span>
-                    <span>Search</span>
-                    <kbd className="hidden sm:inline rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400">
-                      Ctrl K
-                    </kbd>
-                  </button>
+              {/* 2. Today's Timetable Strip (Top of Page) */}
+              <TodayTimetableStrip
+                schedule={dashboardSchedule}
+                profile={profile}
+                onNavigateToAcademics={() => setCurrentPage("My Academics")}
+              />
 
-                  <button
-                    type="button"
-                    onClick={() => setNotificationModalOpen(true)}
-                    className="relative flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
-                  >
-                    <span>🔔</span>
-                    <span>Alerts</span>
-                    {unreadNotifCount > 0 && (
-                      <span className="rounded-full bg-red-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
-                        {unreadNotifCount}
-                      </span>
-                    )}
-                  </button>
+              {/* 3. For You Social Learning Feed */}
+              <SocialFeed
+                user={user}
+                profile={profile}
+                topicProgress={dashboardTopics}
+                exams={dashboardExams}
+                completedKeys={xpSummary.completedKeys}
+                onXPUpdated={loadAllDashboardData}
+                onOpenFocusSession={() => setCurrentPage("Focus Session")}
+              />
 
-                  <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-xs">
-                    <span className="text-sm">🗓️</span>
-                    <div className="text-xs font-semibold text-slate-800">
-                      {new Date().toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Today's Schedule & Academic Context Row (Top Section) */}
-              <section className="mb-8 grid gap-5 lg:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm lg:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase">
-                        TODAY&apos;S SCHEDULE
-                      </p>
-                      <h3 className="mt-1 text-xl font-bold text-slate-900">
-                        {todayClasses.length} {todayClasses.length === 1 ? "class" : "classes"} scheduled today
-                      </h3>
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage("My Academics")}
-                      className="text-xs font-semibold text-blue-600 hover:underline"
-                    >
-                      View Timetable →
-                    </button>
-                  </div>
-
-                  {nextClass ? (
-                    <div className="mt-5 rounded-2xl bg-slate-900 p-5 text-white shadow-md">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <p className="text-xs font-bold tracking-wider text-slate-400">
-                          NEXT CLASS
-                        </p>
-                      </div>
-
-                      <h4 className="mt-2 text-xl font-bold">
-                        {nextClass.academic_subjects?.subject_name}
-                      </h4>
-
-                      <p className="mt-1 font-mono text-sm text-slate-300">
-                        {nextClass.start_time?.slice(0, 5)} – {nextClass.end_time?.slice(0, 5)}
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
-                          📍 Room {nextClass.room || "—"}
-                        </span>
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
-                          👨‍🏫 {nextClass.teacher_name || "Faculty N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-5 rounded-2xl bg-slate-50 p-5 border border-slate-100">
-                      <p className="font-semibold text-slate-800 text-sm">
-                        No more classes today 🎉
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        You have open study time. Focus on your highest-priority task or exam revision!
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
-                      ACADEMIC CONTEXT
-                    </p>
-                    <h3 className="mt-1 text-xl font-bold text-slate-900">
-                      Semester {profile.semester}
-                    </h3>
-                    <p className="text-sm font-medium text-blue-600">
-                      Section {profile.section}
-                    </p>
-                  </div>
-
-                  <div className="mt-6 space-y-3 border-t border-slate-100 pt-4 text-xs sm:text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500">Classes today</span>
-                      <span className="font-bold text-slate-900">{todayClasses.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500">Upcoming exams</span>
-                      <span className="font-bold text-slate-900">{dashboardExams.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500">Pending tasks</span>
-                      <span className="font-bold text-slate-900">{dashboardTasks.length}</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Next Best Action Card (Under Today's Schedule) */}
+              {/* 4. Next Best Action Card */}
               {dashboardLoading ? (
                 <SkeletonBanner />
               ) : bestAction ? (
@@ -1271,6 +1200,14 @@ function App() {
             <MyProfile
               user={user}
               profile={profile}
+              totalXP={xpSummary.totalXP}
+              thisWeekXP={xpSummary.thisWeekXP}
+              streak={learningStreak.currentStreak}
+              reputation={profile.reputation || 91}
+              topicProgress={dashboardTopics}
+              quizAttempts={quizAttempts}
+              xpTransactions={xpTransactions}
+              studySessions={studySessions}
               onProfileUpdated={(updatedProfile) => {
                 setProfile(updatedProfile)
                 loadAllDashboardData()

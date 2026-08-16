@@ -33,7 +33,7 @@ function MobileBottomNav({
   // Primary 4 fixed destinations + More
   const primaryTabs = [
     {
-      id: "Dashboard",
+      id: "Home",
       label: "Home",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -293,7 +293,9 @@ function MobileBottomNav({
         aria-label="Mobile Bottom Navigation"
       >
         {primaryTabs.map((tab) => {
-          const isActive = currentPage === tab.id
+          const isActive =
+            currentPage === tab.id ||
+            (tab.id === "Home" && (currentPage === "Home" || currentPage === "Dashboard"))
           return (
             <button
               key={tab.id}

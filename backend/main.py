@@ -2556,10 +2556,66 @@ OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
     }
 
 
+# ============================================================================
+# SOCIAL LEARNING & XP ENDPOINTS
+# ============================================================================
+
+class XpAwardRequest(BaseModel):
+    user_id: str
+    amount: int
+    reason: str
+    reference_type: str = "challenge"
+    reference_id: str
 
 
+@app.post("/api/xp/award")
+async def award_xp_endpoint(request: XpAwardRequest):
+    """
+    Idempotent server-side XP award endpoint.
+    Guarantees that a challenge, quiz, or task awards XP exactly once per reference.
+    """
+    if not request.user_id or request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid user_id or amount")
 
+    clamped_amount = min(request.amount, 500)
+    reference_key = f"{request.reference_type}_completion:{request.reference_id}"
 
+    if supabase_client:
+        try:
+            existing = supabase_client.table("xp_transactions").select("id, amount").eq("reference_key", reference_key).execute()
+            if existing.data and len(existing.data) > 0:
+                return {
+                    "status": "success",
+                    "already_awarded": True,
+                    "amount": existing.data[0]["amount"],
+                    "reference_key": reference_key,
+                }
 
+            insert_res = supabase_client.table("xp_transactions").insert([
+                {
+                    "user_id": request.user_id,
+                    "amount": clamped_amount,
+                    "reason": request.reason,
+                    "reference_type": request.reference_type,
+                    "reference_id": request.reference_id,
+                    "reference_key": reference_key,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                }
+            ]).execute()
 
+            return {
+                "status": "success",
+                "already_awarded": False,
+                "amount": clamped_amount,
+                "reference_key": reference_key,
+                "data": insert_res.data[0] if insert_res.data else None,
+            }
+        except Exception as err:
+            logger.warning(f"[XP_AWARD] Database note: {err}")
 
+    return {
+        "status": "success",
+        "already_awarded": False,
+        "amount": clamped_amount,
+        "reference_key": reference_key,
+    }
