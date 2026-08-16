@@ -1,24 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
-  <!-- Full bleed background for maskable adaptive clipping -->
-  <rect width="512" height="512" fill="#0f172a" />
-  <g transform="translate(64, 64) scale(0.75)">
-    <defs>
-      <linearGradient id="cp_grad_mask" x1="120" y1="120" x2="400" y2="400" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#38bdf8"/>
-        <stop offset="0.5" stop-color="#3b82f6"/>
-        <stop offset="1" stop-color="#1d4ed8"/>
-      </linearGradient>
-      <linearGradient id="cp_wing_mask" x1="280" y1="90" x2="420" y2="230" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#93c5fd"/>
-        <stop offset="1" stop-color="#38bdf8"/>
-      </linearGradient>
-    </defs>
-    <!-- Stylized C trajectory curve -->
-    <path d="M305 135C222 135 155 202 155 285C155 368 222 435 305 435C347.5 435 385.5 417.5 412 389L357 342.5C343 356.5 324.5 364.5 305 364.5C261 364.5 225.5 329 225.5 285C225.5 241 261 205.5 305 205.5C324.5 205.5 343 213.5 357 227.5L412 181C385.5 152.5 347.5 135 305 135Z" fill="url(#cp_grad_mask)"/>
-    <!-- Pilot flight vector -->
-    <path d="M300 95L420 215L360 238L278 158L300 95Z" fill="url(#cp_wing_mask)"/>
-    <!-- Central core beacon -->
-    <circle cx="312" cy="285" r="40" fill="#38bdf8" />
-    <circle cx="312" cy="285" r="22" fill="#ffffff" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="pwaMaskCapTop" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#1E40AF" />
+      <stop offset="50%" stop-color="#1D4ED8" />
+      <stop offset="100%" stop-color="#0F2870" />
+    </linearGradient>
+    <linearGradient id="pwaMaskCapHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="pwaMaskCRibbonMain" x1="20%" y1="15%" x2="80%" y2="85%">
+      <stop offset="0%" stop-color="#00D4FF" />
+      <stop offset="30%" stop-color="#0077E6" />
+      <stop offset="65%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="pwaMaskCFoldTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="pwaMaskCFoldBottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="pwaMaskArrowLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E0F2FE" />
+      <stop offset="40%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="pwaMaskArrowRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="100" height="100" fill="#0B132B" />
+
+  <g transform="translate(15, 15) scale(0.7)">
+    <path
+      d="M 50 25 C 32 25, 20 38, 20 54 C 20 70, 33 83, 50 83 C 58 83, 64 80, 68 76 L 57 69 C 54 71, 51 72, 48 72 C 38 72, 30 64, 30 54 C 30 43, 38 35, 49 35 C 57 35, 63 39, 67 44 L 76 36 C 70 29, 61 25, 50 25 Z"
+      fill="url(#pwaMaskCRibbonMain)"
+    />
+    <path
+      d="M 33 46 C 36 36, 44 29, 54 29 C 63 29, 71 34, 76 41 L 66 48 C 63 43, 58 40, 53 40 C 46 40, 40 45, 37 51 Z"
+      fill="url(#pwaMaskCFoldTop)"
+    />
+    <path
+      d="M 46 72 C 53 72, 60 69, 65 64 L 74 72 C 67 79, 58 83, 48 83 C 43 83, 38 82, 34 79 L 41 71 C 43 72, 44 72, 46 72 Z"
+      fill="url(#pwaMaskCFoldBottom)"
+    />
+    <path d="M 50 8 L 83 23 L 50 38 L 17 23 Z" fill="url(#pwaMaskCapTop)" />
+    <path d="M 50 8 L 83 23 L 79 24.5 L 50 11.5 L 21 24.5 L 17 23 Z" fill="url(#pwaMaskCapHighlight)" opacity="0.9" />
+    <path d="M 28 28 C 28 28, 38 37, 50 37 C 62 37, 72 28, 72 28 L 72 32 C 72 32, 62 41, 50 41 C 38 41, 28 32, 28 32 Z" fill="#0F2870" />
+    <path d="M 50 23 Q 70 24 74 34 L 75 44" stroke="#1E40AF" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <circle cx="50" cy="23" r="2.2" fill="#38BDF8" />
+    <path d="M 73.5 43 L 76.5 43 L 78 52 C 78 53.5, 72 53.5, 72 52 Z" fill="#1D4ED8" />
+    <circle cx="75" cy="43.5" r="1.5" fill="#38BDF8" />
+    <path d="M 58 39 L 42 58 L 49 55 Z" fill="url(#pwaMaskArrowLeft)" />
+    <path d="M 58 39 L 49 55 L 52 68 Z" fill="url(#pwaMaskArrowRight)" />
   </g>
 </svg>
