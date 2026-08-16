@@ -16,12 +16,6 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  :root.dark body,
-  html.dark body {
-    background-color: #090d16;
-    color: #f1f5f9;
-  }
-
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
@@ -55,6 +49,143 @@
   html.dark ::-webkit-scrollbar-thumb:hover {
     background: #475569;
   }
+}
+
+/* =========================================================
+   COMPREHENSIVE DARK THEME SYSTEM
+   ========================================================= */
+
+:root.dark,
+html.dark {
+  color-scheme: dark;
+}
+
+:root.dark body,
+html.dark body,
+body.dark {
+  background-color: #090d16 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Layout containers */
+html.dark .min-h-screen,
+html.dark .bg-\[\#f8fafc\] {
+  background-color: #090d16 !important;
+}
+
+/* Surface containers, cards & panels */
+html.dark .bg-white,
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: #111827 !important;
+  color: #f1f5f9;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/40,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/90,
+html.dark .bg-slate-100 {
+  background-color: #0d1322 !important;
+}
+
+html.dark .bg-slate-900 {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-slate-950 {
+  background-color: #0c1220 !important;
+}
+
+/* Typography in dark mode */
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Borders in dark mode */
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/90,
+html.dark .border-slate-100,
+html.dark .border-slate-100\/80 {
+  border-color: #1e293b !important;
+}
+
+/* Forms, inputs, dropdowns & textareas */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="search"],
+html.dark select,
+html.dark textarea {
+  background-color: #151e32 !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark select option {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Interactive elements & hovers */
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-100\/70:hover,
+html.dark .hover\:bg-slate-200\/60:hover {
+  background-color: #1a233a !important;
+}
+
+html.dark .hover\:bg-white:hover {
+  background-color: #1e293b !important;
+}
+
+/* Sidebar navigation */
+html.dark aside,
+html.dark .sticky.top-0.h-screen {
+  background-color: #0b0f19 !important;
+  border-color: #1e293b !important;
+}
+
+/* Headers */
+html.dark header {
+  background-color: rgba(11, 15, 25, 0.95) !important;
+  border-color: #1e293b !important;
+}
+
+/* Mobile bottom navigation */
+html.dark .fixed.bottom-0 {
+  background-color: rgba(11, 15, 25, 0.95) !important;
+  border-color: #1e293b !important;
+}
+
+/* Modals & Dropdowns */
+html.dark .fixed .bg-white {
+  background-color: #111827 !important;
+  border-color: #1e293b !important;
 }
 
 /* Reduced motion preference */

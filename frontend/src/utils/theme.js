@@ -20,15 +20,27 @@ export function applyTheme(theme) {
 
   localStorage.setItem(THEME_STORAGE_KEY, theme)
   const root = document.documentElement
+  const body = document.body
 
   const shouldBeDark =
     theme === "dark" || (theme === "system" && isSystemDark())
 
   if (shouldBeDark) {
     root.classList.add("dark")
+    if (body) body.classList.add("dark")
   } else {
     root.classList.remove("dark")
+    if (body) body.classList.remove("dark")
   }
+
+  // Dispatch custom event for reactive UI updates
+  try {
+    window.dispatchEvent(
+      new CustomEvent("coursepilot_theme_change", {
+        detail: { theme, isDark: shouldBeDark },
+      })
+    )
+  } catch {}
 }
 
 export function initTheme() {
