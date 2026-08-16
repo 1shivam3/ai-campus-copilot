@@ -91,7 +91,7 @@ def run_tests():
         print("  --> [SKIP] Supabase client offline, skipped live context build.")
 
     # 7. AI Study Copilot Chat
-    print("[TEST 7/7] AI Study Copilot Chat Grounding & Intent Routing...")
+    print("[TEST 7/8] AI Study Copilot Chat Grounding & Intent Routing...")
     r_chat = client.post("/api/copilot-chat", json={
         "message": "What is my academic priority today?",
         "user_id": "00000000-0000-0000-0000-000000000000"
@@ -99,6 +99,35 @@ def run_tests():
     assert r_chat.status_code == 200
     assert "message" in r_chat.json()
     print("  --> [PASS] AI Study Copilot Chat successfully synthesized grounded response.")
+
+    # 8. Dynamic One-at-a-Time Exam Question Generation
+    print("[TEST 8/8] Dynamic Exam Question Generator (MCQ / Short / Long / Practicals)...")
+    r_q_mcq = client.post("/api/generate-exam-question", json={
+        "subject_name": "Data Structure and Algorithms",
+        "syllabus_type": "theory",
+        "question_type": "mcq",
+        "selected_units": ["Unit 1", "Unit 3"],
+        "difficulty": "medium",
+        "answer_mode": "question_only",
+        "used_questions": []
+    })
+    assert r_q_mcq.status_code == 200
+    assert "question" in r_q_mcq.json()
+    assert r_q_mcq.json()["question"]["question_type"] == "mcq"
+
+    r_q_short = client.post("/api/generate-exam-question", json={
+        "subject_name": "Software Engineering Lab",
+        "syllabus_type": "lab",
+        "question_type": "short_answer",
+        "selected_units": ["Practical 1", "Practical 2"],
+        "difficulty": "hard",
+        "answer_mode": "question_and_answer",
+        "used_questions": []
+    })
+    assert r_q_short.status_code == 200
+    assert "question" in r_q_short.json()
+    assert r_q_short.json()["question"]["question_type"] == "short_answer"
+    print("  --> [PASS] Dynamic exam question generator verified across theory and lab scopes.")
 
     duration = round(time.time() - start_time, 2)
     print("\n=======================================================")

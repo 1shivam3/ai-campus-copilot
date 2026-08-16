@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import re
 import sys
 import urllib.parse
@@ -225,7 +226,7 @@ JSON format:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -249,6 +250,286 @@ JSON format:
         status_code=500,
         detail="Exam quiz generation is currently unavailable. Please try again in a few moments.",
     )
+
+
+class ExamQuestionRequest(BaseModel):
+    subject_id: int | None = None
+    subject_name: str = Field(..., min_length=1, max_length=200)
+    syllabus_type: str = Field("theory", max_length=50)
+    question_type: str = Field("mcq", max_length=50)  # "mcq" | "short_answer" | "long_answer"
+    selected_units: list[str] = Field(default_factory=list)
+    difficulty: str = Field("mixed", max_length=50)  # "easy" | "medium" | "hard" | "mixed"
+    answer_mode: str = Field("question_only", max_length=50)
+    used_questions: list[str] = Field(default_factory=list)
+
+
+@app.post("/api/generate-exam-question")
+def generate_exam_question(request: ExamQuestionRequest):
+    if not request.subject_name.strip():
+        raise HTTPException(status_code=400, detail="Subject name is required.")
+
+    # 1. Fetch syllabus topics from Supabase
+    sb = get_supabase_client()
+    topics_data = []
+    if sb:
+        try:
+            if request.subject_id:
+                res = sb.table("syllabus_topics").select("id, unit_number, topic_name, description").eq("subject_id", request.subject_id).order("unit_number").execute()
+                topics_data = res.data or []
+            if not topics_data and request.subject_name:
+                sub_res = sb.table("academic_subjects").select("id, subject_type").ilike("subject_name", f"%{request.subject_name.strip()}%").limit(1).execute()
+                if sub_res.data:
+                    s_id = sub_res.data[0]["id"]
+                    res = sb.table("syllabus_topics").select("id, unit_number, topic_name, description").eq("subject_id", s_id).order("unit_number").execute()
+                    topics_data = res.data or []
+        except Exception as e:
+            logger.warning(f"Error querying Supabase syllabus topics for question generation: {e}")
+
+    # 2. Filter topics by selected_units / practicals if specified
+    is_lab = request.syllabus_type.lower() == "lab" or "lab" in request.subject_name.lower() or request.subject_name.endswith("L")
+    selected_numbers = set()
+    for u_str in request.selected_units:
+        digits = re.findall(r"\d+", str(u_str))
+        if digits:
+            selected_numbers.add(int(digits[0]))
+
+    if topics_data and selected_numbers:
+        filtered_topics = [t for t in topics_data if t.get("unit_number") in selected_numbers]
+        if filtered_topics:
+            topics_data = filtered_topics
+
+    # 3. Select target unit/practical
+    grouped_by_unit = {}
+    for t in topics_data:
+        unit_num = t.get("unit_number") or 1
+        grouped_by_unit.setdefault(unit_num, []).append(t)
+
+    if grouped_by_unit:
+        chosen_unit_num = random.choice(list(grouped_by_unit.keys()))
+        target_topics = grouped_by_unit[chosen_unit_num]
+    else:
+        chosen_unit_num = random.choice(list(selected_numbers)) if selected_numbers else 1
+        target_topics = [{
+            "topic_name": f"{request.subject_name} Core Concepts",
+            "description": f"Fundamental concepts and applications of {request.subject_name}"
+        }]
+
+    scope_label = f"Practical {chosen_unit_num}" if is_lab else f"Unit {chosen_unit_num}"
+
+    # 4. Difficulty selection
+    diff_req = (request.difficulty or "mixed").strip().lower()
+    if diff_req == "mixed":
+        chosen_difficulty = random.choice(["easy", "medium", "hard"])
+    elif diff_req in ["easy", "medium", "hard"]:
+        chosen_difficulty = diff_req
+    else:
+        chosen_difficulty = "medium"
+
+    q_type = (request.question_type or "mcq").strip().lower()
+    if q_type not in ["mcq", "short_answer", "long_answer"]:
+        q_type = "mcq"
+
+    # 5. Build context & previous questions exclusion clause
+    context_lines = []
+    for t in target_topics:
+        name = t.get("topic_name", "")
+        desc = t.get("description", "")
+        context_lines.append(f"- {name}: {desc}" if desc else f"- {name}")
+    context_str = "\n".join(context_lines)
+
+    used_str = ""
+    if request.used_questions:
+        cleaned_used = [q.strip() for q in request.used_questions if q.strip()][-12:]
+        if cleaned_used:
+            formatted_used = "\n".join(f"- {q}" for q in cleaned_used)
+            used_str = f"\nPREVIOUSLY USED QUESTIONS (DO NOT DUPLICATE OR REPEAT ANY OF THESE):\n{formatted_used}\n"
+
+    # 6. Build prompt based on question type
+    if q_type == "mcq":
+        prompt = f"""
+You are generating exactly ONE B.Tech exam-practice multiple-choice question for CoursePilot.
+
+SUBJECT: {request.subject_name}
+SYLLABUS TYPE: {'Lab / Practical' if is_lab else 'Theory'}
+SYLLABUS SCOPE: {scope_label}
+DIFFICULTY: {chosen_difficulty.capitalize()}
+
+SYLLABUS TOPIC CONTENT:
+{context_str}
+{used_str}
+RULES:
+1. Generate exactly ONE high-quality multiple choice question strictly based on the syllabus content for {scope_label}.
+2. Provide exactly 4 options.
+3. Exactly one option is correct (correct_answer is a 0-indexed integer: 0, 1, 2, or 3).
+4. Provide a clear, educational explanation explaining why the correct option is right.
+5. Return raw JSON ONLY without any markdown backticks, markdown fences, or extra text.
+
+JSON FORMAT:
+{{
+  "unit": "{scope_label}",
+  "question_type": "mcq",
+  "difficulty": "{chosen_difficulty}",
+  "question": "Question text here?",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correct_answer": 0,
+  "explanation": "Why this answer is correct."
+}}
+"""
+    elif q_type == "short_answer":
+        prompt = f"""
+You are generating exactly ONE B.Tech short-answer exam question for CoursePilot.
+
+SUBJECT: {request.subject_name}
+SYLLABUS TYPE: {'Lab / Practical' if is_lab else 'Theory'}
+SYLLABUS SCOPE: {scope_label}
+DIFFICULTY: {chosen_difficulty.capitalize()}
+
+SYLLABUS TOPIC CONTENT:
+{context_str}
+{used_str}
+RULES:
+1. Generate exactly ONE focused short-answer university exam question strictly based on the syllabus content for {scope_label}.
+2. Provide a concise expected answer (2-4 sentences).
+3. Provide 2-4 key conceptual bullet points that must be included in a high-scoring answer.
+4. Provide a concise explanation or concept summary.
+5. Return raw JSON ONLY without any markdown backticks, markdown fences, or extra text.
+
+JSON FORMAT:
+{{
+  "unit": "{scope_label}",
+  "question_type": "short_answer",
+  "difficulty": "{chosen_difficulty}",
+  "question": "Clear short answer question text here?",
+  "expected_answer": "Concise and accurate model answer.",
+  "key_points": ["Key concept 1", "Key concept 2", "Key concept 3"],
+  "explanation": "Educational context or explanation."
+}}
+"""
+    else:  # long_answer
+        prompt = f"""
+You are generating exactly ONE B.Tech long-answer university exam question for CoursePilot.
+
+SUBJECT: {request.subject_name}
+SYLLABUS TYPE: {'Lab / Practical' if is_lab else 'Theory'}
+SYLLABUS SCOPE: {scope_label}
+DIFFICULTY: {chosen_difficulty.capitalize()}
+
+SYLLABUS TOPIC CONTENT:
+{context_str}
+{used_str}
+RULES:
+1. Generate exactly ONE comprehensive, university-level long-answer exam question (testing deep architecture, mathematical derivations, algorithms, system design, or code implementations) strictly based on the syllabus content for {scope_label}.
+2. Provide a detailed, well-structured expected answer.
+3. Provide 3-5 comprehensive key grading criteria points.
+4. Provide a detailed explanation.
+5. Return raw JSON ONLY without any markdown backticks, markdown fences, or extra text.
+
+JSON FORMAT:
+{{
+  "unit": "{scope_label}",
+  "question_type": "long_answer",
+  "difficulty": "{chosen_difficulty}",
+  "question": "Comprehensive long-answer exam question text here?",
+  "expected_answer": "Detailed, multi-part structured solution and explanation.",
+  "key_points": ["Comprehensive criteria 1", "Comprehensive criteria 2", "Comprehensive criteria 3", "Comprehensive criteria 4"],
+  "explanation": "Detailed theoretical and practical breakdown."
+}}
+"""
+
+    models_to_try = [
+        "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
+        "gemini-3.7-flash",
+    ]
+
+    last_error = None
+
+    for model_name in models_to_try:
+        try:
+            raw_text = None
+            if USE_NEW_SDK and client:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                raw_text = response.text
+            elif api_key:
+                model = genai_legacy.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                raw_text = response.text
+
+            if raw_text:
+                cleaned = raw_text.strip()
+                if cleaned.startswith("```json"):
+                    cleaned = cleaned[7:]
+                elif cleaned.startswith("```"):
+                    cleaned = cleaned[3:]
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
+
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, dict) and "question" in parsed:
+                    # Normalize parsed question fields
+                    parsed["unit"] = parsed.get("unit") or scope_label
+                    parsed["question_type"] = parsed.get("question_type") or q_type
+                    parsed["difficulty"] = parsed.get("difficulty") or chosen_difficulty
+                    return {"question": parsed}
+        except Exception as err:
+            last_error = err
+            logger.warning(f"Model {model_name} failed in generate_exam_question: {err}")
+
+    # Fallback if Gemini fails or is unconfigured
+    fallback_title = target_topics[0].get("topic_name", "Core Subject Topic") if target_topics else f"{request.subject_name} Topic"
+    fallback_desc = target_topics[0].get("description", "") if target_topics else ""
+
+    if q_type == "mcq":
+        fallback_question = {
+            "unit": scope_label,
+            "question_type": "mcq",
+            "difficulty": chosen_difficulty,
+            "question": f"Which of the following statements best describes the core principle of {fallback_title} in {request.subject_name}?",
+            "options": [
+                f"It optimizes resource utilization and operational efficiency for {fallback_title}.",
+                f"It eliminates all algorithmic time complexity in {request.subject_name}.",
+                f"It replaces all underlying data structures with static arrays.",
+                f"It is only applicable in legacy architectures without runtime execution."
+            ],
+            "correct_answer": 0,
+            "explanation": f"{fallback_title} is designed to provide structured operational efficiency: {fallback_desc or 'Fundamental principle in curriculum.'}"
+        }
+    elif q_type == "short_answer":
+        fallback_question = {
+            "unit": scope_label,
+            "question_type": "short_answer",
+            "difficulty": chosen_difficulty,
+            "question": f"Define {fallback_title} and state its primary advantages in {request.subject_name}.",
+            "expected_answer": f"{fallback_title} represents a fundamental component in {request.subject_name}. {fallback_desc or 'It ensures modular design, data integrity, and optimal problem-solving capability.'}",
+            "key_points": [
+                f"Core definition of {fallback_title}",
+                "Key algorithmic/design advantages",
+                "Practical application and implementation context"
+            ],
+            "explanation": f"Understanding {fallback_title} provides essential mastery for university examination."
+        }
+    else:
+        fallback_question = {
+            "unit": scope_label,
+            "question_type": "long_answer",
+            "difficulty": chosen_difficulty,
+            "question": f"Explain the architectural design, algorithmic workflow, and practical use cases of {fallback_title} in {request.subject_name}. Provide relevant diagrams or schema specifications where applicable.",
+            "expected_answer": f"{fallback_title} is comprehensive in {request.subject_name}.\n\n1. Theoretical Architecture: {fallback_desc or 'Core principles and definitions.'}\n2. Workflow: Systematic processing, state transitions, and complexity analysis.\n3. Practical Implementation: Real-world engineering trade-offs.",
+            "key_points": [
+                "Detailed architectural components and definitions",
+                "Step-by-step algorithmic or workflow breakdown",
+                "Complexity analysis and trade-offs",
+                "Practical implementation and real-world relevance"
+            ],
+            "explanation": f"Comprehensive long-answer response covering theoretical and practical facets of {fallback_title}."
+        }
+
+    return {"question": fallback_question}
 
 
 @app.post("/api/generate-quiz")
@@ -290,7 +571,7 @@ JSON format:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -392,7 +673,7 @@ Do not give generic motivational advice.
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -463,7 +744,7 @@ Do not invent facts that are not supported by the document.
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -887,7 +1168,7 @@ REQUIRED JSON STRUCTURE:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -1393,7 +1674,7 @@ STRICT RAG RULES:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -1604,7 +1885,7 @@ REQUIRED JSON SCHEMA:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -1837,7 +2118,7 @@ REQUIRED JSON SCHEMA:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -2189,7 +2470,7 @@ REQUIRED JSON SCHEMA:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -2508,7 +2789,7 @@ OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
         "gemini-3.5-flash",
         "gemini-flash-lite-latest",
         "gemini-3.7-flash",
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     response_text = None

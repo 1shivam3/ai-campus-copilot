@@ -128,6 +128,28 @@ export async function generateExamQuiz(data) {
   return result.quiz
 }
 
+export async function generateExamQuestion(payload) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/generate-exam-question`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+    30000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Exam question generation failed.")
+  }
+
+  const result = await response.json()
+  return result.question
+}
+
 // ---------------------------------------------------------
 // GOOGLE CALENDAR API CLIENT METHODS
 // ---------------------------------------------------------

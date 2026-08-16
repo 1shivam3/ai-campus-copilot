@@ -332,7 +332,7 @@ function ExamMode({ user, profile }) {
                     Test Yourself Before the Exam
                   </h3>
                   <p className="mt-1 text-xs text-slate-600 max-w-xl">
-                    Take an AI-generated 10-question quiz dynamically focused on your weakest topics in {exam.subject}.
+                    Launch a customizable, dynamic practice test tailored to your syllabus units, question formats (MCQ, Short Answer, Long Answer), and difficulty.
                   </p>
                 </div>
 
@@ -342,7 +342,7 @@ function ExamMode({ user, profile }) {
                   className="self-start sm:self-center shrink-0 rounded-xl bg-red-600 px-5 py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-red-700 shadow-md active:scale-[0.98] flex items-center gap-2"
                 >
                   <span>🎯</span>
-                  <span>Start Simulation</span>
+                  <span>Configure & Start Test</span>
                 </button>
               </div>
             </div>
