@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "../lib/supabase"
+import { syncUserLearningStats, fetchUserStats } from "../lib/api"
 
 const LOCAL_XP_CACHE_KEY = "coursepilot_xp_transactions_cache"
 
@@ -21,7 +22,7 @@ export const XP_REWARDS = {
 }
 
 /**
- * Get all XP transactions for the authenticated student.
+ * Get all XP transactions for the authenticated student across all devices.
  */
 export async function getXPTransactions(userId) {
   if (!userId) return []
@@ -33,18 +34,22 @@ export async function getXPTransactions(userId) {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
 
-    if (error || !data) {
-      // Fallback to local storage cache if table is not yet created or offline
-      return getCachedXPTransactions(userId)
+    if (!error && data && data.length > 0) {
+      setCachedXPTransactions(userId, data)
+      return data
     }
+  } catch {}
 
-    // Sync with local cache
-    setCachedXPTransactions(userId, data)
-    return data
-  } catch (err) {
-    console.warn("Could not load XP transactions from Supabase, using local cache:", err)
-    return getCachedXPTransactions(userId)
-  }
+  // Fallback to cloud backend store
+  try {
+    const cloudStats = await fetchUserStats(userId)
+    if (cloudStats?.xp_transactions && cloudStats.xp_transactions.length > 0) {
+      setCachedXPTransactions(userId, cloudStats.xp_transactions)
+      return cloudStats.xp_transactions
+    }
+  } catch {}
+
+  return getCachedXPTransactions(userId)
 }
 
 /**
@@ -142,6 +147,14 @@ export async function awardXP({
     const updatedCache = [savedTx, ...cached.filter((t) => t.reference_key !== referenceKey)]
     setCachedXPTransactions(userId, updatedCache)
 
+    const summary = calculateXPSummary(updatedCache)
+    syncUserLearningStats({
+      user_id: userId,
+      total_xp: summary.totalXP,
+      this_week_xp: summary.thisWeekXP,
+      xp_transactions: updatedCache,
+    }).catch(() => {})
+
     return {
       success: true,
       alreadyAwarded: false,
@@ -152,6 +165,14 @@ export async function awardXP({
     console.warn("XP award error, cached locally:", err)
     const updatedCache = [newTx, ...cached.filter((t) => t.reference_key !== referenceKey)]
     setCachedXPTransactions(userId, updatedCache)
+
+    const summary = calculateXPSummary(updatedCache)
+    syncUserLearningStats({
+      user_id: userId,
+      total_xp: summary.totalXP,
+      this_week_xp: summary.thisWeekXP,
+      xp_transactions: updatedCache,
+    }).catch(() => {})
 
     return {
       success: true,

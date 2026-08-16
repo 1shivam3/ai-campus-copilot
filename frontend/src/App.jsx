@@ -49,6 +49,7 @@ import {
   awardDailySetBonus,
 } from "./utils/dailyChallengeEngine"
 import { getUserSavedItems } from "./utils/socialInteractions"
+import { fetchUserStats, syncUserLearningStats } from "./lib/api"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -160,32 +161,48 @@ function App() {
     setProfileLoading(true)
 
     try {
+      // 1. Fetch Supabase profile record
       const { data, error } = await supabase
         .from("student_profiles")
         .select("*")
         .eq("id", currentUser.id)
         .maybeSingle()
 
-      if (error) {
-        console.error("Profile load error:", error)
-        const savedAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
-        const savedDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
-        setProfile({
-          id: currentUser.id,
-          full_name: currentUser.email?.split("@")[0] || "Student",
-          semester: 3,
-          section: "B2",
-          avatar_url: savedAvatar || null,
-          public_display_name: savedDisplayName || null,
-        })
-      } else {
-        const savedAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
-        const savedDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
-        setProfile({
-          ...(data || {}),
-          avatar_url: data?.avatar_url || savedAvatar || null,
-          public_display_name: data?.public_display_name || savedDisplayName || data?.full_name || null,
-        })
+      // 2. Fetch cross-device cloud synced stats (avatar, XP, streak, displayName, challenge history)
+      const cloudStats = await fetchUserStats(currentUser.id)
+
+      const localAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
+      const localDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
+
+      const finalAvatar = cloudStats?.avatar_url || data?.avatar_url || localAvatar || null
+      const finalDisplayName = cloudStats?.display_name || data?.public_display_name || localDisplayName || data?.full_name || currentUser.email?.split("@")[0] || "Student"
+
+      if (finalAvatar) {
+        try { localStorage.setItem(`coursepilot_avatar_${currentUser.id}`, finalAvatar) } catch {}
+      }
+      if (finalDisplayName) {
+        try { localStorage.setItem(`coursepilot_display_name_${currentUser.id}`, finalDisplayName) } catch {}
+      }
+
+      setProfile({
+        ...(data || {}),
+        id: currentUser.id,
+        full_name: data?.full_name || currentUser.email?.split("@")[0] || "Student",
+        semester: data?.semester || 3,
+        section: data?.section || "B2",
+        avatar_url: finalAvatar,
+        public_display_name: finalDisplayName,
+        reputation: cloudStats?.reputation || 91,
+      })
+
+      // If cloud stats has transactions or history, sync immediately
+      if (cloudStats?.xp_transactions && cloudStats.xp_transactions.length > 0) {
+        setXpTransactions(cloudStats.xp_transactions)
+        try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(cloudStats.xp_transactions)) } catch {}
+      }
+      if (cloudStats?.challenge_history && cloudStats.challenge_history.length > 0) {
+        setChallengeHistory(cloudStats.challenge_history)
+        try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(cloudStats.challenge_history)) } catch {}
       }
     } catch (err) {
       console.error("Profile fetch error:", err)

@@ -531,7 +531,23 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
   }
 }
 
-export { API_URL }
+export async function fetchUserStats(userId) {
+  if (!userId) return null
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/api/user-stats/${userId}`,
+      { method: "GET" },
+      10000
+    )
+    if (response.ok) {
+      const data = await response.json()
+      return data.stats || null
+    }
+  } catch (err) {
+    console.warn("User stats fetch notice:", err)
+  }
+  return null
+}
 
 export async function syncUserLearningStats(stats) {
   try {

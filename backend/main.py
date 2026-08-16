@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import urllib.parse
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
@@ -2621,8 +2622,26 @@ async def award_xp_endpoint(request: XpAwardRequest):
     }
 
 
-# In-memory fast cache for live multi-device campus learning standings
-CAMPUS_LEADERBOARD_STORE: Dict[str, Dict[str, Any]] = {}
+# Persistent fast store for multi-device sync (XP, streak, avatar, challenge history)
+USER_STATS_FILE = Path(__file__).resolve().parent / "user_stats_store.json"
+
+def load_user_stats_from_disk() -> Dict[str, Dict[str, Any]]:
+    if USER_STATS_FILE.exists():
+        try:
+            with open(USER_STATS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error reading user_stats_store.json: {e}")
+    return {}
+
+def save_user_stats_to_disk(store: Dict[str, Dict[str, Any]]):
+    try:
+        with open(USER_STATS_FILE, "w", encoding="utf-8") as f:
+            json.dump(store, f, indent=2)
+    except Exception as e:
+        logger.warning(f"Error writing user_stats_store.json: {e}")
+
+CAMPUS_LEADERBOARD_STORE: Dict[str, Dict[str, Any]] = load_user_stats_from_disk()
 
 
 class SyncUserStatsRequest(BaseModel):
@@ -2637,32 +2656,60 @@ class SyncUserStatsRequest(BaseModel):
     streak: int = 0
     reputation: int = 91
     solved_count: int = 0
+    xp_transactions: Optional[List[Dict[str, Any]]] = None
+    challenge_history: Optional[List[Dict[str, Any]]] = None
+
+
+@app.get("/api/user-stats/{user_id}")
+async def get_user_stats(user_id: str):
+    """
+    Fetch a student's cloud-persisted learning progress, avatar, and XP to sync across any device.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id")
+
+    stats = CAMPUS_LEADERBOARD_STORE.get(user_id)
+    if not stats:
+        return {"status": "not_found", "stats": None}
+    return {"status": "success", "stats": stats}
 
 
 @app.post("/api/sync-user-stats")
 async def sync_user_stats(request: SyncUserStatsRequest):
     """
-    Sync student learning stats across devices and students for live campus leaderboard.
+    Sync student learning stats, avatar, and progression across devices.
     """
     if not request.user_id:
         raise HTTPException(status_code=400, detail="Missing user_id")
+
+    existing = CAMPUS_LEADERBOARD_STORE.get(request.user_id, {})
+    
+    # Merge existing transactions/history if new request does not supply them
+    merged_avatar = request.avatar_url or existing.get("avatar_url")
+    merged_xp_txs = request.xp_transactions if request.xp_transactions is not None else existing.get("xp_transactions", [])
+    merged_history = request.challenge_history if request.challenge_history is not None else existing.get("challenge_history", [])
 
     CAMPUS_LEADERBOARD_STORE[request.user_id] = {
         "id": request.user_id,
         "full_name": request.full_name,
         "display_name": request.public_display_name or request.full_name or f"Learner_{request.user_id[:6]}",
-        "avatar_url": request.avatar_url,
+        "avatar_url": merged_avatar,
         "semester": request.semester,
         "section": request.section,
-        "total_xp": request.total_xp,
-        "this_week_xp": request.this_week_xp,
-        "streak": request.streak,
-        "reputation": request.reputation,
-        "solved_count": request.solved_count,
+        "total_xp": max(request.total_xp, existing.get("total_xp", 0)),
+        "this_week_xp": max(request.this_week_xp, existing.get("this_week_xp", 0)),
+        "streak": max(request.streak, existing.get("streak", 0)),
+        "reputation": request.reputation or existing.get("reputation", 91),
+        "solved_count": max(request.solved_count, existing.get("solved_count", 0)),
+        "xp_transactions": merged_xp_txs,
+        "challenge_history": merged_history,
         "last_active": datetime.now(timezone.utc).isoformat(),
     }
 
-    return {"status": "success", "synced": True}
+    save_user_stats_to_disk(CAMPUS_LEADERBOARD_STORE)
+
+    return {"status": "success", "synced": True, "stats": CAMPUS_LEADERBOARD_STORE[request.user_id]}
+
 
 
 @app.get("/api/leaderboard")

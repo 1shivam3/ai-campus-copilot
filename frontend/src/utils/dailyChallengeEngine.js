@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "../lib/supabase"
+import { syncUserLearningStats, fetchUserStats } from "../lib/api"
 import { FEED_CATALOG } from "../data/feedCatalog"
 import { calculateAdaptiveDifficulty } from "./adaptiveDifficulty"
 import { awardXP } from "./xpEngine"
@@ -16,7 +17,7 @@ const DAILY_BONUS_XP = 50
 const DAILY_BONUS_XP_CAP = 100
 
 /**
- * Fetch all attempted/completed challenge records for the student.
+ * Fetch all attempted/completed challenge records for the student across all devices.
  */
 export async function getUserChallengeHistory(userId) {
   if (!userId) return getCachedChallengeHistory()
@@ -27,9 +28,18 @@ export async function getUserChallengeHistory(userId) {
       .select("*")
       .eq("user_id", userId)
 
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       setCachedChallengeHistory(data)
       return data
+    }
+  } catch {}
+
+  // Fallback to cloud backend store
+  try {
+    const cloudStats = await fetchUserStats(userId)
+    if (cloudStats?.challenge_history && cloudStats.challenge_history.length > 0) {
+      setCachedChallengeHistory(cloudStats.challenge_history)
+      return cloudStats.challenge_history
     }
   } catch {}
 
@@ -73,6 +83,12 @@ export async function recordChallengeAttempt({
       onConflict: "user_id,challenge_id",
     })
   } catch {}
+
+  // Sync to cloud backend store across devices
+  syncUserLearningStats({
+    user_id: userId,
+    challenge_history: history,
+  }).catch(() => {})
 
   return { success: true, record }
 }

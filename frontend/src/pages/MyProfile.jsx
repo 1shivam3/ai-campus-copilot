@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react"
 import { supabase } from "../lib/supabase"
+import { syncUserLearningStats } from "../lib/api"
 import { getStoredTheme, applyTheme } from "../utils/theme"
 import { BADGE_DEFINITIONS, getUserBadges } from "../utils/badgeEngine"
 
@@ -304,6 +305,20 @@ export default function MyProfile({
       } catch (dbErr) {
         console.warn("DB update fallback:", dbErr)
       }
+
+      // Sync avatar and profile across all devices in cloud store
+      await syncUserLearningStats({
+        user_id: user.id,
+        full_name: finalName,
+        public_display_name: publicDisplayName.trim() || finalName,
+        avatar_url: avatarUrl || null,
+        semester: Number(semester),
+        section: finalSection,
+        total_xp: totalXP,
+        this_week_xp: thisWeekXP,
+        streak: streak,
+        reputation: reputation,
+      })
 
       setSuccessMessage("Your profile and photo have been saved successfully!")
       if (onProfileUpdated) {
