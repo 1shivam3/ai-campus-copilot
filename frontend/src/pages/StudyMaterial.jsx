@@ -936,11 +936,10 @@ function StudyMaterial({
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {materials.map((item) => {
+                const subjectCode = item.academic_subjects?.subject_code
                 const subjectLabel =
                   item.academic_subjects?.subject_name ||
-                  (item.subject_id ? `Subject #${item.subject_id}` : "General Subject")
-
-                const subjectCode = item.academic_subjects?.subject_code
+                  (subjectCode ? `${subjectCode} Course Material` : "Academic Course Material")
 
                 const formattedDate = item.created_at
                   ? new Date(item.created_at).toLocaleDateString(undefined, {
@@ -1062,7 +1061,7 @@ function StudyMaterial({
                             const topicName =
                               mt.syllabus_topics?.topic_name ||
                               mt.topic_name ||
-                              `Topic #${mt.syllabus_topic_id}`
+                              "Syllabus Topic"
                             const score = Math.round(Number(mt.match_score))
                             const barColor =
                               score >= 85

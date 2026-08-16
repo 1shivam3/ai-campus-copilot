@@ -247,10 +247,10 @@ function StudyPack({ materialId, user, profile, onBack, onOpenReader, onNavigate
     )
   }
 
+  const subjectCode = material?.academic_subjects?.subject_code
   const subjectLabel =
     material?.academic_subjects?.subject_name ||
-    (material?.subject_id ? `Subject #${material.subject_id}` : "Academic Subject")
-  const subjectCode = material?.academic_subjects?.subject_code
+    (subjectCode ? `${subjectCode} Course Material` : "Academic Course Material")
 
   const formattedDate = studyPack?.updated_at
     ? new Date(studyPack.updated_at).toLocaleDateString(undefined, {
@@ -354,7 +354,7 @@ function StudyPack({ materialId, user, profile, onBack, onOpenReader, onNavigate
               </p>
               <div className="flex flex-wrap gap-2">
                 {matchedTopics.map((mt) => {
-                  const topicName = mt.syllabus_topics?.topic_name || `Topic #${mt.syllabus_topic_id}`
+                  const topicName = mt.syllabus_topics?.topic_name || mt.topic_name || "Syllabus Topic"
                   const score = Math.round(Number(mt.match_score))
                   return (
                     <button

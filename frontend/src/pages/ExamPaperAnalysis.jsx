@@ -281,10 +281,10 @@ function ExamPaperAnalysis({
     )
   }
 
+  const subjectCode = material?.academic_subjects?.subject_code
   const subjectLabel =
     material?.academic_subjects?.subject_name ||
-    (material?.subject_id ? `Subject #${material.subject_id}` : "Academic Subject")
-  const subjectCode = material?.academic_subjects?.subject_code
+    (subjectCode ? `${subjectCode} Course Material` : "Academic Course Material")
 
   const maxQCount =
     analysis?.topic_frequency && analysis.topic_frequency.length > 0

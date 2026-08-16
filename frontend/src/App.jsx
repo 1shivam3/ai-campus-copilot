@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, lazy, Suspense } from "react"
 import { supabase } from "./lib/supabase"
 import Sidebar from "./components/Sidebar"
 import MyAcademics from "./pages/MyAcademics"
@@ -8,15 +8,17 @@ import Tasks from "./pages/Tasks"
 import Exams from "./pages/Exams"
 import ExamMode from "./pages/ExamMode"
 import StudyMaterial from "./pages/StudyMaterial"
-import StudyMaterialReader from "./pages/StudyMaterialReader"
 import StudyPack from "./pages/StudyPack"
 import Flashcards from "./pages/Flashcards"
-import ExamPaperAnalysis from "./pages/ExamPaperAnalysis"
 import FocusSession from "./pages/FocusSession"
 import MyProfile from "./pages/MyProfile"
 import Auth from "./pages/Auth"
 import ProfileSetup from "./pages/ProfileSetup"
 import LandingPage from "./pages/LandingPage"
+
+// Code-split heavy document reading and parsing modules
+const StudyMaterialReader = lazy(() => import("./pages/StudyMaterialReader"))
+const ExamPaperAnalysis = lazy(() => import("./pages/ExamPaperAnalysis"))
 import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
@@ -310,8 +312,25 @@ function App() {
     } catch (error) {
       console.error("Sign out error:", error)
     }
+    // Clean all user-specific state to prevent cross-user state bleed
     setUser(null)
     setProfile(null)
+    setDashboardTasks([])
+    setDashboardExams([])
+    setDashboardTopics([])
+    setStudySessions([])
+    setQuizAttempts([])
+    setXpTransactions([])
+    setChallengeHistory([])
+    setSavedItemIds(new Set())
+    setNotifications([])
+    setDashboardSchedule([])
+    setAcademicSubjects([])
+    setSyllabusTopics([])
+    setTopicProgress({})
+    setSelectedMaterialIdForReader(null)
+    setRecommendedTaskId(null)
+    setCurrentPage("Home")
   }
 
   useEffect(() => {
@@ -924,24 +943,26 @@ function App() {
           {currentPage === "Exam Mode" && <ExamMode user={user} profile={profile} />}
           {currentPage === "Study Material" && (
             selectedMaterialIdForAnalysis ? (
-              <ExamPaperAnalysis
-                materialId={selectedMaterialIdForAnalysis}
-                user={user}
-                profile={profile}
-                onBack={() => setSelectedMaterialIdForAnalysis(null)}
-                onOpenReader={(id) => {
-                  setSelectedMaterialIdForAnalysis(null)
-                  setSelectedMaterialIdForReader(id)
-                }}
-                onOpenExamMode={() => {
-                  setSelectedMaterialIdForAnalysis(null)
-                  setCurrentPage("Exam Mode")
-                }}
-                onOpenStudyPack={(id) => {
-                  setSelectedMaterialIdForAnalysis(null)
-                  setSelectedMaterialIdForStudyPack(id)
-                }}
-              />
+              <Suspense fallback={<div className="p-6 space-y-4"><SkeletonCard count={3} /></div>}>
+                <ExamPaperAnalysis
+                  materialId={selectedMaterialIdForAnalysis}
+                  user={user}
+                  profile={profile}
+                  onBack={() => setSelectedMaterialIdForAnalysis(null)}
+                  onOpenReader={(id) => {
+                    setSelectedMaterialIdForAnalysis(null)
+                    setSelectedMaterialIdForReader(id)
+                  }}
+                  onOpenExamMode={() => {
+                    setSelectedMaterialIdForAnalysis(null)
+                    setCurrentPage("Exam Mode")
+                  }}
+                  onOpenStudyPack={(id) => {
+                    setSelectedMaterialIdForAnalysis(null)
+                    setSelectedMaterialIdForStudyPack(id)
+                  }}
+                />
+              </Suspense>
             ) : selectedMaterialIdForFlashcards ? (
               <Flashcards
                 materialId={selectedMaterialIdForFlashcards}
@@ -973,28 +994,30 @@ function App() {
                 }}
               />
             ) : selectedMaterialIdForReader ? (
-              <StudyMaterialReader
-                materialId={selectedMaterialIdForReader}
-                user={user}
-                profile={profile}
-                onBack={() => setSelectedMaterialIdForReader(null)}
-                onOpenStudyPack={(id) => {
-                  setSelectedMaterialIdForReader(null)
-                  setSelectedMaterialIdForStudyPack(id)
-                }}
-                onOpenFlashcards={(id) => {
-                  setSelectedMaterialIdForReader(null)
-                  setSelectedMaterialIdForFlashcards(id)
-                }}
-                onOpenExamAnalysis={(id) => {
-                  setSelectedMaterialIdForReader(null)
-                  setSelectedMaterialIdForAnalysis(id)
-                }}
-                onNavigateToSyllabus={() => {
-                  setSelectedMaterialIdForReader(null)
-                  setCurrentPage("Syllabus")
-                }}
-              />
+              <Suspense fallback={<div className="p-6 space-y-4"><SkeletonCard count={3} /></div>}>
+                <StudyMaterialReader
+                  materialId={selectedMaterialIdForReader}
+                  user={user}
+                  profile={profile}
+                  onBack={() => setSelectedMaterialIdForReader(null)}
+                  onOpenStudyPack={(id) => {
+                    setSelectedMaterialIdForReader(null)
+                    setSelectedMaterialIdForStudyPack(id)
+                  }}
+                  onOpenFlashcards={(id) => {
+                    setSelectedMaterialIdForReader(null)
+                    setSelectedMaterialIdForFlashcards(id)
+                  }}
+                  onOpenExamAnalysis={(id) => {
+                    setSelectedMaterialIdForReader(null)
+                    setSelectedMaterialIdForAnalysis(id)
+                  }}
+                  onNavigateToSyllabus={() => {
+                    setSelectedMaterialIdForReader(null)
+                    setCurrentPage("Syllabus")
+                  }}
+                />
+              </Suspense>
             ) : (
               <StudyMaterial
                 user={user}
