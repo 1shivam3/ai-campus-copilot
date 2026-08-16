@@ -83,7 +83,15 @@ function App() {
   const [activeSelectedChallenge, setActiveSelectedChallenge] = useState(null)
   const [dashboardLoading, setDashboardLoading] = useState(true)
   const [notifications, setNotifications] = useState([])
-  const [deliveredKeys, setDeliveredKeys] = useState(() => new Set())
+  const [deliveredKeys, setDeliveredKeys] = useState(() => {
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const raw = sessionStorage.getItem(`coursepilot_delivered_keys_${today}`)
+      return raw ? new Set(JSON.parse(raw)) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
   const [notificationModalOpen, setNotificationModalOpen] = useState(false)
   const [notificationPreferences, setNotificationPreferences] = useState(() => {
     try {
@@ -109,6 +117,10 @@ function App() {
 
   function handleMarkAllNotificationsAsRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+  }
+
+  function handleDismissNotification(id) {
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
   }
 
   function handleClearAllNotifications() {
@@ -548,10 +560,21 @@ function App() {
     })
 
     if (newNotifs.length > 0) {
-      setNotifications((prev) => [...newNotifs, ...prev])
+      setNotifications((prev) => {
+        const existingKeys = new Set(prev.map((n) => n.dedup_key || n.id))
+        const uniqueNew = newNotifs.filter((n) => !existingKeys.has(n.dedup_key) && !existingKeys.has(n.id))
+        if (uniqueNew.length === 0) return prev
+        // Cap notifications to a clean, non-spammy list of at most 4 items
+        return [...uniqueNew, ...prev].slice(0, 4)
+      })
+
       setDeliveredKeys((prev) => {
         const nextSet = new Set(prev)
         newNotifs.forEach((n) => nextSet.add(n.dedup_key))
+        try {
+          const today = new Date().toISOString().slice(0, 10)
+          sessionStorage.setItem(`coursepilot_delivered_keys_${today}`, JSON.stringify([...nextSet]))
+        } catch {}
         return nextSet
       })
 
@@ -963,6 +986,7 @@ function App() {
         onMarkAsRead={handleMarkNotificationAsRead}
         onMarkAllAsRead={handleMarkAllNotificationsAsRead}
         onClearAll={handleClearAllNotifications}
+        onDismiss={handleDismissNotification}
         onNavigate={(page, entityId) => {
           if (page === "Focus Session" && entityId) {
             setRecommendedTaskId(entityId)

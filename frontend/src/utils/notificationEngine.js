@@ -72,17 +72,17 @@ export function generateSmartNotifications({
   const notifications = []
   const todayStr = now.toISOString().slice(0, 10)
 
-  // 1. Evaluate Urgent Assignments
+  // 1. Evaluate Urgent Assignments (max 1 urgent alert per day)
   if (preferences.assignment_reminders && Array.isArray(tasks)) {
-    tasks.forEach((task) => {
-      if (task.status === "completed" || !task.deadline) return
+    for (const task of tasks) {
+      if (task.status === "completed" || !task.deadline) continue
 
       const diffMs = new Date(task.deadline).getTime() - now.getTime()
       const diffHours = diffMs / (1000 * 60 * 60)
 
       if (diffHours > 0 && diffHours <= 2) {
         // Critical: due in <= 2 hours
-        const dedupKey = `urgent_task_${task.id}_2h_${todayStr}`
+        const dedupKey = `urgent_task_${task.id}_${todayStr}`
         if (!deliveredKeys.has(dedupKey)) {
           notifications.push({
             id: `notif_${dedupKey}`,
@@ -90,17 +90,18 @@ export function generateSmartNotifications({
             type: NOTIFICATION_TYPES.URGENT_ASSIGNMENT,
             priority: NOTIFICATION_PRIORITIES.CRITICAL,
             title: `Urgent: ${task.title}`,
-            message: `${task.title} (${task.subject}) is due in less than 2 hours.`,
+            message: `${task.title} (${task.subject || "Task"}) is due in less than 2 hours.`,
             related_entity_type: "task",
             related_entity_id: task.id,
             target_page: "Focus Session",
             is_read: false,
             created_at: now.toISOString(),
           })
+          break // Limit to 1 urgent task notification at a time
         }
       } else if (diffHours > 2 && diffHours <= 24) {
         // High: due in <= 24 hours
-        const dedupKey = `urgent_task_${task.id}_24h_${todayStr}`
+        const dedupKey = `urgent_task_${task.id}_${todayStr}`
         if (!deliveredKeys.has(dedupKey)) {
           notifications.push({
             id: `notif_${dedupKey}`,
@@ -108,22 +109,23 @@ export function generateSmartNotifications({
             type: NOTIFICATION_TYPES.URGENT_ASSIGNMENT,
             priority: NOTIFICATION_PRIORITIES.HIGH,
             title: `Assignment Due Tomorrow`,
-            message: `${task.title} (${task.subject}) is due in ${Math.round(diffHours)} hours.`,
+            message: `${task.title} (${task.subject || "Task"}) is due in ${Math.round(diffHours)} hours.`,
             related_entity_type: "task",
             related_entity_id: task.id,
             target_page: "Tasks",
             is_read: false,
             created_at: now.toISOString(),
           })
+          break // Limit to 1 urgent task notification at a time
         }
       }
-    })
+    }
   }
 
-  // 2. Evaluate Upcoming Exams (7 days, 3 days, 1 day)
-  if (preferences.exam_reminders && Array.isArray(exams)) {
-    exams.forEach((exam) => {
-      if (!exam.exam_date) return
+  // 2. Evaluate Upcoming Exams (7 days, 3 days, 1 day) - max 1 per run
+  if (preferences.exam_reminders && Array.isArray(exams) && notifications.length < 2) {
+    for (const exam of exams) {
+      if (!exam.exam_date) continue
 
       const diffMs = new Date(exam.exam_date).getTime() - now.getTime()
       const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
@@ -151,19 +153,20 @@ export function generateSmartNotifications({
             is_read: false,
             created_at: now.toISOString(),
           })
+          break // Max 1 exam reminder per run
         }
       }
-    })
+    }
   }
 
-  // 3. Evaluate Weak Topics for Proximity Exams (<= 5 days)
-  if (preferences.weak_topic_reminders && Array.isArray(exams) && Array.isArray(syllabusTopics)) {
+  // 3. Evaluate Weak Topics for Proximity Exams (<= 5 days) - max 1 per day
+  if (preferences.weak_topic_reminders && Array.isArray(exams) && Array.isArray(syllabusTopics) && notifications.length < 2) {
     const upcomingSoonExams = exams.filter((e) => {
       const days = Math.ceil((new Date(e.exam_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       return days > 0 && days <= 5
     })
 
-    upcomingSoonExams.forEach((exam) => {
+    for (const exam of upcomingSoonExams) {
       const subjectTopics = syllabusTopics.filter(
         (t) =>
           t.academic_subjects?.subject_name?.toLowerCase().includes(exam.subject.toLowerCase()) ||
@@ -182,32 +185,34 @@ export function generateSmartNotifications({
         const score = topicProgress[weakest?.id]?.mastery_score ?? 0
 
         if (weakest && score < 50) {
-          const dedupKey = `weak_topic_${weakest.id}_exam_${exam.id}_${todayStr}`
+          const dedupKey = `weak_topic_${weakest.id}_${todayStr}`
           if (!deliveredKeys.has(dedupKey)) {
             notifications.push({
               id: `notif_${dedupKey}`,
               dedup_key: dedupKey,
               type: NOTIFICATION_TYPES.WEAK_TOPIC,
               priority: NOTIFICATION_PRIORITIES.HIGH,
-              title: `High-Risk Topic: ${weakest.title}`,
-              message: `${weakest.title} has only ${score}% mastery before your ${exam.subject} exam.`,
+              title: `High-Risk Topic: ${weakest.topic_name || weakest.title || "Topic"}`,
+              message: `${weakest.topic_name || weakest.title || "Topic"} has only ${score}% mastery before your ${exam.subject} exam.`,
               related_entity_type: "topic",
               related_entity_id: weakest.id,
               target_page: "Exam Mode",
               is_read: false,
               created_at: now.toISOString(),
             })
+            break // Max 1 weak topic reminder per day
           }
         }
       }
-    })
+    }
   }
 
-  // 4. Evaluate Calendar / Timetable Study Window Reminders
-  if (preferences.study_reminders && Array.isArray(studyWindows) && studyWindows.length > 0 && bestAction) {
+  // 4. Evaluate Calendar / Timetable Study Window Reminders - strictly max 1 per day
+  if (preferences.study_reminders && Array.isArray(studyWindows) && studyWindows.length > 0 && bestAction && notifications.length < 2) {
     const primaryWindow = studyWindows[0]
     if (primaryWindow && primaryWindow.minutes >= 30) {
-      const dedupKey = `study_window_${primaryWindow.start}_${primaryWindow.end}_${todayStr}`
+      // Deterministic once-per-day key for study window reminders
+      const dedupKey = `study_reminder_${todayStr}`
       if (!deliveredKeys.has(dedupKey)) {
         notifications.push({
           id: `notif_${dedupKey}`,
@@ -215,7 +220,7 @@ export function generateSmartNotifications({
           type: NOTIFICATION_TYPES.STUDY_REMINDER,
           priority: NOTIFICATION_PRIORITIES.NORMAL,
           title: `Study Opportunity: ${primaryWindow.start} – ${primaryWindow.end}`,
-          message: `You have ${primaryWindow.minutes} mins free. Recommended focus: ${bestAction.title}.`,
+          message: `You have ${primaryWindow.minutes} mins free. Recommended focus: ${bestAction.title || "Academic Review"}.`,
           related_entity_type: "study_window",
           related_entity_id: primaryWindow.start,
           target_page: "Focus Session",
@@ -226,5 +231,6 @@ export function generateSmartNotifications({
     }
   }
 
-  return notifications
+  // Strictly limit return batch to 1 or 2 high-value notifications
+  return notifications.slice(0, 2)
 }

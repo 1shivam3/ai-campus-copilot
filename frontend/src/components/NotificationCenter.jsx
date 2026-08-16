@@ -11,6 +11,7 @@ export function NotificationCenter({
   onMarkAsRead = () => {},
   onMarkAllAsRead = () => {},
   onClearAll = () => {},
+  onDismiss = () => {},
   onNavigate = () => {},
   preferences,
   onUpdatePreferences = () => {},
@@ -169,12 +170,25 @@ export function NotificationCenter({
                           )}
                         </div>
 
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {new Date(item.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(item.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDismiss(item.id)
+                            }}
+                            className="text-slate-300 hover:text-slate-600 rounded-full p-0.5 text-xs transition"
+                            title="Dismiss notification"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
 
                       <h4 className="mt-2 text-xs sm:text-sm font-bold text-slate-900">
