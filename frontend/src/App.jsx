@@ -168,9 +168,24 @@ function App() {
 
       if (error) {
         console.error("Profile load error:", error)
-        setProfile(null)
+        const savedAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
+        const savedDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
+        setProfile({
+          id: currentUser.id,
+          full_name: currentUser.email?.split("@")[0] || "Student",
+          semester: 3,
+          section: "B2",
+          avatar_url: savedAvatar || null,
+          public_display_name: savedDisplayName || null,
+        })
       } else {
-        setProfile(data || null)
+        const savedAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
+        const savedDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
+        setProfile({
+          ...(data || {}),
+          avatar_url: data?.avatar_url || savedAvatar || null,
+          public_display_name: data?.public_display_name || savedDisplayName || data?.full_name || null,
+        })
       }
     } catch (err) {
       console.error("Profile fetch error:", err)

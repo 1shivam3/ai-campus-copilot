@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { supabase } from "../lib/supabase"
 
 const TIMEFRAMES = [
   { id: "global", label: "Global" },
@@ -10,23 +11,9 @@ const SKILL_FILTERS = [
   { id: "all", label: "All Subjects" },
   { id: "dsa", label: "DSA" },
   { id: "python", label: "Python" },
-  { id: "java", label: "Java / OOP" },
   { id: "dbms", label: "DBMS" },
-  { id: "ai", label: "AI & Systems" },
-]
-
-// Mock baseline public learning peers for social comparison
-const PEER_COHORT = [
-  { id: "peer-1", display_name: "AlgoMaster", avatar_url: null, xp: 5820, streak: 24, reputation: 96, solved: 64 },
-  { id: "peer-2", display_name: "CodeNinja", avatar_url: null, xp: 5410, streak: 19, reputation: 94, solved: 58 },
-  { id: "peer-3", display_name: "ByteCrafter", avatar_url: null, xp: 5120, streak: 16, reputation: 92, solved: 52 },
-  { id: "peer-4", display_name: "DevSeeker", avatar_url: null, xp: 4750, streak: 14, reputation: 89, solved: 46 },
-  { id: "peer-5", display_name: "BinaryPioneer", avatar_url: null, xp: 4320, streak: 11, reputation: 88, solved: 41 },
-  { id: "peer-6", display_name: "DataKnight", avatar_url: null, xp: 3890, streak: 9, reputation: 85, solved: 36 },
-  { id: "peer-7", display_name: "Learner_9281", avatar_url: null, xp: 3450, streak: 7, reputation: 82, solved: 30 },
-  { id: "peer-8", display_name: "SyntaxHero", avatar_url: null, xp: 3100, streak: 6, reputation: 80, solved: 27 },
-  { id: "peer-9", display_name: "Learner_4412", avatar_url: null, xp: 2680, streak: 5, reputation: 78, solved: 22 },
-  { id: "peer-10", display_name: "KernelWalker", avatar_url: null, xp: 2200, streak: 4, reputation: 75, solved: 18 },
+  { id: "se", label: "Software Eng." },
+  { id: "ai", label: "Generative AI" },
 ]
 
 export default function Leaderboard({
@@ -35,239 +22,265 @@ export default function Leaderboard({
   totalXP = 0,
   thisWeekXP = 0,
   streak = 0,
-  reputation = 91,
+  reputation = 0,
   onNavigate,
 }) {
   const [timeframe, setTimeframe] = useState("global")
   const [skillFilter, setSkillFilter] = useState("all")
+  const [realProfiles, setRealProfiles] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Generate safe user display name
+  // Load real students from database
+  useEffect(() => {
+    async function loadRealLearners() {
+      setLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from("student_profiles")
+          .select("id, full_name, semester, section")
+          .order("created_at", { ascending: true })
+
+        if (!error && data) {
+          setRealProfiles(data)
+        }
+      } catch (err) {
+        console.error("Leaderboard fetch error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadRealLearners()
+  }, [])
+
+  // Safe display name for current student
   const userDisplayName = useMemo(() => {
     if (profile?.public_display_name) return profile.public_display_name
-    if (profile?.is_public && profile?.full_name) return profile.full_name
+    if (profile?.full_name) return profile.full_name
     return `Learner_${(user?.id || "student").slice(0, 6)}`
   }, [profile, user])
 
-  // Combine authenticated student into the deterministic ranking list
+  // Compute deterministic ranking list from REAL registered students ONLY
   const rankedList = useMemo(() => {
-    const userEntry = {
-      id: user?.id || "current-user",
-      display_name: userDisplayName,
-      avatar_url: profile?.avatar_url || null,
-      xp: timeframe === "weekly" ? Math.max(thisWeekXP, 320) : totalXP > 0 ? totalXP : 2480,
-      streak: streak > 0 ? streak : 12,
-      reputation: profile?.reputation || reputation || 91,
-      solved: 34,
-      isCurrentUser: true,
-    }
+    const studentsMap = new Map()
 
-    // Filter and adjust scores based on timeframe
-    const cohort = PEER_COHORT.map((p) => {
-      let multiplier = 1.0
-      if (timeframe === "weekly") multiplier = 0.22
-      if (timeframe === "monthly") multiplier = 0.55
-      return {
-        ...p,
-        xp: Math.round(p.xp * multiplier),
-      }
+    // Add all real registered students from database
+    realProfiles.forEach((p) => {
+      const isSelf = p.id === user?.id
+      const pDisplayName = isSelf
+        ? userDisplayName
+        : p.full_name || `Learner_${p.id.slice(0, 6)}`
+
+      studentsMap.set(p.id, {
+        id: p.id,
+        display_name: pDisplayName,
+        avatar_url: isSelf ? profile?.avatar_url || null : null,
+        semester: p.semester,
+        section: p.section,
+        xp: isSelf ? (timeframe === "weekly" ? thisWeekXP : totalXP) : 0,
+        streak: isSelf ? streak : 0,
+        reputation: isSelf ? reputation : 0,
+        solved: isSelf ? Math.floor(totalXP / 25) : 0,
+        isCurrentUser: isSelf,
+      })
     })
 
-    const all = [...cohort, userEntry].sort((a, b) => {
+    // Ensure current user is present
+    if (user?.id && !studentsMap.has(user.id)) {
+      studentsMap.set(user.id, {
+        id: user.id,
+        display_name: userDisplayName,
+        avatar_url: profile?.avatar_url || null,
+        semester: profile?.semester || 3,
+        section: profile?.section || "B2",
+        xp: timeframe === "weekly" ? thisWeekXP : totalXP,
+        streak: streak,
+        reputation: reputation,
+        solved: Math.floor(totalXP / 25),
+        isCurrentUser: true,
+      })
+    }
+
+    const list = Array.from(studentsMap.values()).sort((a, b) => {
       if (b.xp !== a.xp) return b.xp - a.xp
       if (b.solved !== a.solved) return b.solved - a.solved
       return b.reputation - a.reputation
     })
 
-    return all.map((entry, idx) => ({ ...entry, rank: idx + 1 }))
-  }, [user, profile, userDisplayName, totalXP, thisWeekXP, streak, reputation, timeframe])
+    return list.map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+  }, [realProfiles, user, profile, userDisplayName, totalXP, thisWeekXP, streak, reputation, timeframe])
 
-  // Student's own rank entry
+  // Current student rank entry
   const currentUserRankEntry = useMemo(() => {
-    return rankedList.find((item) => item.isCurrentUser) || {
-      rank: 7,
-      xp: totalXP,
-      display_name: userDisplayName,
-    }
+    return (
+      rankedList.find((item) => item.isCurrentUser) || {
+        rank: 1,
+        xp: totalXP,
+        display_name: userDisplayName,
+      }
+    )
   }, [rankedList, totalXP, userDisplayName])
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8 space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:py-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
-              GLOBAL LEARNING REPUTATION
-            </span>
-          </div>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-            Campus Leaderboard
+          <span className="text-xs font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+            CAMPUS LEARNING STANDINGS
+          </span>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+            Leaderboard
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Compare verified learning XP, consistency streaks, and community reputation.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Real peer learning rankings based on verified challenge completions and XP.
           </p>
         </div>
 
-        {onNavigate && (
-          <button
-            type="button"
-            onClick={() => onNavigate("Home")}
-            className="self-start sm:self-center flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 shadow-2xs"
-          >
-            <span>← Back to Home</span>
-          </button>
-        )}
+        {/* Timeframe Selector */}
+        <div className="flex items-center rounded-2xl bg-slate-100 p-1 dark:bg-slate-800 self-start sm:self-auto">
+          {TIMEFRAMES.map((tf) => (
+            <button
+              key={tf.id}
+              onClick={() => setTimeframe(tf.id)}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                timeframe === tf.id
+                  ? "bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Student's Personal Rank Banner */}
-      <div className="overflow-hidden rounded-3xl border border-blue-200/80 bg-linear-to-r from-blue-600 to-indigo-700 p-5 sm:p-6 text-white shadow-md">
+      {/* Authenticated Student Standing Pinned Card */}
+      <div className="rounded-3xl border border-blue-200 bg-linear-to-r from-blue-50 via-indigo-50/50 to-white p-4 sm:p-5 shadow-xs dark:border-blue-900/50 dark:bg-slate-900">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl font-black shadow-inner">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white shadow-sm shadow-blue-500/20">
               #{currentUserRankEntry.rank}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                  YOUR CURRENT STANDING
-                </span>
-              </div>
-              <h2 className="text-xl font-bold">{userDisplayName}</h2>
-              <p className="text-xs text-blue-100">
-                Top {Math.max(5, Math.round((currentUserRankEntry.rank / rankedList.length) * 100))}% of active campus learners
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                YOUR STANDING
+              </span>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                {currentUserRankEntry.display_name}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Semester {profile?.semester || 3} · Section {profile?.section || "B2"}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl bg-white/10 px-3.5 py-2 text-center">
-              <p className="text-base font-black">⭐ {currentUserRankEntry.xp.toLocaleString()}</p>
-              <p className="text-[10px] text-blue-200 font-semibold uppercase">Total XP</p>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <div className="rounded-2xl bg-white px-3.5 py-2 text-center border border-slate-200/60 dark:bg-slate-800 dark:border-slate-700">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase">Total XP</span>
+              <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                ⭐ {currentUserRankEntry.xp?.toLocaleString()}
+              </span>
             </div>
-            <div className="rounded-2xl bg-white/10 px-3.5 py-2 text-center">
-              <p className="text-base font-black">🔥 {currentUserRankEntry.streak}d</p>
-              <p className="text-[10px] text-blue-200 font-semibold uppercase">Streak</p>
-            </div>
-            <div className="rounded-2xl bg-white/10 px-3.5 py-2 text-center">
-              <p className="text-base font-black">🏆 {currentUserRankEntry.reputation}%</p>
-              <p className="text-[10px] text-blue-200 font-semibold uppercase">Reputation</p>
+
+            <div className="rounded-2xl bg-white px-3.5 py-2 text-center border border-slate-200/60 dark:bg-slate-800 dark:border-slate-700">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase">Streak</span>
+              <span className="text-sm font-black text-orange-600 dark:text-orange-400">
+                🔥 {currentUserRankEntry.streak}d
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filters: Timeframe & Skill */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4 dark:border-slate-800">
-        {/* Timeframe Tabs */}
-        <div className="flex gap-2">
-          {TIMEFRAMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTimeframe(t.id)}
-              className={`rounded-2xl px-4 py-2 text-xs font-bold transition active:scale-[0.98] ${
-                timeframe === t.id
-                  ? "bg-slate-900 text-white shadow-xs dark:bg-blue-600"
-                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+      {/* Leaderboard Table / Rankings */}
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            Ranked Peers ({rankedList.length} Active Learners)
+          </h3>
+          <span className="text-[11px] font-medium text-slate-400">
+            Real Student Data Only
+          </span>
         </div>
 
-        {/* Skill Filter Dropdown */}
-        <select
-          value={skillFilter}
-          onChange={(e) => setSkillFilter(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
-        >
-          {SKILL_FILTERS.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </div>
+        {loading ? (
+          <div className="p-8 text-center text-xs text-slate-400">Loading campus standings...</div>
+        ) : rankedList.length === 0 ? (
+          <div className="p-8 text-center">
+            <span className="text-3xl">🏆</span>
+            <h4 className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">No peers yet</h4>
+            <p className="text-xs text-slate-500 mt-1">
+              Solve daily challenges to earn XP and claim the #1 spot!
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {rankedList.map((peer) => {
+              const isTop3 = peer.rank <= 3
+              const medal = peer.rank === 1 ? "🥇" : peer.rank === 2 ? "🥈" : peer.rank === 3 ? "🥉" : null
 
-      {/* Leaderboard Table List */}
-      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {rankedList.map((entry) => {
-            const isUser = entry.isCurrentUser
-            const isTop3 = entry.rank <= 3
-            const initial = (entry.display_name || "L").charAt(0).toUpperCase()
-
-            return (
-              <div
-                key={entry.id}
-                className={`flex items-center justify-between p-4 sm:p-5 transition ${
-                  isUser
-                    ? "bg-blue-50/60 dark:bg-blue-950/30 font-semibold"
-                    : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
-                }`}
-              >
-                {/* Left: Rank & Avatar */}
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center font-black text-sm">
-                    {entry.rank === 1 ? (
-                      <span className="text-xl">🥇</span>
-                    ) : entry.rank === 2 ? (
-                      <span className="text-xl">🥈</span>
-                    ) : entry.rank === 3 ? (
-                      <span className="text-xl">🥉</span>
-                    ) : (
-                      <span className="text-slate-400">#{entry.rank}</span>
-                    )}
-                  </div>
-
-                  {entry.avatar_url ? (
-                    <img
-                      src={entry.avatar_url}
-                      alt={entry.display_name}
-                      className="h-10 w-10 shrink-0 rounded-2xl object-cover ring-2 ring-blue-500/20"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-xs font-bold text-white shadow-inner dark:bg-slate-800">
-                      {initial}
+              return (
+                <div
+                  key={peer.id}
+                  className={`flex items-center justify-between p-4 sm:px-5 transition ${
+                    peer.isCurrentUser
+                      ? "bg-blue-50/50 dark:bg-blue-950/30 font-semibold"
+                      : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                  }`}
+                >
+                  {/* Left: Rank & Avatar & Name */}
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center text-sm font-bold">
+                      {medal || <span className="text-slate-400 text-xs">#{peer.rank}</span>}
                     </div>
-                  )}
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                        {entry.display_name}
-                      </h3>
-                      {isUser && (
-                        <span className="rounded-full bg-blue-600 px-2 py-0.2 text-[9px] font-extrabold uppercase tracking-wider text-white">
-                          YOU
-                        </span>
+                    <div className="relative">
+                      {peer.avatar_url ? (
+                        <img
+                          src={peer.avatar_url}
+                          alt={peer.display_name}
+                          className="h-10 w-10 rounded-2xl object-cover ring-2 ring-blue-500/20"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-slate-700 to-slate-900 text-sm font-bold text-white">
+                          {(peer.display_name || "S").charAt(0).toUpperCase()}
+                        </div>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      {entry.solved} challenges solved · 🏆 {entry.reputation}% rep
-                    </p>
-                  </div>
-                </div>
 
-                {/* Right: XP & Streak */}
-                <div className="flex items-center gap-4 text-right">
-                  <div className="hidden sm:block">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-                      🔥 {entry.streak}d
-                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                          {peer.display_name}
+                        </span>
+                        {peer.isCurrentUser && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.2 text-[9px] font-extrabold uppercase text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                            YOU
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-400">
+                        Semester {peer.semester || 3} · Section {peer.section || "B2"}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                      ⭐ {entry.xp.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">XP</p>
+
+                  {/* Right: Stats */}
+                  <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-right">
+                    <div>
+                      <span className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                        ⭐ {peer.xp.toLocaleString()} XP
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {peer.streak > 0 ? `🔥 ${peer.streak}d streak` : "0d streak"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
