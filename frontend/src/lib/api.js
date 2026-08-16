@@ -1,7 +1,9 @@
 const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
   import.meta.env.VITE_API_BASE_URL ||
-  "https://ai-campus-copilot-uanp.onrender.com"
+  (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "http://localhost:8000"
+    : "https://ai-campus-copilot-uanp.onrender.com")
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 45000) {
   const controller = new AbortController()
@@ -477,23 +479,29 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
     // Graceful fallback if backend instance is deploying or returns 404
     if (response.status === 404) {
       console.warn("Copilot chat route 404, using fallback study advice pipeline...")
-      const fallbackAdvice = await generateStudyAdvice({
-        today: new Date().toLocaleDateString("en-US", { weekday: "long" }),
-        topic_name: message.trim(),
-        user_id: userId,
-      })
+      try {
+        const fallbackAdvice = await generateStudyAdvice({
+          today: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+          topic_name: message.trim(),
+          user_id: userId,
+        })
 
-      if (fallbackAdvice?.answer) {
-        return {
-          status: "success",
-          conversation_id: conversationId,
-          message: fallbackAdvice.answer,
-          actions: [
-            { type: "start_focus", label: "Start 45m Focus Session", minutes: 45 },
-            { type: "open_timetable", label: "View Timetable" },
-          ],
-          sources: [],
+        const answerText = typeof fallbackAdvice === "string" ? fallbackAdvice : (fallbackAdvice?.answer || fallbackAdvice?.message)
+
+        if (answerText) {
+          return {
+            status: "success",
+            conversation_id: conversationId,
+            message: answerText,
+            actions: [
+              { type: "start_focus", label: "Start 45m Focus Session", minutes: 45 },
+              { type: "open_timetable", label: "View Timetable" },
+            ],
+            sources: [],
+          }
         }
+      } catch (fbErr) {
+        console.warn("Fallback study advice error:", fbErr)
       }
     }
 
