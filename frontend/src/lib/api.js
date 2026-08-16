@@ -531,11 +531,41 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
   }
 }
 
+export { API_URL }
 
+export async function syncUserLearningStats(stats) {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/api/sync-user-stats`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(stats),
+      },
+      10000
+    )
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch (err) {
+    console.warn("Campus stats sync notice:", err)
+  }
+  return null
+}
 
-
-
-
-
-
-
+export async function fetchCampusLeaderboard(timeframe = "global") {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/api/leaderboard?timeframe=${timeframe}`,
+      { method: "GET" },
+      10000
+    )
+    if (response.ok) {
+      const data = await response.json()
+      return data.leaderboard || []
+    }
+  } catch (err) {
+    console.warn("Campus leaderboard fetch notice:", err)
+  }
+  return []
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { syncUserLearningStats, fetchCampusLeaderboard } from "../lib/api"
 import { supabase } from "../lib/supabase"
 
 const TIMEFRAMES = [
@@ -27,67 +28,46 @@ export default function Leaderboard({
     return `Learner_${(user?.id || "student").slice(0, 6)}`
   }, [profile, user])
 
-  // Sync current student's stats to campus leaderboard store & fetch live standings
+  // Sync current student's stats to campus backend store & fetch live standings
   useEffect(() => {
-    async function syncAndFetchLeaderboard() {
+    let isMounted = true
+
+    async function syncAndFetch() {
       setLoading(true)
 
       // 1. Sync current student metrics to the live server
       if (user?.id) {
-        try {
-          const syncUrl = import.meta.env.VITE_BACKEND_URL
-            ? `${import.meta.env.VITE_BACKEND_URL}/api/sync-user-stats`
-            : "/api/sync-user-stats"
-
-          await fetch(syncUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: user.id,
-              full_name: profile?.full_name || "Student",
-              public_display_name: userDisplayName,
-              avatar_url: profile?.avatar_url || null,
-              semester: profile?.semester || 3,
-              section: profile?.section || "B2",
-              total_xp: totalXP,
-              this_week_xp: thisWeekXP,
-              streak: streak,
-              reputation: profile?.reputation || reputation || 91,
-              solved_count: Math.floor(totalXP / 25),
-            }),
-          }).catch(() => {})
-        } catch {
-          // Ignore network errors on local sync
-        }
+        await syncUserLearningStats({
+          user_id: user.id,
+          full_name: profile?.full_name || "Student",
+          public_display_name: userDisplayName,
+          avatar_url: profile?.avatar_url || null,
+          semester: profile?.semester || 3,
+          section: profile?.section || "B2",
+          total_xp: totalXP,
+          this_week_xp: thisWeekXP,
+          streak: streak,
+          reputation: profile?.reputation || reputation || 91,
+          solved_count: Math.floor(totalXP / 25),
+        })
       }
 
-      // 2. Fetch all real students from server
-      try {
-        const lbUrl = import.meta.env.VITE_BACKEND_URL
-          ? `${import.meta.env.VITE_BACKEND_URL}/api/leaderboard?timeframe=${timeframe}`
-          : `/api/leaderboard?timeframe=${timeframe}`
-
-        const res = await fetch(lbUrl)
-        if (res.ok) {
-          const json = await res.json()
-          if (json.leaderboard && json.leaderboard.length > 0) {
-            setRemoteRankings(json.leaderboard)
-            setLoading(false)
-            return
-          }
-        }
-      } catch {
-        // Fallback to Supabase direct query
+      // 2. Fetch all registered and active peers from campus backend
+      const leaderboardData = await fetchCampusLeaderboard(timeframe)
+      if (isMounted && Array.isArray(leaderboardData) && leaderboardData.length > 0) {
+        setRemoteRankings(leaderboardData)
+        setLoading(false)
+        return
       }
 
-      // 3. Fallback: Supabase direct query
+      // 3. Fallback: Query Supabase student_profiles directly
       try {
         const { data } = await supabase
           .from("student_profiles")
           .select("id, full_name, semester, section")
           .order("created_at", { ascending: true })
 
-        if (data) {
+        if (isMounted && data) {
           setRemoteRankings(
             data.map((p, i) => ({
               id: p.id,
@@ -106,11 +86,15 @@ export default function Leaderboard({
       } catch (err) {
         console.error("Leaderboard fallback note:", err)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
-    syncAndFetchLeaderboard()
+    syncAndFetch()
+
+    return () => {
+      isMounted = false
+    }
   }, [user, profile, userDisplayName, totalXP, thisWeekXP, streak, reputation, timeframe])
 
   // Map and mark the current user in the live list
