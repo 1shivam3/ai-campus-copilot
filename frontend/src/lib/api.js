@@ -425,6 +425,61 @@ export async function analyzeExamPaper({ studyMaterialId, userId, forceRegenerat
   return response.json()
 }
 
+function generateSearchTerms(query) {
+  const clean = (query || "").trim().toLowerCase()
+  if (!clean) return []
+  const words = clean.split(/\s+/).filter((w) => w.length > 1)
+  const terms = new Set(words)
+  terms.add(clean)
+
+  words.forEach((w) => {
+    if (w.endsWith("s") && w.length > 3) {
+      terms.add(w.slice(0, -1))
+    } else if (w.length > 2) {
+      terms.add(w + "s")
+    }
+  })
+
+  // Common academic acronyms
+  if (clean.includes("dbms")) {
+    terms.add("database")
+    terms.add("management")
+  }
+  if (clean.includes("dsa") || clean.includes("data structure")) {
+    terms.add("data structure")
+    terms.add("algorithm")
+    terms.add("structures")
+    terms.add("structure")
+  }
+  if (words.includes("os") || clean === "os") {
+    terms.add("operating")
+    terms.add("system")
+  }
+  if (words.includes("cn") || clean === "cn") {
+    terms.add("computer network")
+    terms.add("network")
+  }
+  if (words.includes("oop") || words.includes("java")) {
+    terms.add("object oriented")
+    terms.add("java")
+  }
+  if (words.includes("discrete")) {
+    terms.add("discrete")
+    terms.add("structures")
+  }
+  if (words.includes("bet") || clean.includes("bet-i")) {
+    terms.add("employability")
+    terms.add("training")
+    terms.add("bet-i")
+  }
+  if (clean.includes("normalization") || clean.includes("normal")) {
+    terms.add("normalization")
+    terms.add("normal")
+  }
+
+  return Array.from(terms).filter((t) => t.length > 1).slice(0, 8)
+}
+
 // ---------------------------------------------------------
 // GLOBAL ACADEMIC SEARCH API
 // ---------------------------------------------------------
@@ -458,7 +513,7 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
 
     if (response.ok) {
       const data = await response.json()
-      if (data && Array.isArray(data.results)) {
+      if (data && Array.isArray(data.results) && data.results.length > 0) {
         return data
       }
     }
@@ -470,13 +525,7 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
 
   // 2. Resilient Direct Supabase Fallback (Guarantees search always works even if backend is waking up)
   try {
-    const normQ = cleanQ.toLowerCase().trim()
-    const searchTerms = [cleanQ]
-    if (normQ === "dbms") searchTerms.push("Database Management")
-    else if (normQ === "dsa") searchTerms.push("Data Structure")
-    else if (normQ === "os") searchTerms.push("Operating System")
-    else if (normQ === "cn") searchTerms.push("Computer Networks")
-
+    const searchTerms = generateSearchTerms(cleanQ)
     const fallbackResults = []
 
     // A. Academic Subjects
@@ -485,7 +534,7 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
       .from("academic_subjects")
       .select("id, subject_name, subject_code, semester, section")
       .or(subFilter)
-      .limit(5)
+      .limit(6)
 
     if (subData && subData.length > 0) {
       subData.forEach((s) => {
@@ -500,10 +549,11 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
     }
 
     // B. Syllabus Topics
+    const topFilter = searchTerms.map((t) => `topic_name.ilike.%${t}%,description.ilike.%${t}%`).join(",")
     let topicQuery = supabase
       .from("syllabus_topics")
       .select("id, topic_name, unit_number, description, subject_id, academic_subjects!inner(id, subject_name, subject_code, semester)")
-      .ilike("topic_name", `%${cleanQ}%`)
+      .or(topFilter)
       .limit(8)
 
     if (semester) {
@@ -535,11 +585,12 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
 
     // C. User Tasks
     if (userId) {
+      const taskFilter = searchTerms.map((t) => `title.ilike.%${t}%,subject.ilike.%${t}%`).join(",")
       const { data: taskData } = await supabase
         .from("tasks")
         .select("id, title, subject, deadline, importance, status")
         .eq("user_id", userId)
-        .or(`title.ilike.%${cleanQ}%,subject.ilike.%${cleanQ}%`)
+        .or(taskFilter)
         .limit(5)
 
       if (taskData && taskData.length > 0) {
@@ -555,11 +606,12 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
       }
 
       // D. User Exams
+      const examFilter = searchTerms.map((t) => `subject.ilike.%${t}%`).join(",")
       const { data: examData } = await supabase
         .from("exams")
         .select("id, subject, exam_date, importance")
         .eq("user_id", userId)
-        .ilike("subject", `%${cleanQ}%`)
+        .or(examFilter)
         .limit(4)
 
       if (examData && examData.length > 0) {
@@ -575,11 +627,12 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
       }
 
       // E. User Study Materials
+      const matFilter = searchTerms.map((t) => `title.ilike.%${t}%`).join(",")
       const { data: matData } = await supabase
         .from("study_materials")
         .select("id, title, material_type, unit_number, academic_subjects(subject_name, subject_code)")
         .eq("user_id", userId)
-        .ilike("title", `%${cleanQ}%`)
+        .or(matFilter)
         .limit(6)
 
       if (matData && matData.length > 0) {

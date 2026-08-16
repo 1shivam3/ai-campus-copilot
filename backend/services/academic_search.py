@@ -17,6 +17,49 @@ def normalize_str(s: str) -> str:
     return re.sub(r"[^\w\s]", " ", s).lower().strip()
 
 
+def generate_search_terms(query: str) -> List[str]:
+    clean = query.strip().lower()
+    if not clean:
+        return []
+    words = [w.strip() for w in clean.split() if len(w.strip()) > 1]
+    terms = set(words)
+    terms.add(clean)
+    for w in words:
+        if w.endswith("s") and len(w) > 3:
+            terms.add(w[:-1])
+        elif len(w) > 2:
+            terms.add(w + "s")
+    # Acronyms & aliases
+    if "dbms" in clean:
+        terms.add("database")
+        terms.add("management")
+    if "dsa" in clean or "data structure" in clean or "data structures" in clean:
+        terms.add("data structure")
+        terms.add("algorithm")
+        terms.add("structures")
+        terms.add("structure")
+    if "os" in words or clean == "os":
+        terms.add("operating")
+        terms.add("system")
+    if "cn" in words or clean == "cn":
+        terms.add("computer network")
+        terms.add("network")
+    if "oop" in words or "java" in words:
+        terms.add("object oriented")
+        terms.add("java")
+    if "discrete" in words:
+        terms.add("discrete")
+        terms.add("structures")
+    if "bet" in words or "bet-i" in clean:
+        terms.add("employability")
+        terms.add("training")
+        terms.add("bet-i")
+    if "normalization" in clean or "normal" in clean:
+        terms.add("normalization")
+        terms.add("normal")
+    return [t for t in terms if len(t) > 1][:8]
+
+
 async def search_academic_workspace(
     supabase_client,
     query: str,
@@ -45,20 +88,7 @@ async def search_academic_workspace(
     is_paper_intent = bool(re.search(r"\b(paper|papers|previous year|pyq|question paper|previous papers)\b", norm_q))
     is_weak_topic_intent = bool(re.search(r"\b(weak|weak topics|revise|revision|mastery|low score)\b", norm_q))
 
-    # Acronym aliases
-    search_terms = [clean_q]
-    if norm_q == "dbms":
-        search_terms.append("Database Management")
-    elif norm_q == "dsa":
-        search_terms.append("Data Structure")
-    elif norm_q == "os":
-        search_terms.append("Operating System")
-    elif norm_q == "cn":
-        search_terms.append("Computer Networks")
-    elif norm_q in ("coa", "cao"):
-        search_terms.append("Computer Organization")
-    elif norm_q in ("de", "del"):
-        search_terms.append("Digital Electronics")
+    search_terms = generate_search_terms(clean_q)
 
     # ---------------------------------------------------------
     # 2. ACADEMIC SUBJECTS & SYLLABUS TOPICS SEARCH
@@ -68,7 +98,7 @@ async def search_academic_workspace(
         sub_query = supabase_client.table("academic_subjects").select("id, subject_name, subject_code, semester, section")
         if semester is not None:
             sub_query = sub_query.eq("semester", semester)
-        sub_res = sub_query.or_(sub_filter).limit(5).execute()
+        sub_res = sub_query.or_(sub_filter).limit(6).execute()
         if sub_res.data:
             for s in sub_res.data:
                 sub_name = s.get("subject_name", "Subject")
@@ -88,13 +118,14 @@ async def search_academic_workspace(
         logger.warning(f"[ACADEMIC_SEARCH] Subjects query notice: {sub_err}")
 
     try:
+        top_filter = ",".join([f"topic_name.ilike.%{term}%,description.ilike.%{term}%" for term in search_terms])
         topic_query = supabase_client.table("syllabus_topics").select(
             "id, topic_name, unit_number, description, subject_id, academic_subjects!inner(id, subject_name, subject_code, semester)"
         )
         if semester is not None:
             topic_query = topic_query.eq("academic_subjects.semester", semester)
 
-        top_res = topic_query.ilike("topic_name", f"%{clean_q}%").limit(8).execute()
+        top_res = topic_query.or_(top_filter).limit(8).execute()
         if top_res.data:
             for t in top_res.data:
                 sub = t.get("academic_subjects") or {}
@@ -102,9 +133,8 @@ async def search_academic_workspace(
                 sub_code = f" ({sub.get('subject_code')})" if sub.get("subject_code") else ""
                 unit_str = f"Unit {t.get('unit_number')}" if t.get("unit_number") else "Syllabus"
 
-                # Check exact match
                 norm_title = normalize_str(t.get("topic_name", ""))
-                score = 0.98 if norm_q == norm_title else 0.85
+                score = 0.98 if norm_q in norm_title else 0.85
 
                 results.append({
                     "type": "syllabus",
@@ -125,9 +155,10 @@ async def search_academic_workspace(
     # 3. STUDY MATERIALS & PREVIOUS PAPERS (User-Specific Keyword Search)
     # ---------------------------------------------------------
     try:
+        mat_filter = ",".join([f"title.ilike.%{term}%" for term in search_terms])
         mat_res = supabase_client.table("study_materials").select(
             "id, title, material_type, unit_number, original_file_name, academic_subjects(subject_name, subject_code)"
-        ).eq("user_id", user_id).ilike("title", f"%{clean_q}%").limit(8).execute()
+        ).eq("user_id", user_id).or_(mat_filter).limit(8).execute()
 
         if mat_res.data:
             for m in mat_res.data:
@@ -164,7 +195,8 @@ async def search_academic_workspace(
         ).eq("user_id", user_id)
 
         if not is_flashcard_intent:
-            fc_query = fc_query.or_(f"question.ilike.%{clean_q}%,answer.ilike.%{clean_q}%,topic_name.ilike.%{clean_q}%")
+            fc_filter = ",".join([f"question.ilike.%{term}%,answer.ilike.%{term}%,topic_name.ilike.%{term}%" for term in search_terms])
+            fc_query = fc_query.or_(fc_filter)
 
         fc_res = fc_query.limit(6).execute()
         if fc_res.data:
@@ -197,7 +229,8 @@ async def search_academic_workspace(
         if is_task_intent:
             task_query = task_query.eq("status", "pending")
         else:
-            task_query = task_query.or_(f"title.ilike.%{clean_q}%,subject.ilike.%{clean_q}%")
+            task_filter = ",".join([f"title.ilike.%{term}%,subject.ilike.%{term}%" for term in search_terms])
+            task_query = task_query.or_(task_filter)
 
         task_res = task_query.limit(5).execute()
         if task_res.data:
@@ -235,7 +268,8 @@ async def search_academic_workspace(
         ).eq("user_id", user_id)
 
         if not is_exam_intent:
-            exam_query = exam_query.ilike("subject", f"%{clean_q}%")
+            exam_filter = ",".join([f"subject.ilike.%{term}%" for term in search_terms])
+            exam_query = exam_query.or_(exam_filter)
 
         exam_res = exam_query.order("exam_date", desc=False).limit(4).execute()
         if exam_res.data:
