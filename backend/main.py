@@ -1043,8 +1043,8 @@ async def match_study_material(request: MatchStudyMaterialRequest):
     except Exception as db_err:
         logger.error(f"[TOPIC_MATCH] Database client unavailable: {db_err}")
         raise HTTPException(
-            status_code=500,
-            detail="The service is temporarily unable to access the database. Please try again.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     # 1. Fetch study material and verify ownership
@@ -1055,21 +1055,21 @@ async def match_study_material(request: MatchStudyMaterialRequest):
     except Exception as err:
         logger.error(f"[TOPIC_MATCH] Error querying study_materials: {err}")
         raise HTTPException(
-            status_code=500,
-            detail="Could not access study material from database.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     if not mat_res.data:
         raise HTTPException(
             status_code=404,
-            detail="Study material record not found.",
+            detail="This study material could not be found.",
         )
 
     material = mat_res.data[0]
     if str(material.get("user_id")) != str(request.user_id):
         raise HTTPException(
             status_code=403,
-            detail="Access denied. You do not own this study material.",
+            detail="You don't have access to this material.",
         )
 
     extracted_text = material.get("extracted_text") or ""
@@ -1276,8 +1276,8 @@ async def index_study_material(request: IndexStudyMaterialRequest):
     except Exception as db_err:
         logger.error(f"[RAG_INDEX] Database client unavailable: {db_err}")
         raise HTTPException(
-            status_code=500,
-            detail="The service is temporarily unable to access the database. Please try again.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     # 1. Verify ownership and retrieve extracted text
@@ -1287,14 +1287,17 @@ async def index_study_material(request: IndexStudyMaterialRequest):
         ).eq("id", request.study_material_id).execute()
     except Exception as err:
         logger.error(f"[RAG_INDEX] Query error: {err}")
-        raise HTTPException(status_code=500, detail="Could not access study material.")
+        raise HTTPException(
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
+        )
 
     if not mat_res.data:
-        raise HTTPException(status_code=404, detail="Study material not found.")
+        raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
     if str(material.get("user_id")) != str(request.user_id):
-        raise HTTPException(status_code=403, detail="Access denied. You do not own this study material.")
+        raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     extracted_text = material.get("extracted_text") or ""
     if not extracted_text.strip():
@@ -1392,8 +1395,8 @@ async def ask_study_material(request: AskStudyMaterialRequest):
     except Exception as db_err:
         logger.error(f"[RAG_QUERY] Database client unavailable: {db_err}")
         raise HTTPException(
-            status_code=500,
-            detail="The service is temporarily unable to access the database. Please try again.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     # 1. Fetch study material and verify ownership
@@ -1404,21 +1407,21 @@ async def ask_study_material(request: AskStudyMaterialRequest):
     except Exception as err:
         logger.error(f"[RAG_QUERY] Error querying study_materials: {err}")
         raise HTTPException(
-            status_code=500,
-            detail="Could not access study material from database.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     if not mat_res.data:
         raise HTTPException(
             status_code=404,
-            detail="Study material record not found.",
+            detail="This study material could not be found.",
         )
 
     material = mat_res.data[0]
     if str(material.get("user_id")) != str(request.user_id):
         raise HTTPException(
             status_code=403,
-            detail="Access denied. You do not own this study material.",
+            detail="You don't have access to this material.",
         )
 
     extracted_text = material.get("extracted_text") or ""
@@ -1866,8 +1869,8 @@ async def generate_study_pack(request: GenerateStudyPackRequest):
     except Exception as db_err:
         logger.error(f"[STUDY_PACK] Database client unavailable: {db_err}")
         raise HTTPException(
-            status_code=500,
-            detail="The study pack could not be generated right now. Please try again.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     # 1. Verify user ownership of study_materials
@@ -1877,14 +1880,17 @@ async def generate_study_pack(request: GenerateStudyPackRequest):
         ).eq("id", request.study_material_id).execute()
     except Exception as err:
         logger.error(f"[STUDY_PACK] Query study_materials error: {err}")
-        raise HTTPException(status_code=500, detail="Could not access study material.")
+        raise HTTPException(
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
+        )
 
     if not mat_res.data:
-        raise HTTPException(status_code=404, detail="Study material not found.")
+        raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
     if str(material.get("user_id")) != str(request.user_id):
-        raise HTTPException(status_code=403, detail="Access denied. You do not own this study material.")
+        raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     # 2. Check for cached study pack if not force_regenerate
     if not request.force_regenerate:
@@ -2145,8 +2151,8 @@ async def generate_flashcards(request: GenerateFlashcardsRequest):
     except Exception as db_err:
         logger.error(f"[FLASHCARDS] Database client unavailable: {db_err}")
         raise HTTPException(
-            status_code=500,
-            detail="Flashcard generation could not access the database. Please try again.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     # 1. Verify user ownership of study_materials
@@ -2156,14 +2162,17 @@ async def generate_flashcards(request: GenerateFlashcardsRequest):
         ).eq("id", request.study_material_id).execute()
     except Exception as err:
         logger.error(f"[FLASHCARDS] Query error: {err}")
-        raise HTTPException(status_code=500, detail="Could not access study material.")
+        raise HTTPException(
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
+        )
 
     if not mat_res.data:
-        raise HTTPException(status_code=404, detail="Study material not found.")
+        raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
     if str(material.get("user_id")) != str(request.user_id):
-        raise HTTPException(status_code=403, detail="Access denied. You do not own this study material.")
+        raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     # 2. Check for cached flashcards if not force_regenerate
     if not request.force_regenerate:
@@ -2470,8 +2479,8 @@ async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
     except Exception as db_err:
         logger.error(f"[EXAM_ANALYZER] Database client unavailable: {db_err}")
         raise HTTPException(
-            status_code=500,
-            detail="Exam paper analyzer could not access the database. Please try again.",
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
         )
 
     # 1. Verify user ownership of study_materials
@@ -2481,14 +2490,17 @@ async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
         ).eq("id", request.study_material_id).execute()
     except Exception as err:
         logger.error(f"[EXAM_ANALYZER] Query error: {err}")
-        raise HTTPException(status_code=500, detail="Could not access study material.")
+        raise HTTPException(
+            status_code=503,
+            detail="The service is temporarily unavailable. Please try again in a moment.",
+        )
 
     if not mat_res.data:
-        raise HTTPException(status_code=404, detail="Study material not found.")
+        raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
     if str(material.get("user_id")) != str(request.user_id):
-        raise HTTPException(status_code=403, detail="Access denied. You do not own this question paper.")
+        raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     # 2. Check for cached analysis if not force_regenerate
     if not request.force_regenerate:

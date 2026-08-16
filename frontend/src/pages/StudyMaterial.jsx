@@ -531,6 +531,10 @@ function StudyMaterial({
   // ---------------------------------------------------------
   async function handleCreateStudyPack(materialId) {
     if (!user?.id || !materialId) return
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setError("This feature requires an internet connection.")
+      return
+    }
 
     setGeneratingPackId(materialId)
     setError("")
@@ -558,6 +562,10 @@ function StudyMaterial({
   // ---------------------------------------------------------
   async function handleAnalyzePaper(materialId) {
     if (!user?.id || !materialId) return
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setError("This feature requires an internet connection.")
+      return
+    }
 
     setAnalyzingPaperId(materialId)
     setError("")

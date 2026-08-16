@@ -191,6 +191,11 @@ function StudyMaterialReader({
   // 2. ASK THIS MATERIAL & EXECUTE QUICK ACTIONS
   // ---------------------------------------------------------
   async function handleAskAI(customQuestion = null, actionType = "ask") {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setAiError("This feature requires an internet connection.")
+      return
+    }
+
     const query = customQuestion || question
     if (!query.trim() && actionType === "ask") return
     if (!material?.id || !user?.id) return
@@ -569,7 +574,12 @@ function StudyMaterialReader({
                     type="button"
                     disabled={generatingPack}
                     onClick={async () => {
+                      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+                        setAiError("This feature requires an internet connection.")
+                        return
+                      }
                       setGeneratingPack(true)
+                      setAiError("")
                       try {
                         await generateStudyPack({
                           studyMaterialId: material.id,
@@ -579,7 +589,8 @@ function StudyMaterialReader({
                         setHasStudyPack(true)
                         if (onOpenStudyPack) onOpenStudyPack(material.id)
                       } catch (e) {
-                        console.warn(e)
+                        console.error("Study pack generation error:", e)
+                        setAiError(e.message || "Failed to generate study pack. Please try again.")
                       } finally {
                         setGeneratingPack(false)
                       }
@@ -633,7 +644,12 @@ function StudyMaterialReader({
                     type="button"
                     disabled={generatingCards}
                     onClick={async () => {
+                      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+                        setAiError("This feature requires an internet connection.")
+                        return
+                      }
                       setGeneratingCards(true)
+                      setAiError("")
                       try {
                         const res = await generateFlashcards({
                           studyMaterialId: material.id,
@@ -646,7 +662,8 @@ function StudyMaterialReader({
                           if (onOpenFlashcards) onOpenFlashcards(material.id)
                         }
                       } catch (e) {
-                        console.warn(e)
+                        console.error("Flashcards generation error:", e)
+                        setAiError(e.message || "Failed to generate flashcards. Please try again.")
                       } finally {
                         setGeneratingCards(false)
                       }
@@ -699,7 +716,12 @@ function StudyMaterialReader({
                       type="button"
                       disabled={analyzingPaper}
                       onClick={async () => {
+                        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+                          setAiError("This feature requires an internet connection.")
+                          return
+                        }
                         setAnalyzingPaper(true)
+                        setAiError("")
                         try {
                           await analyzeExamPaper({
                             studyMaterialId: material.id,
@@ -709,7 +731,8 @@ function StudyMaterialReader({
                           setHasPaperAnalysis(true)
                           if (onOpenExamAnalysis) onOpenExamAnalysis(material.id)
                         } catch (e) {
-                          console.warn(e)
+                          console.error("Paper analysis error:", e)
+                          setAiError(e.message || "The question paper analysis could not be completed.")
                         } finally {
                           setAnalyzingPaper(false)
                         }
