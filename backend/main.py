@@ -18,11 +18,16 @@ from services.embeddings import embed_text, embed_query, embed_batch
 from services.chunking import chunk_document_text
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("coursepilot.calendar")
+logger = logging.getLogger("coursepilot.backend")
+
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 load_dotenv()
+load_dotenv(os.path.join(backend_dir, ".env"))
 
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_KEY") or os.getenv("GOOGLE_API_KEY")
 google_client_id = os.getenv("GOOGLE_CLIENT_ID", "")
 google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
 google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "")
@@ -41,7 +46,7 @@ if supabase_url and supabase_key:
 calendar_token_store = {}
 
 if not api_key:
-    raise RuntimeError("GEMINI_API_KEY is not configured.")
+    logger.warning("GEMINI_API_KEY is not configured in environment. AI endpoints will operate with graceful fallbacks.")
 
 app = FastAPI(title="CoursePilot API", docs_url=None, redoc_url=None)
 
@@ -77,14 +82,21 @@ async def add_security_headers(request: Request, call_next):
 
 
 # Initialize Gemini SDK
-try:
-    from google import genai
-    client = genai.Client(api_key=api_key)
-    USE_NEW_SDK = True
-except ImportError:
-    import google.generativeai as genai_legacy
-    genai_legacy.configure(api_key=api_key)
-    USE_NEW_SDK = False
+client = None
+USE_NEW_SDK = False
+
+if api_key:
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        USE_NEW_SDK = True
+    except (ImportError, Exception):
+        try:
+            import google.generativeai as genai_legacy
+            genai_legacy.configure(api_key=api_key)
+            USE_NEW_SDK = False
+        except Exception as e:
+            logger.warning(f"Could not configure Gemini legacy SDK: {e}")
 
 
 class StudyAdviceRequest(BaseModel):
