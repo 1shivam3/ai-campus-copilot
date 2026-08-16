@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { getAcademicData, getClassSchedule } from "../lib/academicData"
 import { getSyncMetadata } from "../lib/offlineDb"
+import { formatRoom } from "../utils/classStatus"
 import { SkeletonGrid } from "../components/SkeletonLoader"
 import EmptyState from "../components/EmptyState"
 import ErrorState from "../components/ErrorState"
@@ -191,7 +192,7 @@ function MyAcademics({ profile }) {
                             👨‍🏫 {item.teacher_name || "Faculty N/A"}
                           </span>
                           <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700 border border-slate-200">
-                            📍 Room {item.room || "—"}
+                            📍 {formatRoom(item.room)}
                           </span>
                         </div>
                       </div>
@@ -273,7 +274,7 @@ function MyAcademics({ profile }) {
                                     </div>
 
                                     <p className="mt-1.5 text-[11px] text-slate-500 truncate">
-                                      👨‍🏫 {item.teacher_name || "Faculty N/A"} · 📍 {item.room || "Room N/A"}
+                                      👨‍🏫 {item.teacher_name || "Faculty N/A"} · 📍 {formatRoom(item.room)}
                                     </p>
                                   </div>
                                 </div>
