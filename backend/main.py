@@ -2341,9 +2341,11 @@ async def copilot_chat(request: CopilotChatRequest):
             }).execute()
             if new_conv.data:
                 conv_id = new_conv.data[0]["id"]
+            else:
+                conv_id = None
         except Exception as create_err:
             logger.warning(f"[COPILOT_CHAT] New conversation creation note: {create_err}")
-            conv_id = 1
+            conv_id = None
 
     # 2. Build Server-Side Academic Context
     from services.copilot_context import build_copilot_context

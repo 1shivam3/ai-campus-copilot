@@ -452,33 +452,75 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
   return response.json()
 }
 
-// ---------------------------------------------------------
-// AI STUDY COPILOT CHAT API
-// ---------------------------------------------------------
-
 export async function sendCopilotMessage({ message, userId, conversationId = null }) {
-  const response = await fetchWithTimeout(
-    `${API_URL}/api/copilot-chat`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/api/copilot-chat`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: message.trim(),
+          user_id: userId,
+          conversation_id: conversationId ? Number(conversationId) : null,
+        }),
       },
-      body: JSON.stringify({
-        message: message.trim(),
-        user_id: userId,
-        conversation_id: conversationId ? Number(conversationId) : null,
-      }),
-    },
-    45000
-  )
+      45000
+    )
 
-  if (!response.ok) {
+    if (response.ok) {
+      return await response.json()
+    }
+
+    // Graceful fallback if backend instance is deploying or returns 404
+    if (response.status === 404) {
+      console.warn("Copilot chat route 404, using fallback study advice pipeline...")
+      const fallbackAdvice = await generateStudyAdvice({
+        today: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+        topic_name: message.trim(),
+        user_id: userId,
+      })
+
+      if (fallbackAdvice?.answer) {
+        return {
+          status: "success",
+          conversation_id: conversationId,
+          message: fallbackAdvice.answer,
+          actions: [
+            { type: "start_focus", label: "Start 45m Focus Session", minutes: 45 },
+            { type: "open_timetable", label: "View Timetable" },
+          ],
+          sources: [],
+        }
+      }
+    }
+
     const errData = await response.json().catch(() => ({}))
     throw new Error(errData.detail || "Copilot message failed. Please try again.")
+  } catch (err) {
+    // If local dev server is running on port 8000, attempt direct local call
+    if (typeof window !== "undefined" && window.location.hostname === "localhost" && !API_URL.includes("localhost:8000")) {
+      try {
+        const localResp = await fetch("http://localhost:8000/api/copilot-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message.trim(),
+            user_id: userId,
+            conversation_id: conversationId ? Number(conversationId) : null,
+          }),
+        })
+        if (localResp.ok) {
+          return await localResp.json()
+        }
+      } catch (locErr) {
+        console.warn("Local backend fallback attempt notice:", locErr)
+      }
+    }
+    throw err
   }
-
-  return response.json()
 }
 
 
