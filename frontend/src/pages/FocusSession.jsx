@@ -136,22 +136,29 @@ function FocusSession({ user, recommendedTaskId, onReturnToDashboard }) {
       const task = tasks.find((t) => String(t.id) === selectedTask)
       if (!task) return
 
-      const { data: topics } = await supabase
-        .from("topics")
-        .select("id, mastery_score")
-        .eq("user_id", user.id)
-        .eq("subject", task.subject)
-        .order("mastery_score", { ascending: true })
-        .limit(1)
+      try {
+        const { data: stProgress } = await supabase
+          .from("student_topic_progress")
+          .select("id, mastery_score")
+          .eq("user_id", user.id)
+          .order("mastery_score", { ascending: true })
+          .limit(1)
 
-      const weakest = topics?.[0]
-      if (!weakest) return
-
-      const newMastery = calculateNewMastery(weakest.mastery_score, minutes)
-      await supabase
-        .from("topics")
-        .update({ mastery_score: newMastery })
-        .eq("id", weakest.id)
+        const weakest = stProgress?.[0]
+        if (weakest) {
+          const newMastery = calculateNewMastery(weakest.mastery_score, minutes)
+          await supabase
+            .from("student_topic_progress")
+            .update({
+              mastery_score: newMastery,
+              status: newMastery >= 80 ? "mastered" : newMastery >= 40 ? "in_progress" : "needs_revision",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", weakest.id)
+        }
+      } catch (stErr) {
+        console.warn("Topic progress mastery update note:", stErr)
+      }
     } catch (err) {
       console.error("Session finish note:", err)
     }

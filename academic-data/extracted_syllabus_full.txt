@@ -1,0 +1,1783 @@
+
+================================================================================
+FILE: BCSE-501, BCSE-501L (Data Structure & Algorithms).pdf
+================================================================================
+
+--- Page 1 ---
+ 
+            
+M.M. (DEEMED TO BE UNIVERSITY) , MULLANA (AMBALA) 
+ 
+ Batch 2025-2029  onwards 
+ 
+ 
+ 
+B. Tech. (3rd Sem) (Common for All Streams except CSE-Industry Integrated)  
+BCSE-501 (Data Structure & Algorithms) 
+L  T  P        Continuous evaluation 40 
+3  0  0        End semester exam     60   
+          Total marks  100   
+Credits     3.0 
+Course Objectives: 
+1.  Develop and analyse algorithms for linked list. 
+2.  To introduce the concepts of Tree and Graph and their traversal algorithms  
+3.  Implement various Hashing and Collision Resolution Technique 
+4.  To introduce various techniques for representation of the data in the real world  
+ 
+UNIT-I  
+Re-explore Linear Data Structure, Static and Dynamic Memory Management  
+Linked Lists: Introduction, singly linked list, representation of a linked list in memory, operations on a single linked list; Applications 
+of linked lists: Polynomial representation and sparse matrix manipulation. Types of linked lists: Circular linked li sts, doubly linked 
+lists; Linked list representation and operations of Stack, linked list representation and operations of queue  
+ 
+UNIT-II  
+Trees: Basic concept, binary tree, binary tree representation, array and linked representations, binary tree traversa l, binary tree 
+variants, threaded binary trees, application of trees.  
+ 
+UNIT-III 
+Binary search trees: Binary search trees, properties, and operations; Balanced search trees: AVL trees; Introduction to M -Way 
+search trees, B trees;  
+ 
+UNIT-IV 
+Graphs: Basic concept, graph terminology, Graph Representations - Adjacency matrix, Adjacency lists, graph implementation, Graph 
+traversals – BFS, DFS.  
+Hashing and collision: Introduction, hash tables, hash functions, collisions, applications of hashing.  
+ 
+Course Outcomes: After completion of this course, student will be able to: 
+i)   Select appropriate data structures as applied to specified problem definition.  
+ii)   Implement Linked list data structures. 
+iii)   Implement appropriate technique of tree and graph for given problem. 
+iv)   Implement real life applications using Hashing and Collision Resolution Technique.  
+ 
+Instructions for paper setter: All Questions are compulsory. The Question paper is divided in to four sections A, B, C and D. Section 
+A is compulsory and comprises of 12 questions of one mark each, 3 from each unit. The questions shall be asked in such a manner 
+that there are no direct answers including one word answer, fill in the blanks or multiple choice questions. Section B compri ses of 
+4 questions of 2 marks each, one from each unit. Section C Comprises of 4 questions of 4 marks each, one from each unit. Section 
+D Comprises of 4 questions of 6 marks each, one from each unit. There is no overall choice, however internal choice may be provided 
+in section C and D, if paper setter so desires. 
+ 
+Text Books:  
+1. Ellis Horowitz and Sartaj Sahni, “Fundamentals of Data Structures”, Illustrated Edition, Computer Science Press.  
+2. Seymour Lipschutz, “Data Structures”, Schaum's Outline Series, McGraw Hill Publication.  
+ 
+Reference Books: 
+1. R. L. Kruse, B.P. Leary and C.L Tondo, “Data structure and program design in C”, PHI.  
+2. A. V. Aho, J. E. Hopcroft and T. D. Ullman, “Data Structures and Algorithms”, Addison -Wesley. 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- Page 2 ---
+ 
+            
+M.M. (DEEMED TO BE UNIVERSITY) , MULLANA (AMBALA) 
+ 
+ Batch 2025-2029  onwards 
+ 
+ 
+ 
+B. Tech. (3rd Sem) (Common for All Streams except CSE-Industry Integrated)  
+BCSE-501L (Data Structure & Algorithms Lab) 
+L  T  P        Continuous evaluation 40 
+0  0  2        End semester exam     60   
+          Total marks  100   
+Credits     1.0 
+                                     
+Course Objectives: 
+1.   To assess how the choice of data structures and algorithm design methods impacts the performance of 
+programs. 
+2.   To choose the appropriate data structure and algorithm design method for a specified application. 
+3.   To solve problems using data structures such as linear lists, stacks, queues, binary trees, heaps binary 
+search trees, and graphs and writing programs for these solutions. 
+  
+List of Practical 
+1.     Declare a 2D Array with dimensions of 9 x 9. Implement the following operations on this array: 
+ i) Search   ii) Traversal   iii) Sum of all elements   iv) Insertion v) Deletion. 
+Use the learned concept of this practical to solve Su-Do-Ku Puzzle whose statement is: 
+Su-Do-Ku Puzzle –  
+A Sudoku is a problem where there are is an incomplete 9 x 9 table of numbers which must be filled according to 
+several rules: 
+ü Within any of the 9 individual 3 x 3 boxes, each of the numbers 1 to 9 must be found. 
+ü Within any column of the 9 x 9 grid, each of the numbers 1 to 9 must be found. 
+ü Within any row of the 9 x 9 grid, each of the numbers 1 to 9 must be found. 
+ 
+2.    Implement representation of sparse matrix using array and link list. 
+Use the learned concept of this practical to solve Conway Game of Life whose statement is: 
+Conway Game of Life – The project introduces the learner to the challenge of implementing a two-dimensional array 
+when the vast majority of the elements are empty, or they are zero. This has the learners explore how best to implement 
+a sparse matrix, tests the implementation using the Conway’s Game of Life and determines which is best. 
+ 
+3. Implement various operations of Stack. 
+Use the learned concept of this practical to solve Tower of Hanoi problem (with & without recursion) whose statement 
+is: 
+Tower of Hanoi – The Tower of Hanoi is a mathematical problem which consists of three rods and multiple disks. 
+Initially, all the disks are placed on one rod, one over the other in ascending order of size similar to a cone-shaped 
+tower. The objective of this problem is to move the stack of disks from the initial rod to another rod, following these 
+rules: 
+·     A disk cannot be placed on top of a smaller disk. 
+·     No disk can be placed on top of the smaller disk. 
+ 
+4. Implement various operations of Queue. 
+Use the learned concept of this practical to implement job scheduling algorithms used to solve Job scheduling 
+problem whose statement is: 
+Job Scheduling – Job scheduling is the process of allocating system resources to many different tasks / jobs by an 
+operating system (OS). The system handles prioritized job queues that are waiting CPU time and it should determine 
+which job to be taken from which queue and the amount of time to be allocated for the job.  
+ 
+5.    Implement memory representation of binary tree using array and link list. 
+ 
+6.    Represent a mathematical expression in the form of binary tree & evaluate that mathematical expression. 
+Use the learned concept of 5th & 6th practical to make  
+
+--- Page 3 ---
+ 
+            
+M.M. (DEEMED TO BE UNIVERSITY) , MULLANA (AMBALA) 
+ 
+ Batch 2025-2029  onwards 
+ 
+ 
+ 
+Expression Calculator which is used for Converting infix to postfix expressions and evaluating results using 
+trees data structure. 
+ 
+7.    Implement memory representation of given location in graph. 
+Use the learned concept of this practical to solve Travelling salesman problem which is the challenge of finding the 
+shortest yet most efficient route for a person to take given a list of specific destinations. 
+  
+Integrated Project (Mandatory) based upon the learnt concepts 
+Dictionary Management – In this project, students will be required to read a dictionary file into different data 
+structures (Array, Linked List, Stack, Queue) to perform various operations (Search, Insert (with sorting), Delete, 
+View) and improve searching using hashing techniques. 
+  
+Course Outcomes: After completion of this course, students will be able to: 
+1.   Write well-structured procedure-oriented programs. 
+2.   Implement the Stack ADT using both array based and linked-list based data structures. 
+3.   Implement the Queue ADT using both array based circular queue and linked-list based implementations. 
+4.   Implement binary search trees and graphs. 
+ 
+ 
+
+================================================================================
+FILE: BCSE-502 (Software Engineering).pdf
+================================================================================
+
+--- Page 1 ---
+BCSE-502
+
+================================================================================
+FILE: BCSE-502L (Software Engineering Lab).pdf
+================================================================================
+
+--- Page 1 ---
+Batch 2025-2029 onwards M.M. (DEEMED TO BE UNIVERSITY), MULLANA (AMBALA) 
+ 
+B. Tech. (3rd Sem) 
+(Common for CSE, CSE with Specialization in Data Science, CSE with specialization in Cloud Technology & Information 
+Security, CSE with specialization in Big Data and Analytics, CSE with specialization in Full Stack Development) 
+BCSE-502L (Software Engineering Lab) 
+ 
+L T P Continuous evaluation 60 
+0 0 2 End semester exam 40 
+   Total marks 100 
+   Credits 1.0 
+Course Objectives: 
+1. Identify complex engineering problems by applying principles of software engineering, and testing. 
+2. To gain software testing experience by applying software testing knowledge and methods to practice-oriented software 
+testing projects. 
+3. To provide an idea of using various testing techniques in the software industry. 
+4. To analyze the processes and products to be tested and use engineering judgment to draw conclusions. 
+List of Practical 
+1. Create Software Requirement Specification (SRS) of Bank Application Management. 
+2. Create Use Case, Class and object diagram of Bank Application Management. 
+3. Implement Activity, Sequence Diagram for Bank Application System. 
+4. Create RTM (Requirement Traceability Matrix) for the given scenario. 
+5. Create ETVX model for the given scenario. 
+6. Create test cases for ATM transactions using any White Box technique. 
+7. Create test cases for ATM transactions using any Black Box technique. 
+8. Tool Installation: 1) JIRA 2) MANTIS 3) Bugzilla 
+Task : Analysis Report : As you have gone through all the three tools you need to now compare and contrast the similarities and 
+the differences between these tools and find which tool will be relevant for which kind of projects .You need to create the analysis 
+report based on your research and tool knowledge you have gained. 
+9. Unit Testing Tools - Junit : Create a program of sum of numbers. Create test cases for the same using junit. Get the result 
+with the help of test runner. 
+10. Defect Management Tools – Mantis /Bugzilla /Zira :  Do the following using MantisBT / Bugzilla 
+Create a Project named Prj<Toolname><YourName> 
+1. Create four users - Administrator, Tester 1, Tester 2 & Developer1 and add to the project created. 
+2. Create a custom field and link it to the project created. 
+3. Create 4 bugs (of different severity & priority) using the tool in the project created. 
+4. Assign these bugs to the administrator and/or developer. 
+11. TESTING PROJECT : ATM Simulator Project 
+Project Instructions: Download "ATM Simulation Project.zip" and load on your Eclipse. 
+1. You will work as a Testing team in an organization. 
+2. Pick a name for your Team 
+3. Each one of you in the team would be playing one of the 3 roles in a Testing Project - Test Manager, Test Analyst and 
+Tester. 
+4. Find a set of Test Plan Templates. Use them to create your deliverables. 
+5. You will also be required to give a presentation at the end of your project as a team. 
+Overview: The Project has a four-phase exercise work that consists of the followingassignments: 
+1. Phase 1: Test case design (individual assignment) 
+2. Phase 2: Test execution and reporting (individual assignment) 
+3. Phase 3: Test planning (group assignment) 
+4. Phase 4: Presentation (group assignment) 
+Exercise phases: Exercise phases are briefly described below: 
+Phase 1: Test case design (individual assignment): In the first and second phase you will do system level functional testing 
+for the ATM Simulator Project. In the first phase the test cases are designed using several test design techniques that you h ave 
+learned. You will create 10 Test cases and log them in the Testcase template. You have  to create and run any 5 test cases 
+using JUnit. 
+Phase 2: Test execution and Reporting (individual assignment): In the second phase the tests are executed and test 
+results reported. Use the template for Defect Log and Test Summary Report to submit these. 
+Phase 3: Test planning (group assignment): In this phase, the system testing of the ATM Simulator project is planned in 
+groups. At this point you should have adequate skills and knowledge of testing techniques and tools as well as experience of 
+
+--- Page 2 ---
+Batch 2025-2029 onwards M.M. (DEEMED TO BE UNIVERSITY), MULLANA (AMBALA) 
+ 
+using the software under test in order to do the planning work. In this phase you will use this knowledge to write a Test plan 
+document. In this phase, we have a fictional case description that outlines the context where the testing project is conducted 
+and gives background information to assist you in test planning. You will also create RACI matrix and Requirements 
+Traceability Matrix in this phase. 
+Phase 4: Presentation (group assignment): In phase 4, student groups perform a formal presentation of a selected 
+document and how the group went about performing the exercise. In the presentation session, only 15 minutes is reserved per team. 
+Tools Required: In Exercise Phases 1-2, the program to be tested is the ATM Simulator. ATM Simulator is an applet written in Java. 
+JUnit should be used for creating any 5 test cases in the exercise phase 1.MantisBT should be used for reporting defects in the 
+exercise phase 2.Test plans and reports should be written using standard word processing and spreadsheet software (e.g. 
+Word and Excel). Accepted document delivery formats are Word (doc), pdf, and Excel formats. 
+12. Automation Testing: Install Test Automation Tool - TestCompletePick a Desktop application (of your choice) and perform the 
+following Automation tutorial. 
+13. TEST AUTOMATION PROJECT : Web Automation Test Project 
+Test Scenario 
+For this project, you need to use TestComplete automation tool to test the dummy web app accessible at https://www.phptravels.net. 
+This website is a travel portal that allows customers to book hotels, flights, tours etc. 
+Note: The demo usernames and passwords are below: 
+ Url Demo Username Demo Password 
+Homepage Front-End https://www.phptravels.net user@phptravels.com demouser 
+Administrator Back-End https://www.phptravels.net/admin admin@phptravels.com demoadmin 
+Supplier back-End https://www.phptravels.net/supplier supplier@phptravels.com demosupplier 
+In this project, you have to create test cases to test the following flows: 
+1. Scenario 1 
+• Login as a Customer 
+• Book a hotel 
+• Confirm booking 
+2. Scenario 2 
+• Login as an Administrator 
+• Go to “Manage Offers” 
+• Add an Offer 
+• Logout as Administrator 
+3. Scenario 3 
+• Login as an Supplier 
+• Choose a workflow of your choice and create a test 
+4. Scenario 4 
+• Pick any one scenario from above and create Cross Browser Tests for that scenario 
+Course Outcomes: After the completion of this course, the students will be able to: 
+1. Formulate, solve and test complex engineering problems by applying principles of software engineering, and testing. 
+2. Conduct appropriate experimentation, analyze and interpret data, and use engineering judgment to draw conclusions. 
+3. Demonstrate an ability to use the tools necessary for engineering practice. 
+4. Apply different types of testing for real life  
+
+================================================================================
+FILE: BCSE-503 L(Database Management System Lab).docx.pdf
+================================================================================
+
+--- Page 1 ---
+             M.M.  (DEEMED  TO  BE  UNIVERSITY)  ,  MULLANA  (AMBALA)  
+ Batch  2020-2024  onwards  
+ B.  Tech.  (3rd  Sem)  (Common  for  CSE,  CSE  with  Specialization  in  Data  Science,  CSE  with  specialization  in  Cloud  Technology  &  Information  Security,  CSE  with  
+specialization
+ 
+in
+ 
+Big
+ 
+Data
+ 
+and
+ 
+Analytics,
+ 
+CSE
+ 
+with
+ 
+specialization
+ 
+in
+ 
+Full
+ 
+Stack
+ 
+Development,
+ 
+CSE
+ 
+with
+ 
+specialization
+ 
+in
+ 
+AI
+ 
+&
+ 
+Machine
+ 
+Learning)
+ BCSE-503L  (Database  Management  System  Lab)  L   T   P         Continuous  evaluation   60  0   0   2                  End  semester  exam       40               Total  marks    100      Credits      1.0  Course  Objectives:  i)  Creating  and  Altering  Tables  with  necessary  constraints,  keys  and  data  types. ii)  Inserting  data  and  manipulating  data  as  per  needs. iii)  Writing  MySQL  Queries  to  retrieve  required  information  from  single/multiple  tables. iv)  Implementing  Operations  on  relations  (tables)  using  MySQL.  List  of  Practical  1.      To  Draw  ER  Model  for  Library  DBMS.  2.  To  draw  Relational  model  corresponding  to  ER  Model.  3.  To  Create  Tables  for  Library  DBMS.  4.  To  Describe  the  Structure  of  Tables  of  Library  DBMS.  5.  To  Insert  Data  In  the  Tables  of  Library  DBMS.  6.  To  Select  Data  From  Library  Database  Using  Various  Operators.  7.  To  Describe  MySQL  Operation  including  Group  By  Clause  and  Use  of  Sub  Queries.  8.  To  Describe  Various  MySQL  Functions.  9.  To  Describe  MySQL  Conversion  Functions.  10.  To  Apply  Privileges  and  Referential  Integrity  Constraints.     11.  To  implement  various  joins  in  MySql.  12.  To  implement  Regular  Expression  for  searching  in  MySql.  Projects:   1)  Consider  the  company  database  as  shown  in  Figure  1,  which  keeps  track  of  employees,  departments,  and  projects.   ●  The  company  is  organized  into  departments.  Each  department  has  a  unique  name,  a  unique  number,  and  a  particular  
+employee
+ 
+who
+ 
+manages
+ 
+the
+ 
+department.
+ 
+A
+ 
+department
+ 
+may
+ 
+have
+ 
+several
+ 
+locations.
+ 
+ ●  A  department  controls  a  number  of  projects;  each  of  which  has  a  unique  name,  a  unique  number,  and  a  single  location.  ●  We  store  each  employee’s  name,  emp_id,  address,  salary,  sex,  and  birth_date.  An  employee  is  assigned  to  one  
+department,
+ 
+but
+ 
+may
+ 
+work
+ 
+on
+ 
+several
+ 
+projects,
+ 
+which
+ 
+are
+ 
+not
+ 
+necessarily
+ 
+controlled
+ 
+by
+ 
+the
+ 
+same
+ 
+department.
+ 
+We
+ 
+also
+ 
+keep
+ 
+track
+ 
+of
+ 
+the
+ 
+direct
+ 
+supervision
+ 
+of
+ 
+each
+ 
+employee.
+ ●  We  want  to  keep  track  of  the  dependants  of  each  employee  for  insurance  purpose.  We  keep  each  dependant’s  name,  
+sex,
+ 
+birth_date,
+ 
+and
+ 
+relationship
+ 
+to
+ 
+the
+ 
+employee.
+           Figure  1:  Schema  diagram  for  the  COMPANY  relational  database  schema.             
+  
+
+
+--- Page 2 ---
+             M.M.  (DEEMED  TO  BE  UNIVERSITY)  ,  MULLANA  (AMBALA)  
+ Batch  2020-2024  onwards  
+  2)  Consider  the  AIRLINE  relational  database  schema,  which  describes  a  database  for  airline  flight  information  as  shown  in  Figure  2.  
+Each
+ 
+FLIGHT
+ 
+is
+ 
+identified
+ 
+by
+ 
+a
+ 
+Flight_number,
+ 
+and
+ 
+consists
+ 
+of
+ 
+one
+ 
+or
+ 
+more
+ 
+FLIGHT_LEGs
+ 
+with
+ 
+Leg_numbers
+ 
+1,
+ 
+2,
+ 
+3,
+ 
+and
+ 
+so
+ 
+on.
+ 
+Each
+ 
+FLIGHT_LEG
+ 
+has
+ 
+scheduled
+ 
+arrival
+ 
+and
+ 
+departure
+ 
+times,
+ 
+airports,
+ 
+and
+ 
+one
+ 
+or
+ 
+more
+ 
+LEG_INSTANCEs—one
+ 
+for
+ 
+each
+ 
+Date
+ 
+on
+ 
+which
+ 
+the
+ 
+flight
+ 
+travels.
+ 
+FAREs
+ 
+are
+ 
+kept
+ 
+for
+ 
+each
+ 
+FLIGHT.
+ 
+For
+ 
+each
+ 
+FLIGHT_LEG
+ 
+instance,
+ 
+SEAT_RESERVATIONs
+ 
+are
+ 
+kept,
+ 
+as
+ 
+are
+ 
+the
+ 
+AIRPLANE
+ 
+used
+ 
+on
+ 
+the
+ 
+leg
+ 
+and
+ 
+the
+ 
+actual
+ 
+arrival
+ 
+and
+ 
+departure
+ 
+times
+ 
+and
+ 
+airports.
+ 
+An
+ 
+AIRPLANE
+ 
+is
+ 
+identified
+ 
+by
+ 
+an
+ 
+Airplane_id
+ 
+and
+ 
+is
+ 
+of
+ 
+a
+ 
+particular
+ 
+AIRPLANE_TYPE.
+ 
+CAN_LAND
+ 
+relates
+ 
+AIRPLANE_TYPEs
+ 
+to
+ 
+the
+ 
+AIRPORTs
+ 
+at
+ 
+which
+ 
+they
+ 
+can
+ 
+land.
+ 
+An
+ 
+AIRPORT
+ 
+is
+ 
+identified
+ 
+by
+ 
+an
+ 
+Airport_code.
+ 
+Consider
+ 
+an
+ 
+update
+ 
+for
+ 
+the
+ 
+AIRLINE
+ 
+database
+ 
+to
+ 
+enter
+ 
+a
+ 
+reservation
+ 
+on
+ 
+a
+ 
+particular
+ 
+flight
+ 
+or
+ 
+flight
+ 
+leg
+ 
+on
+ 
+a
+ 
+given
+ 
+date.
+ ●  Give  the  operations  for  this  update.   ●  What  types  of  constraints  would  you  expect  to  check?  ●  Which  of  these  constraints  are  key,  entity  integrity,  and  referential  integrity  constraints,  and  which  are  not?  ●  Specify  all  the  referential  integrity  constraints  that  hold  on  the  schema.                Figure  2:  The  AIRLINE  relational  database  schema.                   Course  Outcomes:  After  completing  this  course,  students  will  be  able  to:  i)  Design  a  Database  without  anomalies  as  per  requirements.  ii)  Construct  complex  queries  to  retrieve  required  information  from  database.  iii)  To  implement  various  integrity  constraints.  iv)  Creating  views  and  manipulating  them  as  needed.  
+ 
+  
+
+
+================================================================================
+FILE: BCSE-503L(Database Management System).docx.pdf
+================================================================================
+
+--- Page 1 ---
+             M.M.  (DEEMED  TO  BE  UNIVERSITY)  ,  MULLANA  (AMBALA)  
+Batch  2020-2024  onwards  
+ B.  Tech.  (3rd  Sem)   (Common  for  CSE,  CSE  with  Specialization  in  Data  Science,  CSE  with  specialization  in  Cloud  Technology  &  Information  Security,  CSE  with  
+specialization
+ 
+in
+ 
+Big
+ 
+Data
+ 
+and
+ 
+Analytics,
+ 
+CSE
+ 
+with
+ 
+specialization
+ 
+in
+ 
+Full
+ 
+Stack
+ 
+Development,
+ 
+CSE
+ 
+with
+ 
+specialization
+ 
+in
+ 
+AI
+ 
+&
+ 
+Machine
+ 
+Learning)
+ BCSE-503  (Database  Management  System)   L   T   P        Continuous  evaluation   40     3   0   0         End  semester  exam       60             Total  marks    100    Credits      3.0  Course  Objectives:  i)  To  understand  the  concept  of  DBMS  and  RDBMS.  ii)  To  study  the  physical  and  logical  database  designs  &  schema.  iii)  To  understand  DDL,  DQL,  DML  and  DCL  to  create,  query,  update,  and  manage  a  database.  iv)  To  impart  knowledge  about  the  concept  of  Normalization  to  design  &  build  a  database  system  for  different  applications.  v)  To  impart  knowledge  about  concurrency  control,  recovery  techniques  and  database  security  of  database  systems.   
+ Unit:-1                    (9  Hours)  Database  system  architecture-  Data  Abstraction,  Data  Independence,  Various  views  of  data,  data  models,  Schemes,  Logical  
+database
+ 
+design,
+ 
+Database
+ 
+design
+ 
+issues,
+ 
+Responsibility
+ 
+of
+ 
+database
+ 
+administrator,
+ 
+Three
+ 
+levels
+ 
+architecture
+ 
+of
+ 
+database
+ 
+systems,
+ 
+Introduction
+ 
+to
+ 
+Client/Server
+ 
+architecture.
+ 
+Data
+ 
+Definition
+ 
+Language
+ 
+(DDL),
+ 
+Data
+ 
+Manipulation
+ 
+Language
+ 
+(DML).
+ 
+Data
+ 
+models-
+ 
+Entity-relationship
+ 
+model,
+ 
+network
+ 
+model,
+ 
+relational
+ 
+and
+ 
+object
+ 
+oriented
+ 
+data
+ 
+models,
+ 
+integrity
+ 
+constraints,
+ 
+data
+ 
+manipulation
+ 
+operations.
+ Unit:-2                    (9  Hours)  Relational  query  languages-  Relational  algebra,  Tuple  and  domain  relational  calculus,  SQL3,  DDL  and  DML  constructs,  Open  source  
+and
+ 
+Commercial
+ 
+DBMS
+ 
+-
+ 
+MYSQL,
+ 
+ORACLE,
+ 
+DB2,
+ 
+SQL
+ 
+server.
+ 
+Relational
+ 
+database
+ 
+design-
+ 
+Domain
+ 
+and
+ 
+data
+ 
+dependency,
+ 
+Armstrong's
+ 
+axioms,
+ 
+Normal
+ 
+forms,
+ 
+Dependency
+ 
+preservation,
+ 
+Lossless
+ 
+design.
+ 
+Query
+ 
+processing
+ 
+and
+ 
+optimization-
+ 
+Evaluation
+ 
+of
+ 
+relational
+ 
+algebra
+ 
+expressions,
+ 
+Query
+ 
+equivalence,
+ 
+Join
+ 
+strategies,
+ 
+Query
+ 
+optimization
+ 
+algorithms.
+ Unit:-3                     (9  Hours)  Storage  strategies-  Indices,  B-trees,  hashing.  Introduction  to  Query  Languages-  QBE,  integrity  constraints,  functional  dependencies  
+&
+ 
+normalization
+ 
+(Normal
+ 
+forms
+ 
+–
+ 
+up
+ 
+to
+ 
+5th
+ 
+Normal
+ 
+Form).
+ 
+Transaction
+ 
+processing-
+ 
+Concurrency
+ 
+control,
+ 
+ACID
+ 
+property,
+ 
+Serializability
+ 
+of
+ 
+scheduling,
+ 
+Locking
+ 
+and
+ 
+timestamp
+ 
+based
+ 
+schedulers,
+ 
+Multi-version
+ 
+and
+ 
+optimistic
+ 
+Concurrency
+ 
+Control
+ 
+schemes,
+ 
+Database
+ 
+recovery.
+ Unit:-4                     (9  Hours)  Database  Security-  Authentication,  Authorization  and  access  control,  DAC,  MAC  and  RBAC  models,  Intrusion  detection,  SQL  
+injection.
+ 
+Advanced
+ 
+topics-
+ 
+Object
+ 
+oriented
+ 
+and
+ 
+object
+ 
+relational
+ 
+databases,
+ 
+Logical
+ 
+databases,
+ 
+Web
+ 
+databases,
+ 
+Distributed
+ 
+databases,
+ 
+Data
+ 
+warehousing
+ 
+and
+ 
+data
+ 
+mining.
+ Course  Outcomes:  After  completion  of  this  course,  student  should  be  able  to:  i)  Understand  the  concept  of  DBMS  and  RDBMS.  ii)  Acquire  knowledge  about  the  physical  and  logical  database  designs  &  schema.  iii)  Understand  DDL,  DQL,  DML  and  DCL  to  create,  query,  update,  and  manage  a  database.  iv)  Impart  knowledge  about  the  concept  of  Normalization  to  design  and  build  a  database  system  for  different  applications.    v)  Explain  about  concurrency  control,  recovery  techniques  and  database  security  of  database  systems.  
+Instructions  for  paper  setter:  All  Questions  are  compulsory.  The  Question  paper  is  divided  in  to  four  sections  A,  B,  C  and  D.  
+Section
+ 
+A
+ 
+is
+ 
+compulsory
+ 
+and
+ 
+comprises
+ 
+of
+ 
+12
+ 
+questions
+ 
+of
+ 
+one
+ 
+mark
+ 
+each,
+ 
+3
+ 
+from
+ 
+each
+ 
+unit.
+ 
+The
+ 
+questions
+ 
+shall
+ 
+be
+ 
+asked
+ 
+in
+ 
+such
+ 
+a
+ 
+manner
+ 
+that
+ 
+there
+ 
+are
+ 
+no
+ 
+direct
+ 
+answers
+ 
+including
+ 
+one
+ 
+word
+ 
+answer,
+ 
+fill
+ 
+in
+ 
+the
+ 
+blanks
+ 
+or
+ 
+multiple
+ 
+choice
+ 
+questions.
+ 
+Section
+ 
+B
+ 
+comprises
+ 
+of
+ 
+4
+ 
+questions
+ 
+of
+ 
+2
+ 
+marks
+ 
+each,
+ 
+one
+ 
+from
+ 
+each
+ 
+unit.
+ 
+Section
+ 
+C
+ 
+Comprises
+ 
+of
+ 
+4
+ 
+questions
+ 
+of
+ 
+4
+ 
+marks
+ 
+each,
+ 
+one
+ 
+from
+ 
+each
+ 
+unit.
+ 
+Section
+ 
+D
+ 
+Comprises
+ 
+of
+ 
+4
+ 
+questions
+ 
+of
+ 
+6
+ 
+marks
+ 
+each,
+ 
+one
+ 
+from
+ 
+each
+ 
+unit.
+ 
+There
+ 
+is
+ 
+no
+ 
+overall
+ 
+choice,
+ 
+however
+ 
+internal
+ 
+choice
+ 
+may
+ 
+be
+ 
+provided
+ 
+in
+ 
+section
+ 
+C
+ 
+and
+ 
+D,
+ 
+if
+ 
+paper
+ 
+setter
+ 
+so
+ 
+desires.
+  Text  Books:  1.   Abraham  Silberschatz,  Henry  F.  Korth,  S.  Sudarshan  ,  “Database  System  Concepts”,  6th  Edition,  McGraw-Hill.  2.   J.  D.  Ullman,  “Principles  of  Database  and  Knowledge  –  Base  Systems”,  Vol  1,  Computer  Science  Press.  Reference  Books:  1.   R.  Elmasri  and  S.  Navathe,  “Fundamentals  of  Database  Systems”,  5th  Edition,  Pearson  Education.  
+  
+
+--- Page 2 ---
+             M.M.  (DEEMED  TO  BE  UNIVERSITY)  ,  MULLANA  (AMBALA)  
+Batch  2020-2024  onwards  
+ 2.   Serge  Abiteboul,  Richard  Hull,  Victor  Vianu,  “Foundations  of  Databases”,  Reprint,  Addison-Wesley.  
+  
+
+================================================================================
+FILE: BCSE-504 (Object Oriented Programming Using JAVA).pdf
+================================================================================
+
+--- Page 1 ---
+Batch 2025-2029 onwards M.M. (DEEMED TO BE UNIVERSITY), MULLANA (AMBALA) 
+ 
+B. Tech. (3rd Sem) 
+(Common for CSE, CSE with Specialization in Data Science, CSE with specialization in Cloud Technology & 
+Information Security) 
+BCSE-504 (Object Oriented Programming using JAVA) 
+L T P Continuous evaluation 40 
+3 0 0 End semester exam 60 
+Total marks 100 
+Credits 3.0 
+Course Objectives: 
+1. To introduce the fundamentals of Object-Oriented Programming and Java programming environment. To acquire 
+knowledge about Java programming language. 
+2. To develop programming skills using classes, objects, inheritance, polymorphism, packages, and interfaces. 
+3. To familiarize students with exception handling and multithreading concepts for developing robust applications. 
+4. To enable students to design and develop GUI-based applications using AWT, and event handling techniques. 
+ 
+               Unit:-1 
+Object Oriented Programming: Foundation to concept of Object oriented programming, Features of object oriented 
+programming languages, Procedural Programming vs Object Oriented Programming, Advantages of Object Oriented 
+Programming. History and features of Java language, Java Developm ent Kit, Java Virtual Machine, Java API, 
+Command line arguments, Visual Studio Code for Java programming.   
+ 
+Java Basics: Data Types, Variables and their Scope, Final Variables, Static variables, Operators, Control Flow-Block 
+Scope, Loops, Conditional Statements, Break and Continue Statements, Arrays and string class, garbage collection.   
+ 
+Unit:-2 
+Core OOP Programming:  Classes and Objects, Pillars of Object Oriented Programming, Methods, Constructors, 
+Types of constructors, Access qualifiers. 
+ 
+Inheritance: Inheritance concept, Benefit of Inheritance, Types of inheritance, Using super and final with inheritance, 
+Polymorphism and its type : Method overriding & method Overloading , Abstract classes.  
+ 
+Packages and Interface:  Defining a Package, Access protection, importing packages, defining an interface, 
+implementing interfaces, Extending interface. 
+ 
+Unit:-3   
+Exception Handling: Types of Exceptions, Handling of Exception using try, catch and finally, Multiple catch clauses, 
+Nested try statements, throw and throws, Built -in exceptions, User defined exceptions, Checked and unchecked 
+exceptions. 
+ 
+Multithreading: Differences between thread -based multitasking and process -based multitasking. Thread life cycle, 
+Types of creating threads, thread priorities, synchronizing threads, inter thread communication. 
+ 
+Unit:-4 
+GUI Programming – AWT classes, working with Frame wind ow, Graphics class, AWT controls, layout managers, 
+Designing menus and dialog boxes. Swings. 
+ 
+Event Handling: Delegation Event Model, Event classes and event listener interfaces, Handling mouse and keyboard 
+events, Adapter classes, Inner classes. 
+Advanced OOP Concept and Design Applications: SOLID Principles-Single Responsibility, Open-Closed Principle 
+Case Study: 1. Learning Management System (LMS) – Design and development of a Learning Management System 
+using Java to manage students, instructors, courses, enrollments, assignments, and assessments. The case study 
+demonstrates the application of Object -Oriented Programming concepts such as encapsulatio n, inheritance, 
+polymorphism, and abstraction, along with interfaces, packages, exception handling, collections framework, and GUI 
+development using AWT and Swing. It provides practical exposure to designing user -friendly and industry-oriented 
+software applications using Java.  
+1. Online Shopping System (E-Commerce Application) – Analysis and implementation of an Online Shopping System 
+using Java for managing customers, products, shopping carts, and order processing. The case study emphasizes the 
+
+--- Page 2 ---
+Batch 2025-2029 onwards M.M. (DEEMED TO BE UNIVERSITY), MULLANA (AMBALA) 
+ 
+application of Object -Oriented Programming principles including encapsulation, inheri tance, polymorphism, and 
+abstraction, along with interfaces, packages, exception handling, collections framework, and GUI development using 
+AWT and Swing. It enables students to gain practical experience in developing interactive and object-oriented software 
+applications. 
+             
+                    Course Outcomes: After completion of this course, students will be able to:  
+1. Apply Java programming fundamentals and object-oriented concepts to develop simple Java applications. 
+2. Design object-oriented solutions using classes, inheritance, polymorphism, packages, and interfaces. 
+3. Implement exception handling and multithreading techniques in Java programs. 
+4. Develop GUI-based applications using AWT components, and event-driven programming. 
+ 
+ 
+Instructions for paper setter: All Questions are compulsory. The Question paper is divided in to four sections A, B, 
+C and D. Section A is compulsory and comprises of 12 questions of one mark each, 3 from each unit. The questions 
+shall be asked in such a manner that there are no direct answers including one word answer, fill in the blanks or multiple 
+choice questions. Section B comprises of 4 questions of 2 marks each, one from each unit. Section C Comprises of 4 
+questions of 4 marks each, one from each unit. Section D 
+Comprises of 4 questions of 6 marks each, one from each unit. There is no overall choice, however internal choice may 
+be provided in section C and D, if paper setter so desires. 
+Text Books: 
+1. “Core Java Volume-I and II” 2nd edition-Sun Micro System. 
+2. Java: The Complete Reference, Herbert Schildt, McGraw Hill Education. 
+Reference Books: 
+1. Programming with Java, E. Balaguruswamy, McGraw Hill Education. 
+2. Rick Dranell , “HTML 4 Unleashed”, Second edition, Tech media publication. 
+3. Head First Java, O'Reilly Media. 
+4. Object-Oriented Programming with Java, McGraw Hill Education. 
+5. Java How to Program, Pearson Education. 
+ 
+
+================================================================================
+FILE: BCSE-504L (Object Oriented Programming using JAVA Lab).pdf
+================================================================================
+
+--- Page 1 ---
+Batch 2025-2029 onwards M.M. (DEEMED TO BE UNIVERSITY) , MULLANA (AMBALA) 
+ 
+B. Tech. (3rd Sem) 
+(Common for CSE, CSE with Specialization in Data Science, CSE with specialization in Cloud Technology & Information Security, CSE with specialization in Big 
+Data and Analytics, CSE with specialization in Full Stack Development, CSE with specialization in AI & Machine Learning) 
+BCSE-504L (Object Oriented Programming using JAVA Lab) 
+L T P Continuous evaluation 60 
+0 0 2 End-of-semester exam 40 
+   Total marks 100 
+ 
+Course Objectives 
+1. To introduce the fundamentals of Object -Oriented Programming and Java programming environment. To acquire knowledge about 
+Java programming language. 
+2. To develop programming skills using classes, objects, inheritance, polymorphism, packages, and interfaces.  
+3. To familiarize students with exception handling and multithreading concepts for developing robust applications.  
+4. To enable students to design and develop GUI -based applications using AWT, and event handling techniques.  
+ 
+List of Experiments 
+1. Consider the user has N eggs. Then display the no of eggs in gross (144 eggs make one gross), the number of eggs 
+in a dozen (12 eggs make one dozen), and the no of eggs that are  left out remaining. The total no of eggs can be 
+obtained as input through the console. The program should display how many gross, how many d ozen, and how 
+many leftover eggs the user has. For example, if the input is 1342 eggs, the program should respond with: "Your 
+number of eggs is 9 gross, 3 dozen, and 10."  
+ 
+2. Get two numbers as input from the user through the console, swap the values of t he two numbers without using a 
+temporary variable, and display the same.  
+ 
+3. Tax slabs for general 0 to 1,80,000 No tax,1,80,001 to 5,00,000 10%,5,00,001 to 8,00,000 20%, Above 8,00,000 
+30%. Income tax slabs for Women 0 to 1,90,000 No tax, 1,90,001 to 5,0 0,000 10%, 5,00,001 to 8,00,000 20%, 
+Above 8,00,000 30%. Write if statements to achieve this. Make sure that you indent the code well so that it is 
+readable.  
+ 
+4. Create a class called Calculator that has different add methods. Overload the methods with different parameters.  
+ 
+5. Demonstrate the concept of a user-defined package using the following scenario: Create a new project in which 
+you create a package named org.animals. In that, create various classes such as Lion, Monkey, and Elephant. In each 
+class, create data members such as colour, weight,  and age. Create methods like is Vegetarian, canClimb, getSound. 
+Create another project , and in it create a package called zoo. Create a class called VandalurZoo, create objects for 
+the animals in the zoo, and print the characteristics of each animal.  
+ 
+6. WAP to demonstrate the concept of Method Overriding.  
+ 
+7. WAP to implement the concept of Interface and Abstract class.  
+ 
+8. WAP to implement the concept of Exception Handling by using try, catch, and finally.  
+ 
+9. WAP to create three threads and a for loop from 1 to 10 and utilise context switching, sleep and other important 
+methods under the Thread class.  
+ 
+10.WAP to demonstrate the concept of GUI with Event handling using Swing and AWT.  
+ 
+Projects : 
+• Learning Management System (LMS) 
+• Online Shopping System (E-Commerce Application) 
+ 
+Course Outcomes: After completion of this course, students will be able to:  
+1. Apply Java programming fundamentals, operators, control structures, and input/output techniques to solve computational 
+problems. 
+2. Design and develop object-oriented applications using classes, objects, methods, constructors, overloading, and packages.  
+3. Implement object-oriented principles such as inheritance, polymorphism, abstract classes, and interfaces in so ftware 
+development. 
+4. Develop robust Java applications using exception handling and multithreading concepts.  
+5. Design and implement event-driven graphical user interfaces using AWT and Swing for interactive applications.  
+
+--- Page 2 ---
+Batch 2025-2029 onwards M.M. (DEEMED TO BE UNIVERSITY) , MULLANA (AMBALA) 
+ 
+Text Books: 
+1. “Core Java Volume-I and II” 2nd edition-Sun Micro System. 
+2. Java: The Complete Reference, Herbert Schildt, McGraw Hill Education. 
+Reference Books: 
+1. Programming with Java, E. Balaguruswamy, McGraw Hill Education. 
+2. Rick Dranell , “HTML 4 Unleashed”, Second edition, Tech media publication.  
+3. Head First Java, O'Reilly Media. 
+4. Object-Oriented Programming with Java, McGraw Hill Education. 
+5. Java How to Program, Pearson Education. 
+ 
+ 
+
+================================================================================
+FILE: BCSE-505- (Discrete Structure) (2).pdf
+================================================================================
+
+--- Page 1 ---
+ 
+            
+M.M. (DEEMED TO BE UNIVERSITY) , MULLANA (AMBALA) 
+ 
+ Batch 2025-2029  onwards 
+ 
+ 
+ 
+B. Tech. (4th Sem) (Common for All Streams except CSE-Industry Integrated)  
+BCSE-505 (Discrete Structures) 
+L  T  P        Continuous evaluation 40 
+3  0  0        End semester exam     60   
+          Total marks  100   
+Credits     3.0 
+Course Objectives: 
+1.  To get familiar and understand the fundamental notions in discrete mathematics  
+2.  To understand and demonstrate the basic concept of an algorithm and its application in combinatorial mathematics  
+3.  To identify the basic properties of graphs and trees and model simple applications  
+Unit – I 
+Set Theory And Logic  - Sets, Functions, Relations, Equivalence Relation, Poset. Functions Logic: Propositional Logic, 
+Truth Tables, Tautologies, Resolution Proof System, Predicate Logic. 
+  
+Unit – II 
+Induction And Combinatorics - Peano's Axioms - Mathematical Induction - Pigeon-Hole Principle - Principle Of Inclusion 
+And Exclusion - Review Of Permutations And Combinations - Distribution Problems - Derangements - Bijection Principle. 
+   
+Unit – III 
+Linear Algebra and Recurrence Relations - Linear Algebra: Vector Space, Basis, Dime nsion, Orthogonality. Recurrence 
+Relations: Homogeneous and Inhomogeneous Recurrences and Their Solutions - Solving Recurrences Using Generating 
+Functions. 
+  
+Unit – IV 
+Graph Theory- Definitions And Basic Results - Representation Of A Graph By A Matrix And Adjacency List - Trees - Cycles 
+- Properties - Paths And Connectedness - Subgraphs - Graph Isomorphism - Operations On Graphs - Vertex And Edge 
+Cuts - Vertex And Edge Connectivity. 
+ 
+Course Outcomes: After completion of this course, student will be able to: 
+i) Ability to distinguish between the notion of discrete and continuous mathematical structures  
+ii) Ability to construct and interpret finite state diagrams and DFSA 
+iii) Application of induction and other proof techniques towards problem solving  
+ 
+Instructions for paper setter: All Questions are compulsory. The Question paper is divided in to four sections A, B, C and D. Section 
+A is compulsory and comprises of 12 questions of one mark each, 3 from each unit. The questions shall be asked in such a m anner 
+that there are no direct answers including one word answer, fill in the blanks or multiple choice questions. Section B compri ses of 
+4 questions of 2 marks each, one from each unit. Section C Comprises of 4 questions of 4 marks each, one from each uni t. Section 
+D Comprises of 4 questions of 6 marks each, one from each unit. There is no overall choice, however internal choice may be provided 
+in section C and D, if paper setter so desires. 
+ 
+Text Books:  
+1. C.L.Liu And D.P.Mohapatra, " Elements Of Discrete M athematics: A Computer Oriented Approach", Mcgraw Hill, Third Edition, 
+2012. 
+2. Kenneth H. Rosen, "Discrete Mathematics And Its Applications" Mcgraw Hill, Seventh Edition, 2012 (Indian Adaptation by Kamala 
+Krithivasan, Iit Madras). 
+ 
+Reference Books: 
+1. R. Balakrishnan and K. Ranganathan, "A Text Book Of Graph Theory", Springer  
+2. Thomas Koshy, "Discrete Mathematics with Applications", Elsevier, 2009.  
+ 
+
+================================================================================
+FILE: BET-I (Employability Training-I).pdf
+================================================================================
+
+--- Page 1 ---
+Maharishi Markandeshwar (Deemed to be
+Established under Section 3 of the UGC Act, 1956
+(Accredited by NAAC with Grade ‘A++’)
+Training and Placement Department
+ 
+ 
+ 
+L T P    
+      
+0 2 0    
+      
+      
+Course Objective: 
+1. Equip students with essential technical, soft skills, logical reasoning, and quantitative aptitude necessary for success in 
+academic and professional Interface. 
+2. Provide comprehensive training that covers a wide range of skills to ensure holistic
+diverse challenges in Interview. 
+3. Foster a learning environment that encourages curiosity, critical thinking, and continuous improvement in various skill 
+domains. 
+4. Empower students with the confidence and competence to 
+ 
+Unit-1: Quantitative Aptitude   
+Vedic Mathematics Speed Calculation techniques, Simplification Techniques, Number System
+Remainder Theorem, Number System- Trailing Zeros, Factorial, Factors, HCF & LCM, Percentage, Profit, Loss, Discount.
+ 
+Unit-2: Logical Reasoning   
+Coding-Decoding, Number Series, Alphanumeric series, Direction & Distance, Blood
+Assumption. 
+ 
+Unit-3: Soft Skills & Verbal Ability  
+Introduction to soft skills, Idea generation techniques, Prepositions, Articles, GD techniques, Mock GD, Vocabulary, Conjunct
+Editorial discussion, Time management Techniques, Body language,
+ 
+Unit-4:  Technical Ability   
+Basics and Introduction: Introduction to Data Structures and Algorithms, Importance of DSA in placements, Complexity Analysis 
+(Time and Space Complexity), Big O Notation 
+Arrays and Strings: Array operations (insertion, deletion, traversal), String operations and manipulation, Two
+Sliding window technique 
+Mathematics for DSA: Basic mathematics, Prime numbers and prime factorization, GCD, LCM, Modu
+Sorting and Searching Algorithms: Basic sorting algorithms (Bubble, Selection, Insertion), Efficient sorting algorithms (Merge Sort, 
+Quick Sort, Heap Sort), Searching algorithms (Binary Search, Ternary Search)
+ 
+Course Outcomes: 
+1. Students will demonstrate proficiency in technical, soft skills, logical reasoning, and quantitative aptitude, showcasing a well
+rounded skill set. 
+2. Through practical application and experiential learning, students will develop competence in utilizing acquired skills to
+real-world problems effectively. 
+3. The training will cultivate a mindset of adaptability and resilience, enabling students to thrive in dynamic and rapidly 
+changing environments. 
+4. Upon completion of the training course, students will possess the capab
+Process. 
+ 
+Reference Books: 
+1. Quantitative Aptitude for Competitive Examinations by 
+2. A Modern Approach to Logical Reasoning by R.S.Aggarwal, S.Chand.
+3. From Plinth to Paramount by Neetu Singh,  K.D.Publication.
+4. Patrick Naughton, Herbert, Schild, The Complete reference Java 2, Tata Mc
+5. Hareliy Hahn,Teacher the Internets, P.H.I. 
+Maharishi Markandeshwar (Deemed to be University), Mullana-Ambala
+Established under Section 3 of the UGC Act, 1956 
+(Accredited by NAAC with Grade ‘A++’) 
+Training and Placement Department 
+  
+ 
+B. Tech. (3rd Sem – CSE / ECE / EE)  
+Employability Training - I 
+BET - I 
+       
+       Internal Marks            
+      Total marks
+       Credit
+    
+Equip students with essential technical, soft skills, logical reasoning, and quantitative aptitude necessary for success in 
+Provide comprehensive training that covers a wide range of skills to ensure holistic development and preparedness for 
+Foster a learning environment that encourages curiosity, critical thinking, and continuous improvement in various skill 
+Empower students with the confidence and competence to navigate complex tasks and become ready for Corporate Interview.
+       
+Vedic Mathematics Speed Calculation techniques, Simplification Techniques, Number System- 
+Trailing Zeros, Factorial, Factors, HCF & LCM, Percentage, Profit, Loss, Discount.
+       
+Decoding, Number Series, Alphanumeric series, Direction & Distance, Blood-Relations, Logical Inequalities, Statement and
+       
+Introduction to soft skills, Idea generation techniques, Prepositions, Articles, GD techniques, Mock GD, Vocabulary, Conjunct
+Editorial discussion, Time management Techniques, Body language, Content curation techniques- (Written & Oral)
+       
+Introduction to Data Structures and Algorithms, Importance of DSA in placements, Complexity Analysis 
+Array operations (insertion, deletion, traversal), String operations and manipulation, Two
+Basic mathematics, Prime numbers and prime factorization, GCD, LCM, Modular arithmetic
+Basic sorting algorithms (Bubble, Selection, Insertion), Efficient sorting algorithms (Merge Sort, 
+Quick Sort, Heap Sort), Searching algorithms (Binary Search, Ternary Search) 
+demonstrate proficiency in technical, soft skills, logical reasoning, and quantitative aptitude, showcasing a well
+Through practical application and experiential learning, students will develop competence in utilizing acquired skills to
+The training will cultivate a mindset of adaptability and resilience, enabling students to thrive in dynamic and rapidly 
+Upon completion of the training course, students will possess the capabilities and confidence to clear the campus Placement 
+Quantitative Aptitude for Competitive Examinations by R.S.Aggarwal, S.Chand 
+Modern Approach to Logical Reasoning by R.S.Aggarwal, S.Chand. 
+Singh,  K.D.Publication. 
+Patrick Naughton, Herbert, Schild, The Complete reference Java 2, Tata Mc-Graw Hill. 
+Ambala 
+  
+Internal Marks            100 
+Total marks            100  
+Credit               0 
+Equip students with essential technical, soft skills, logical reasoning, and quantitative aptitude necessary for success in 
+development and preparedness for 
+Foster a learning environment that encourages curiosity, critical thinking, and continuous improvement in various skill 
+navigate complex tasks and become ready for Corporate Interview. 
+          
+ Cyclicity, Number System- 
+Trailing Zeros, Factorial, Factors, HCF & LCM, Percentage, Profit, Loss, Discount. 
+     
+Relations, Logical Inequalities, Statement and 
+    
+Introduction to soft skills, Idea generation techniques, Prepositions, Articles, GD techniques, Mock GD, Vocabulary, Conjunctions, 
+(Written & Oral) 
+    
+Introduction to Data Structures and Algorithms, Importance of DSA in placements, Complexity Analysis 
+Array operations (insertion, deletion, traversal), String operations and manipulation, Two-pointer techniques,        
+lar arithmetic 
+Basic sorting algorithms (Bubble, Selection, Insertion), Efficient sorting algorithms (Merge Sort, 
+demonstrate proficiency in technical, soft skills, logical reasoning, and quantitative aptitude, showcasing a well-
+Through practical application and experiential learning, students will develop competence in utilizing acquired skills to tackle 
+The training will cultivate a mindset of adaptability and resilience, enabling students to thrive in dynamic and rapidly 
+ilities and confidence to clear the campus Placement 
+
+================================================================================
+FILE: BHUM-118 (Human Values & Ethics).pdf
+================================================================================
+
+--- Page 1 ---
+.\
+--'
+1,6. S
+*\ffi
+MAHARISHI MARKANDESHWAR (Deemed to be university)
+M ul la na- Ambala, L332O7
+(established under Section 3 of the UGC Act. 1956)
+(NAAC Accredited Grade'A**' University)
+Department of Mathematics & Humanities
+B.Tech./B.Sc.
+BHUM-118 Human Values & Ethics
+LTP
+300
+Theory:
+Continuous Evaluation :
+Time:
+Credit:
+60
+40
+3 Hours
+3.0
+MMEC/ENG lBOS|2sl Dahei27.07.2023
+Course Objective:
+. Development of a holistic perspective based on self- exploration about themselves family, Society and nature
+/ existence.
+o Understanding of the harmony in the human being, family, society, and nature / existence.
+o Strengthening of self -reflection.
+r Development of commitment and courage to act.
+Course Outcomes:
+. Ability to understand, connect up and explain basics of Humatt Values & Ethics modern perspective.
+Unit-I: Course Introduction- Need, basic guidelines, content and process for value education.
+1. purpose and motivation for the course, recapitulation from Unil'ersal Human Value-1
+Z. Seli- Exploration- What is it ? Its content and process; Natural 'Acceptance' and Experiential validation - as
+the process for the self-exploration.
+3. Contentious Happiness and prosperity - A look at basic Human Aspirations.
+4. Right understanding relationship and physical facility- the basic requirement for fulfillment of aspirations of
+every human being with their correct priority'
+5. UndLrstanding Halpiness and prospeiity correctly - A Critical Appraisal of the current scenario
+6. Method to fulfil the'above human ispirations: understanding and living in harmony at various levels.
+InclLrde practice sessions to discuss natural acceptance in human being as the innate acceptance for living with
+,.rpontibility rather than as arbitrariness in choice based on liking -disliking' i
+Unit-II: Understanding Harmony in the Human tieing - Harmony in Myself.
+L. Understanding human- being as a co-existence of the sentient 'I' and the material Body.
+2. Understanding the needs ofselfand body- happiness and physical facility.
+3. Understanding the body as an instrument of 'l'
+4. Understandin[ the chaiacteristics and activities of 'I' and Harmony in 'l'
+5. Understanding the harmony of I with the Body: Sanyam and Health; correct appraisal of Physical needs,
+meaning of Prosperity in detail
+6. Programs to ensure Sanyam and Health.
+Includi practice sessions to discuss the role other have played in making material goods available tome.
+Identifying from one's own life.
+Differentiate between prosperity and accumulation. Discttss program for ensuring health vs dealing with disease.
+Unit-III: Understanding Harmony in the Family and Society- Harmony in Human-fluman Relationship
+l. Understanding values i-n human-human relationship; meaning of Justice (nine universalvalues in relationships)
+and program foiits fulfilment to ensure mutual happiness; Trust and Respect as the foundational values of
+relationship
+2. Understanding the meaning of Trust; Difference between intention and competence
+3. Understandin[ the rneanin[ of Respect, Difference between respect and differentiation;the other salient values
+in relationship
+2t
+i,
+@Y
+
+--- Page 2 ---
+Unit-fV: Understanding Harmony in the Nature arrd Existencc - Whole existence as Coexistence
+1. Understanding the harmony in the Nature
+2. Interconnectedness and mutual fulfihnent alnong the four orders of nature- recyclability and self-regulation in
+nature.
+3. Understanding Existence as Co-existence of nutualJltjnteractlrlg.pnits in all-pervasive space.
+4. Holistic perception of harmony at all levels of existence.
+5' Include practice sessions to discuss human being as cause of imbalance in nature (film ',Home,'can be used),
+pollution, depletion ofresources and role oftechnology etc.
+6. Natr.rral acceptance of human yalues Universal Order
+7. Competence in professional ethics: a. Ability to utilize the professional competence for augmenting universal
+human order b. Ability to identify the scope and characteristiis of people friendly and eco-fr[ndly piduction
+systems, c. Ability to identify and develop appropriate technologies and management patterns for above
+production systems.
+8' Case studies of typical holistic technologies, management models and production systems
+include practice Exercises and Case Studies will be taken up in Practice (tutorial) Sessions e.g. to discuss theconduct as an engineer or scientist etc.
+4. Understanding the harmony in the society (sociiriy t.rcirrg iLrr Jxiv,,rion of family): Resolution, prosperity,
+fearlessness (trust) and co-existence as comprehensive l-Iuman Goals.
+5. Visualizing a universal harmonious order in society- Undivided Society, Universal Order- from family toworld family.
+Include practice sessions to reflect on relationships in family, hostel and institute as extended family, real.life
+examples, teacher-student relationship, goal of edLrcation etc. Cratitude as a universal value in relatlonships.
+Discuss with scenarios. Elicit examples from students' Iives.
+Text Book
+1 . Human Values and Professional Ethics by R R Gaur, R Sangal, G P Bagaria, Excel Books, New Delhi, 201 0
+Reference Books
+1. leevan vidya: EkParichaya, A Nagaraj, Amarkantak , lggg. Jeevan vida prakashan,
+2. Human values, A.N. Tripathi, New Age Intl. pubrishers, New Delhi, 2004.
+3. The Story of Stuff (Book)
+4. The Story of My Experiments with Truth - by Mohandas Karamchand Gandhi.
+5. Srnall is Beautiful -8. F Schumacher.
+6. Slow is Beautiful - Cecile Andrews
+7. Economy of Permanence - J C Kumarappa
+8. Bharat Mein Angreji Raj - panditSunderlal
+9. Rediscovering India - by Dharampal
+10. Hind swaraj or lndian Home Rule - by Mohandas K. Gandhi
+LL. lndia Wins Freedom - Maulana Abdul Kalam Azad
+12. Vivekananda - Romain Rolland (English)
+Note: All Questions are compulsory. The Question paper is di.zided in to four sections A, B, C and D. Section A iscompulsory and comprises of 12 questions of one mark each, 3 from each unit. The questions shall be asked in such
+a lnallner that there are no direct answers inciuding one word answer, fill in the blanks or multiple choice questions.Section B comprises of 4 questions of 2 marks each, one flom each unit. Section C Comprises of 4 quesiions of 4marks each, one from each unit. Section D Comprises of4 questions of 6 marks each, one from each unit. There is nooveralI choice, however internal choice may be provicled in section C and D, if paper setter so desires.
+Head
+
+================================================================================
+FILE: BMAT-003C (Statistical Techniques).pdf
+================================================================================
+
+--- Page 1 ---
+            
+M.M. (DEEMED TO BE UNIVERSITY), MULLANA (AMBALA) 
+ 
+Batch 2024-2028 
+ 
+B. Tech. (3rd Sem)  
+(Common for CSE, CSE with Specialization in Data Science, CSE with specialization in Cloud Technology & Information Security,  CSE with 
+specialization in Big Data and Analytics, CSE with specialization in Full Stack Development, CSE with specialization in AI & Machine Learning)  
+BMAT-003C (Statistical Techniques) 
+L  T  P        Continuous evaluation  40 
+3  0 0        End semester exam      60   
+          Total marks   100   
+Credits     3.0 
+Course Objectives: 
+1. To provide students with the foundations of probabilistic and statistical analysis mostly used in varied applications 
+in engineering and science like disease modeling, climate prediction and computer networks etc.  
+2. To introduce students the concepts, processes and practice of statistical analysis.  
+3. Understand the essentials of statistical analytics and the corresponding terminologies.  
+ 
+Unit: -1             (9 Hours)  
+Foundation of Statistics : Frequency distribution: Fr equency distribution and its table and graphical representation, Measures of 
+central tendency: Arithmetic mean, Geometric mean, Harmonic mean, median and mode . Measure of dispersion: Range, deviatio n 
+(Quartile, mean and standard), Co-efficient of variation. 
+ 
+Unit: -2             (9 Hours)  
+Probability Functions and Moment Generating Function : Sample space, Probability set function, Geometric probability. Real 
+random variables - Discrete and continuous, Cumulative distribution functio n, Probability mass/density functions, Transformations, 
+Mathematical expectation, Moments, Moment generating function, Characteristic function. 
+ 
+Unit :-3             (9 Hours)   
+Univariate Discrete and Continuous Distributions : Discrete distributions: Unifor m, Bernoulli, Binomial, Negative Binomial, 
+Geometric, and Poisson; Continuous distributions: Uniform, Gamma, Exponential, Beta and normal; Normal approximation to the 
+binomial distribution.  
+ 
+Unit :-4             (9 Hours)   
+Correlation and Regression : The Correlation coefficient, Covariance, Calculation of covariance from joint moment generating 
+function, Independent random variables, Linear regression for two variables, Method of least squares, Bivariate normal distribution. 
+ 
+Course Outcome: After completion of this course, students will be able to: 
+1. Apply some commonly used statistical techniques to other fields. 
+2. Strengthen themselves both computationally and analytically. 
+3. Understand and critically discuss the issues surrounding sampling and significance. 
+4. Solve a range of problems using the techniques covered. 
+5. Discuss critically the uses and limitations of statistical analysis. 
+ 
+Instructions for paper setter: All Questions are compulsory. The Question paper is divided in to four sections A, B, C 
+and D. Sect ion A is compulsory and comprises of 12 questions of one mark each, 3 from each unit. The questions shall be 
+asked in such a manner that there are no direct answers including one word answer, fill in the blanks or multiple choice 
+questions. Section B compr ises of 4 questions of 2 marks each, one from each unit. Section C Comprises of 4 questions of 
+4 marks each, one from each unit. Section D Comprises of 4 questions of 6 marks each, one from each unit. There is no 
+overall choice, however internal choice may  be provided in section C and D, if paper setter so desires.  
+ 
+Text Books: 
+1. Introduction to Mathematical Statistics (7th ed.) by Hogg, Robert V., McKean, Joseph W., & Craig, Allen T.  
+2. Mathematical Statistics with Applications (8th ed.) by Miller, Irwin & Miller, Marylees., John E. Freund. 
+ 
+Reference Books: 
+1. Introduction to Probability Models (11th ed.) by Ross, Sheldon M.  
+ 
+ 
+ 

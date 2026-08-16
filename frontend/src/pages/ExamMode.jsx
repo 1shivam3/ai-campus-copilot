@@ -93,23 +93,28 @@ function ExamMode({ user, profile }) {
           }
         }
 
-        if (loadedTopics.length === 0) {
-          const { data: generalTopics } = await supabase
-            .from("topics")
-            .select("id, subject, topic_name, mastery_score")
-            .eq("user_id", user.id)
+        if (loadedTopics.length === 0 && user?.id) {
+          try {
+            const { data: generalProgress } = await supabase
+              .from("student_topic_progress")
+              .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
+              .eq("user_id", user.id)
 
-          loadedTopics = (generalTopics || [])
-            .filter(
-              (t) =>
-                t.subject?.toLowerCase().includes(upcomingExam.subject.toLowerCase()) ||
-                upcomingExam.subject?.toLowerCase().includes(t.subject?.toLowerCase())
-            )
-            .map((t) => ({
-              id: t.id,
-              topic_name: t.topic_name,
-              mastery_score: Number(t.mastery_score || 0),
-            }))
+            loadedTopics = (generalProgress || [])
+              .filter((p) => {
+                const subName = p.syllabus_topics?.academic_subjects?.subject_name?.toLowerCase() || ""
+                const examSub = upcomingExam.subject?.toLowerCase() || ""
+                return subName.includes(examSub) || examSub.includes(subName)
+              })
+              .map((p) => ({
+                id: p.syllabus_topic_id || p.id,
+                topic_name: p.syllabus_topics?.topic_name || "Topic",
+                mastery_score: Number(p.mastery_score || 0),
+                status: p.status || "not_started",
+              }))
+          } catch (fbErr) {
+            console.warn("Exam mode fallback topic notice:", fbErr)
+          }
         }
 
         setExamTopics(loadedTopics)

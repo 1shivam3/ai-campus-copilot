@@ -1,4 +1,97 @@
-semester,section,subject_name,day_of_week,start_time,end_time,lab_room,teacher_name
-3,B2,Data Structures Lab,Tuesday,14:00,16:00,Lab-3 (Engineering Block),Prof. Rajesh Sharma
-3,B2,DBMS Lab,Thursday,14:00,16:00,Lab-2 (Engineering Block),Dr. Priya Verma
-3,B2,Operating Systems Lab,Friday,14:00,16:00,Lab-5 (Engineering Block),Prof. Amit Gupta
+﻿semester,section,subject_code,subject_name,day_of_week,start_time,end_time,lab_room,teacher_name
+3,A1,BCSE-501L,Data Structure and Algorithms Lab,Monday,13:40,15:40,142,Abhishek Pandey
+3,A1,BCSE-855L,Natural Language Processing with Transformers Lab,Thursday,13:40,15:40,143,Tainer
+3,A1,BCSE-502L,Software Engineering Lab,Tuesday,13:40,15:40,142,Dr. Mohit Chabbra
+3,A1,BCSE-854L,Introduction to Generative AI Models Lab,Wednesday,13:40,15:40,142,Trainer
+3,A2,BCSE-854L,Introduction to Generative AI Models Lab,Monday,13:40,15:40,143,Trainer
+3,A2,BCSE-501L,Data Structure and Algorithms Lab,Thursday,13:40,15:40,142,Abhishek Pandey
+3,A2,BCSE-855L,Natural Language Processing with Transformers Lab,Tuesday,13:40,15:40,143,Tainer
+3,A2,BCSE-502L,Software Engineering Lab,Wednesday,13:40,15:40,143,Dr. Mohit Chabbra
+3,B1,BCSE-501L,Data Structure and Algorithms Lab,Friday,08:40,10:40,143,Abhishek Pandey
+3,B1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Monday,08:40,10:40,142,Anurag Kumar Singh
+3,B1,BCSE-502L,Software Engineering Lab,Thursday,10:40,12:40,142,Dr. Munishwar Rai
+3,B1,BCSE-503L,Database Management System Lab,Wednesday,10:40,12:40,143,Dr. Rohini
+3,B2,BCSE-503L,Database Management System Lab,Friday,08:40,10:40,142,Dr. Rohini
+3,B2,BCSE-502L,Software Engineering Lab,Monday,08:40,10:40,143,"3A,Dr. Munishwar Rai"
+3,B2,BCSE-501L,Data Structure and Algorithms Lab,Thursday,10:40,12:40,143,Abhishek Pandey
+3,B2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Wednesday,10:40,12:40,142,Anurag Kumar Singh
+3,C1,BCSE-502L,Software Engineering Lab,Friday,10:40,12:40,143,Ms. Sonam
+3,C1,BCSE-503L,Database Management System Lab,Thursday,08:40,10:40,143,Dr. Anil Kumar Lamba
+3,C1,BCSE-501L,Data Structure and Algorithms Lab,Tuesday,10:40,12:40,142,Abhishek Pandey
+3,C1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Wednesday,08:40,10:40,142,Anurag Kumar Singh
+3,C2,BCSE-501L,Data Structure and Algorithms Lab,Friday,10:40,12:40,142,Abhishek Pandey
+3,C2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Thursday,08:40,10:40,142,Anurag Kumar Singh
+3,C2,BCSE-502L,Software Engineering Lab,Tuesday,10:40,12:40,143,Ms. Sonam
+3,C2,BCSE-503L,Database Management System Lab,Wednesday,08:40,10:40,143,Dr. Anil Kumar Lamba
+3,D1,BCSE-503L,Database Management System Lab,Friday,09:40,11:40,145,Dr. Bandana Sharma
+3,D1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Monday,13:40,15:40,144,Anurag Kumar Singh
+3,D1,BCSE-502L,Software Engineering Lab,Tuesday,08:40,10:40,143,Ms. Sonam
+3,D1,BCSE-501L,Data Structure and Algorithms Lab,Wednesday,09:40,11:40,144,Abhishek Pandey
+3,D2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Friday,09:40,11:40,144,Anurag Kumar Singh
+3,D2,BCSE-503L,Database Management System Lab,Monday,13:40,15:40,145,Dr. Bandana Sharma
+3,D2,BCSE-501L,Data Structure and Algorithms Lab,Tuesday,08:40,10:40,142,Abhishek Pandey
+3,D2,BCSE-502L,Software Engineering Lab,Wednesday,09:40,11:40,145,Ms. Sonam
+3,E1,BCSE-503L,Database Management System Lab,Friday,10:40,12:40,160,Ms. Neelam Oberoi
+3,E1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Tuesday,09:40,11:40,144,Anurag Kumar Singh
+3,E1,BCSE-502L,Software Engineering Lab,Tuesday,13:40,15:40,145,Dr. Bhupesh Gupta
+3,E1,BCSE-501L,Data Structure and Algorithms Lab,Wednesday,10:40,12:40,160,Ayush Bhujade
+3,E2,BCSE-501L,Data Structure and Algorithms Lab,Friday,10:40,12:40,147,Ayush Bhujade
+3,E2,BCSE-502L,Software Engineering Lab,Tuesday,09:40,11:40,145,Dr. Bhupesh Gupta
+3,E2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Tuesday,13:40,15:40,144,Anurag Kumar Singh
+3,E2,BCSE-503L,Database Management System Lab,Wednesday,10:40,12:40,147,Ms. Neelam Oberoi
+3,F1,BCSE-502L,Software Engineering Lab,Thursday,10:40,12:40,145,Dr. Prachi Garg
+3,F1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Tuesday,08:40,10:40,147,Nikhil Patil
+3,F1,BCSE-501L,Data Structure and Algorithms Lab,Wednesday,08:40,10:40,147,Ayush Bhujade
+3,F1,BCSE-503L,Database Management System Lab,Wednesday,13:40,15:40,145,Dr. Sumit Kumar Aggarwal
+3,F2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Thursday,10:40,12:40,144,Nikhil Patil
+3,F2,BCSE-502L,Software Engineering Lab,Tuesday,08:40,10:40,160,Dr. Vinisha Sumra
+3,F2,BCSE-503L,Database Management System Lab,Wednesday,08:40,10:40,160,Dr. Sumit Kumar Aggarwal
+3,F2,BCSE-501L,Data Structure and Algorithms Lab,Wednesday,13:40,15:40,144,Ayush Bhujade
+3,G1,BCSE-501L,Data Structure and Algorithms Lab,Friday,13:40,15:40,142,Ayush Bhujade
+3,G1,BCSE-503L,Database Management System Lab,Monday,10:40,12:40,142,Dr. Sumit Kumar Aggarwal
+3,G1,BCSE-502L,Software Engineering Lab,Thursday,13:40,15:40,144,Ms. Sonam
+3,G1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Tuesday,10:40,12:40,147,Nikhil Patil
+3,G2,BCSE-502L,Software Engineering Lab,Friday,13:40,15:40,143,Dr. Vinisha Sumra
+3,G2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Monday,10:40,12:40,143,Nikhil Patil
+3,G2,BCSE-501L,Data Structure and Algorithms Lab,Thursday,13:40,15:40,145,Ayush Bhujade
+3,G2,BCSE-503L,Database Management System Lab,Tuesday,10:40,12:40,160,Dr. Bandana Sharma
+3,H1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Friday,10:40,12:40,161,Nikhil Patil
+3,H1,BCSE-503L,Database Management System Lab,Thursday,10:40,12:40,147,Dr. Sandhya Bansal
+3,H1,BCSE-501L,Data Structure and Algorithms Lab,Tuesday,13:40,15:40,147,Ayush Bhujade
+3,H1,BCSE-502L,Software Engineering Lab,Wednesday,13:40,15:40,147,Dr. Vinisha Sumra
+3,H2,BCSE-502L,Software Engineering Lab,Friday,10:40,12:40,162,Dr. Vinisha Sumra (H2)
+3,H2,BCSE-501L,Data Structure and Algorithms Lab,Thursday,10:40,12:40,160,Ayush Bhujade
+3,H2,BCSE-503L,Database Management System Lab,Tuesday,13:40,15:40,160,Dr. Sandhya Bansal
+3,H2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Wednesday,13:40,15:40,160,Nikhil Patil
+3,I1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Friday,13:40,15:40,144,Anurag Kumar Singh
+3,I1,BCSE-502L,Software Engineering Lab,Monday,08:40,10:40,144,Dr. Naveen Malik
+3,I1,BCSE-501L,Data Structure and Algorithms Lab,Thursday,08:40,10:40,144,Ashwani Singh
+3,I1,BCSE-503L,Database Management System Lab,Wednesday,08:40,10:40,161,Dr. Charu Sharma
+3,I2,BCSE-503L,Database Management System Lab,Friday,13:40,15:40,145,Dr. Charu Sharma
+3,I2,BCSE-501L,Data Structure and Algorithms Lab,Monday,08:40,10:40,145,Ashwani Singh
+3,I2,BCSE-502L,Software Engineering Lab,Thursday,08:40,10:40,145,Dr. Naveen Malik
+3,I2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Wednesday,08:40,10:40,162,Nikhil Patil (I2)
+3,J1,BCSE-502L,Software Engineering Lab,Friday,13:40,15:40,147,Dr. Naveen Malik
+3,J1,BCSE-501L,Data Structure and Algorithms Lab,Monday,13:40,15:40,147,Ashwani Singh
+3,J1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Thursday,13:40,15:40,147,Mr. Vishal Trainer
+3,J1,BCSE-503L,Database Management System Lab,Wednesday,13:40,15:40,161,"Ms. Neelam Oberoi, (161)"
+3,J2,BCSE-501L,Data Structure and Algorithms Lab,Friday,13:40,15:40,160,Ashwani Singh
+3,J2,BCSE-502L,Software Engineering Lab,Monday,13:40,15:40,160,Dr. Naveen Malik
+3,J2,BCSE-503L,Database Management System Lab,Thursday,13:40,15:40,160,Dr. Charu Sharma
+3,J2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Wednesday,13:40,15:40,162,Mr. Vishal Trainer (162)
+3,K1,BCSE-502L,Software Engineering Lab,Friday,10:40,12:40,174,Dr. Kajal Jain
+3,K1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Monday,13:40,15:40,161,Mr. Vishal Trainer
+3,K1,BCSE-501L,Data Structure and Algorithms Lab,Tuesday,13:40,15:40,161,Ashwani Singh
+3,K1,BCSE-503L,Database Management System Lab,Wednesday,13:40,15:40,174,Dr. Daxa Vekariya
+3,K2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Friday,10:40,12:40,245,Mr. Vishal Trainer
+3,K2,BCSE-502L,Software Engineering Lab,Monday,13:40,15:40,162,Dr. Kajal Jain
+3,K2,BCSE-503L,Database Management System Lab,Tuesday,13:40,15:40,162,Dr. Daxa Vekariya
+3,K2,BCSE-501L,Data Structure and Algorithms Lab,Wednesday,13:40,15:40,236,Ashwani Singh
+3,L1,BCSE-504L,Object Oriented Programming Using JAVA Lab,Thursday,08:40,10:40,147,Mr. Vishal Trainer
+3,L1,BCSE-503L,Database Management System Lab,Thursday,13:40,15:40,161,Ms. Neelam Oberoi
+3,L1,BCSE-502L,Software Engineering Lab,Tuesday,13:40,15:40,174,Dr. Kajal Jain
+3,L1,BCSE-501L,Data Structure and Algorithms Lab,Wednesday,09:40,11:40,174,Ashwani Singh
+3,L2,BCSE-503L,Database Management System Lab,Thursday,08:40,10:40,160,Ms. Neelam Oberoi
+3,L2,BCSE-501L,Data Structure and Algorithms Lab,Thursday,13:40,15:40,162,Ashwani Singh
+3,L2,BCSE-504L,Object Oriented Programming Using JAVA Lab,Tuesday,13:40,15:40,236,Mr. Vishal Trainer
+3,L2,BCSE-502L,Software Engineering Lab,Wednesday,09:40,11:40,236,Dr. Kajal Jain

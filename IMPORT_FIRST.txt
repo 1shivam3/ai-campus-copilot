@@ -1,0 +1,18 @@
+USE THIS BUNDLE, NOT THE PREVIOUS IMPORTER/DATA FOLDER.
+
+Expected source counts:
+- sections.csv: 24 sections
+- subjects.csv: 408 rows
+- timetable.csv: 546 class blocks
+- labs.csv: generated from timetable lab blocks
+- syllabus.csv: extracted syllabus mappings
+
+Put this folder's academic-data/ and import_academic_data_complete.py in your project root.
+Run the importer from the project root with:
+python import_academic_data_complete.py
+
+Before running, make sure backend/.env contains:
+VITE_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+
+The service-role key must remain local and must never be committed to GitHub.

@@ -1,11 +1,595 @@
-semester,section,subject_code,day_of_week,start_time,end_time,room,teacher_name
-3,B2,CSE301,Monday,09:00,10:00,EB-101,Prof. Rajesh Sharma
-3,B2,CSE302,Monday,10:00,11:00,EB-102,Dr. Priya Verma
-3,B2,CSE303,Tuesday,09:00,10:00,EB-103,Prof. Amit Gupta
-3,B2,CSE304,Tuesday,11:00,12:00,EB-104,Dr. Neha Singh
-3,B2,CSE305,Wednesday,10:00,11:00,EB-105,Prof. Vikas Kumar
-3,B2,CSE301,Wednesday,11:00,12:00,EB-101,Prof. Rajesh Sharma
-3,B2,CSE302,Thursday,09:00,10:00,EB-102,Dr. Priya Verma
-3,B2,CSE303,Thursday,10:00,11:00,EB-103,Prof. Amit Gupta
-3,B2,CSE304,Friday,09:00,10:00,EB-104,Dr. Neha Singh
-3,B2,CSE305,Friday,11:00,12:00,EB-105,Prof. Vikas Kumar
+﻿semester,section,subject_code,day_of_week,start_time,end_time,room,teacher_name
+3,A1,BCSE-505,Friday,08:40,09:40,117,Dr. Vinisha Sumra
+3,A1,BCSE-855,Friday,09:40,10:40,117,Trainer
+3,A1,BCSE-856,Friday,11:40,12:40,117,Dr. Amit Jain
+3,A1,BET-I,Friday,13:40,14:40,117,Employability Training-I
+3,A1,BCSE-502,Friday,14:40,15:40,117,Dr. Mohit Chabbra
+3,A1,BCSE-854,Monday,08:40,09:40,117,Trainer
+3,A1,BCSE-505,Monday,09:40,10:40,117,Dr. Vinisha Sumra
+3,A1,BCSE-501,Monday,10:40,11:40,117,Abhishek Pandey
+3,A1,BCSE-856,Monday,11:40,12:40,117,Dr. Amit Jain
+3,A1,BCSE-501L,Monday,13:40,15:40,142,Abhishek Pandey
+3,A1,BCSE-501,Thursday,08:40,09:40,117,Abhishek Pandey
+3,A1,BCSE-854,Thursday,09:40,10:40,117,Trainer
+3,A1,BCSE-855,Thursday,10:40,11:40,117,Trainer
+3,A1,BCSE-502,Thursday,11:40,12:40,117,Dr. Mohit Chabbra
+3,A1,BCSE-855L,Thursday,13:40,15:40,143,Tainer
+3,A1,BCSE-856,Tuesday,08:40,09:40,117,Dr. Amit Jain
+3,A1,BCSE-854,Tuesday,09:40,10:40,117,Trainer
+3,A1,BET-I,Tuesday,10:40,11:40,117,Employability Training-I
+3,A1,BHUM-118,Tuesday,11:40,12:40,117,"Human Value & Ethics 117 [Doubt Clearing Session] Er. Praveen Kumar, 3A"
+3,A1,BCSE-502L,Tuesday,13:40,15:40,142,Dr. Mohit Chabbra
+3,A1,BCSE-502,Wednesday,08:40,09:40,117,Dr. Mohit Chabbra
+3,A1,BCSE-505,Wednesday,09:40,10:40,117,Dr. Vinisha Sumra
+3,A1,BCSE-855,Wednesday,10:40,11:40,117,Trainer
+3,A1,BCSE-501,Wednesday,11:40,12:40,117,Abhishek Pandey
+3,A1,BCSE-854L,Wednesday,13:40,15:40,142,Trainer
+3,A2,BCSE-505,Friday,08:40,09:40,117,Dr. Vinisha Sumra
+3,A2,BCSE-855,Friday,09:40,10:40,117,Trainer
+3,A2,BCSE-856,Friday,11:40,12:40,117,Dr. Amit Jain
+3,A2,BET-I,Friday,13:40,14:40,117,Employability Training-I
+3,A2,BCSE-502,Friday,14:40,15:40,117,Dr. Mohit Chabbra
+3,A2,BCSE-854,Monday,08:40,09:40,117,Trainer
+3,A2,BCSE-505,Monday,09:40,10:40,117,Dr. Vinisha Sumra
+3,A2,BCSE-501,Monday,10:40,11:40,117,Abhishek Pandey
+3,A2,BCSE-856,Monday,11:40,12:40,117,Dr. Amit Jain
+3,A2,BCSE-854L,Monday,13:40,15:40,143,Trainer
+3,A2,BCSE-501,Thursday,08:40,09:40,117,Abhishek Pandey
+3,A2,BCSE-854,Thursday,09:40,10:40,117,Trainer
+3,A2,BCSE-855,Thursday,10:40,11:40,117,Trainer
+3,A2,BCSE-502,Thursday,11:40,12:40,117,Dr. Mohit Chabbra
+3,A2,BCSE-501L,Thursday,13:40,15:40,142,Abhishek Pandey
+3,A2,BCSE-856,Tuesday,08:40,09:40,117,Dr. Amit Jain
+3,A2,BCSE-854,Tuesday,09:40,10:40,117,Trainer
+3,A2,BET-I,Tuesday,10:40,11:40,117,Employability Training-I
+3,A2,BHUM-118,Tuesday,11:40,12:40,117,"Human Value & Ethics 117 [Doubt Clearing Session] Er. Praveen Kumar, 3A"
+3,A2,BCSE-855L,Tuesday,13:40,15:40,143,Tainer
+3,A2,BCSE-502,Wednesday,08:40,09:40,117,Dr. Mohit Chabbra
+3,A2,BCSE-505,Wednesday,09:40,10:40,117,Dr. Vinisha Sumra
+3,A2,BCSE-855,Wednesday,10:40,11:40,117,Trainer
+3,A2,BCSE-501,Wednesday,11:40,12:40,117,Abhishek Pandey
+3,A2,BCSE-502L,Wednesday,13:40,15:40,143,Dr. Mohit Chabbra
+3,B1,BCSE-501L,Friday,08:40,10:40,143,Abhishek Pandey
+3,B1,BCSE-505,Friday,10:40,11:40,118,Dr. Kamal Prakash
+3,B1,BCSE-504,Friday,11:40,12:40,118,Anurag Kumar Singh
+3,B1,BMAT-003C,Friday,13:40,14:40,118,Dr. Ravinder
+3,B1,BCSE-501,Friday,14:40,15:40,118,Abhishek Pandey
+3,B1,BCSE-504L,Monday,08:40,10:40,142,Anurag Kumar Singh
+3,B1,BCSE-502,Monday,10:40,11:40,118,Dr. Munishwar Rai
+3,B1,BCSE-505,Monday,11:40,12:40,119,Dr. Kamal Prakash
+3,B1,BET-I,Monday,14:40,15:40,117,Employability Training-I
+3,B1,BCSE-503,Thursday,08:40,09:40,118,Dr. Vipul M. Vekariya
+3,B1,BCSE-502,Thursday,09:40,10:40,118,Dr. Munishwar Rai
+3,B1,BCSE-502L,Thursday,10:40,12:40,142,Dr. Munishwar Rai
+3,B1,BCSE-505,Thursday,13:40,14:40,117,Dr. Kamal Prakash
+3,B1,BMAT-003C,Thursday,14:40,15:40,117,Dr. Ravinder
+3,B1,BCSE-504,Tuesday,08:40,09:40,118,Anurag Kumar Singh
+3,B1,BHUM-118,Tuesday,09:40,10:40,118,"Human Value & Ethics [Doubt Clearing Session], Dr.Jotesh"
+3,B1,BCSE-502,Tuesday,10:40,11:40,118,Dr. Munishwar Rai
+3,B1,BCSE-503,Tuesday,11:40,12:40,118,Dr. Vipul M. Vekariya
+3,B1,BMAT-003C,Tuesday,13:40,14:40,117,Dr. Ravinder
+3,B1,BCSE-501,Tuesday,14:40,15:40,117,Abhishek Pandey
+3,B1,BCSE-501,Wednesday,08:40,09:40,118,Abhishek Pandey
+3,B1,BCSE-503,Wednesday,09:40,10:40,118,Dr. Vipul M. Vekariya
+3,B1,BCSE-503L,Wednesday,10:40,12:40,143,Dr. Rohini
+3,B1,BCSE-504,Wednesday,13:40,14:40,117,Anurag Kumar Singh
+3,B1,BET-I,Wednesday,14:40,15:40,117,Employability Training-I
+3,B2,BCSE-503L,Friday,08:40,10:40,142,Dr. Rohini
+3,B2,BCSE-505,Friday,10:40,11:40,118,Dr. Kamal Prakash
+3,B2,BCSE-504,Friday,11:40,12:40,118,Anurag Kumar Singh
+3,B2,BMAT-003C,Friday,13:40,14:40,118,Dr. Ravinder
+3,B2,BCSE-501,Friday,14:40,15:40,118,Abhishek Pandey
+3,B2,BCSE-502L,Monday,08:40,10:40,143,"3A,Dr. Munishwar Rai"
+3,B2,BCSE-502,Monday,10:40,11:40,118,Dr. Munishwar Rai
+3,B2,BCSE-505,Monday,11:40,12:40,119,Dr. Kamal Prakash
+3,B2,BET-I,Monday,14:40,15:40,117,Employability Training-I
+3,B2,BCSE-503,Thursday,08:40,09:40,118,Dr. Vipul M. Vekariya
+3,B2,BCSE-502,Thursday,09:40,10:40,118,Dr. Munishwar Rai
+3,B2,BCSE-501L,Thursday,10:40,12:40,143,Abhishek Pandey
+3,B2,BCSE-505,Thursday,13:40,14:40,117,Dr. Kamal Prakash
+3,B2,BMAT-003C,Thursday,14:40,15:40,117,Dr. Ravinder
+3,B2,BCSE-504,Tuesday,08:40,09:40,118,Anurag Kumar Singh
+3,B2,BHUM-118,Tuesday,09:40,10:40,118,"Human Value & Ethics [Doubt Clearing Session], Dr.Jotesh"
+3,B2,BCSE-502,Tuesday,10:40,11:40,118,Dr. Munishwar Rai
+3,B2,BCSE-503,Tuesday,11:40,12:40,118,Dr. Vipul M. Vekariya
+3,B2,BMAT-003C,Tuesday,13:40,14:40,117,Dr. Ravinder
+3,B2,BCSE-501,Tuesday,14:40,15:40,117,Abhishek Pandey
+3,B2,BCSE-501,Wednesday,08:40,09:40,118,Abhishek Pandey
+3,B2,BCSE-503,Wednesday,09:40,10:40,118,Dr. Vipul M. Vekariya
+3,B2,BCSE-504L,Wednesday,10:40,12:40,142,Anurag Kumar Singh
+3,B2,BCSE-504,Wednesday,13:40,14:40,117,Anurag Kumar Singh
+3,B2,BET-I,Wednesday,14:40,15:40,117,Employability Training-I
+3,C1,BCSE-504,Friday,08:40,09:40,118,Anurag Kumar Singh
+3,C1,BCSE-502L,Friday,10:40,12:40,143,Ms. Sonam
+3,C1,BCSE-502,Friday,13:40,14:40,119,Ms. Sonam
+3,C1,BMAT-003C,Friday,14:40,15:40,119,Dr. Abdul Raheem
+3,C1,BCSE-503,Monday,08:40,09:40,118,Dr. Anil Kumar Lamba
+3,C1,BCSE-505,Monday,09:40,10:40,118,Dr. Vandana
+3,C1,BHUM-118,Monday,10:40,11:40,119,"Human Value & Ethics, 119 [Doubt Clearing Session], Dr. Sidharth sharma"
+3,C1,BCSE-501,Monday,11:40,12:40,118,Abhishek Pandey
+3,C1,BMAT-003C,Monday,13:40,14:40,118,Dr. Abdul Raheem
+3,C1,BCSE-503,Monday,14:40,15:40,118,Dr. Anil Kumar Lamba
+3,C1,BCSE-503L,Thursday,08:40,10:40,143,Dr. Anil Kumar Lamba
+3,C1,BCSE-504,Thursday,10:40,11:40,,Anurag Kumar Singh118
+3,C1,BET-I,Thursday,11:40,12:40,118,Employability Training-I
+3,C1,BCSE-504,Thursday,13:40,14:40,118,Anurag Kumar Singh
+3,C1,BMAT-003C,Thursday,14:40,15:40,118,Dr. Abdul Raheem
+3,C1,BCSE-505,Tuesday,08:40,09:40,119,Dr. Vandana
+3,C1,BCSE-503,Tuesday,09:40,10:40,119,Dr. Anil Kumar Lamba
+3,C1,BCSE-501L,Tuesday,10:40,12:40,142,Abhishek Pandey
+3,C1,BCSE-501,Tuesday,13:40,14:40,118,Abhishek Pandey
+3,C1,BCSE-502,Tuesday,14:40,15:40,118,Ms. Sonam
+3,C1,BCSE-504L,Wednesday,08:40,10:40,142,Anurag Kumar Singh
+3,C1,BET-I,Wednesday,10:40,11:40,118,Employability Training-I
+3,C1,BCSE-505,Wednesday,11:40,12:40,118,Dr. Vandana
+3,C1,BCSE-501,Wednesday,13:40,14:40,118,Abhishek Pandey
+3,C1,BCSE-502,Wednesday,14:40,15:40,118,Ms. Sonam
+3,C2,BCSE-504,Friday,08:40,09:40,118,Anurag Kumar Singh
+3,C2,BCSE-501L,Friday,10:40,12:40,142,Abhishek Pandey
+3,C2,BCSE-502,Friday,13:40,14:40,119,Ms. Sonam
+3,C2,BMAT-003C,Friday,14:40,15:40,119,Dr. Abdul Raheem
+3,C2,BCSE-503,Monday,08:40,09:40,118,Dr. Anil Kumar Lamba
+3,C2,BCSE-505,Monday,09:40,10:40,118,Dr. Vandana
+3,C2,BHUM-118,Monday,10:40,11:40,119,"Human Value & Ethics, 119 [Doubt Clearing Session], Dr. Sidharth sharma"
+3,C2,BCSE-501,Monday,11:40,12:40,118,Abhishek Pandey
+3,C2,BMAT-003C,Monday,13:40,14:40,118,Dr. Abdul Raheem
+3,C2,BCSE-503,Monday,14:40,15:40,118,Dr. Anil Kumar Lamba
+3,C2,BCSE-504L,Thursday,08:40,10:40,142,Anurag Kumar Singh
+3,C2,BCSE-504,Thursday,10:40,11:40,,Anurag Kumar Singh118
+3,C2,BET-I,Thursday,11:40,12:40,118,Employability Training-I
+3,C2,BCSE-504,Thursday,13:40,14:40,118,Anurag Kumar Singh
+3,C2,BMAT-003C,Thursday,14:40,15:40,118,Dr. Abdul Raheem
+3,C2,BCSE-505,Tuesday,08:40,09:40,119,Dr. Vandana
+3,C2,BCSE-503,Tuesday,09:40,10:40,119,Dr. Anil Kumar Lamba
+3,C2,BCSE-502L,Tuesday,10:40,12:40,143,Ms. Sonam
+3,C2,BCSE-501,Tuesday,13:40,14:40,118,Abhishek Pandey
+3,C2,BCSE-502,Tuesday,14:40,15:40,118,Ms. Sonam
+3,C2,BCSE-503L,Wednesday,08:40,10:40,143,Dr. Anil Kumar Lamba
+3,C2,BET-I,Wednesday,10:40,11:40,118,Employability Training-I
+3,C2,BCSE-505,Wednesday,11:40,12:40,118,Dr. Vandana
+3,C2,BCSE-501,Wednesday,13:40,14:40,118,Abhishek Pandey
+3,C2,BCSE-502,Wednesday,14:40,15:40,118,Ms. Sonam
+3,D1,BMAT-003C,Friday,08:40,09:40,119,Dr. Ravinder
+3,D1,BCSE-503L,Friday,09:40,11:40,145,Dr. Bandana Sharma
+3,D1,BET-I,Friday,11:40,12:40,119,PD Trainer
+3,D1,BCSE-501,Friday,13:40,14:40,167,Abhishek Pandey
+3,D1,BCSE-503,Friday,14:40,15:40,167,Dr. Bandana Sharma
+3,D1,BMAT-003C,Monday,08:40,09:40,119,Dr. Ravinder
+3,D1,BCSE-501,Monday,09:40,10:40,119,Abhishek Pandey
+3,D1,BCSE-502,Monday,10:40,11:40,167,Ms. Sonam
+3,D1,BCSE-504,Monday,11:40,12:40,167,Anurag Kumar Singh
+3,D1,BCSE-504L,Monday,13:40,15:40,144,Anurag Kumar Singh
+3,D1,BCSE-502,Thursday,08:40,09:40,119,Ms. Sonam
+3,D1,BCSE-501,Thursday,09:40,10:40,119,Abhishek Pandey
+3,D1,BCSE-503,Thursday,10:40,11:40,119,Dr. Bandana Sharma
+3,D1,BCSE-504,Thursday,11:40,12:40,119,Anurag Kumar Singh
+3,D1,BCSE-505,Thursday,13:40,14:40,119,Dr. Vandana
+3,D1,BCSE-502L,Tuesday,08:40,10:40,143,Ms. Sonam
+3,D1,BMAT-003C,Tuesday,10:40,11:40,119,Dr. Ravinder
+3,D1,BCSE-504,Tuesday,11:40,12:40,119,Anurag Kumar Singh
+3,D1,BCSE-505,Tuesday,13:40,14:40,119,Dr. Vandana
+3,D1,BET-I,Tuesday,14:40,15:40,119,PD Trainer
+3,D1,BCSE-503,Wednesday,08:40,09:40,119,Dr. Bandana Sharma
+3,D1,BCSE-501L,Wednesday,09:40,11:40,144,Abhishek Pandey
+3,D1,BCSE-502,Wednesday,11:40,12:40,119,Ms. Sonam
+3,D1,BCSE-505,Wednesday,13:40,14:40,119,Dr. Vandana
+3,D1,BHUM-118,Wednesday,14:40,15:40,119,"Human Value & Ethics, 119 [Doubt Clearing Session], Dr. Sidharth sharma"
+3,D2,BMAT-003C,Friday,08:40,09:40,119,Dr. Ravinder
+3,D2,BCSE-504L,Friday,09:40,11:40,144,Anurag Kumar Singh
+3,D2,BET-I,Friday,11:40,12:40,119,PD Trainer
+3,D2,BCSE-501,Friday,13:40,14:40,167,Abhishek Pandey
+3,D2,BCSE-503,Friday,14:40,15:40,167,Dr. Bandana Sharma
+3,D2,BMAT-003C,Monday,08:40,09:40,119,Dr. Ravinder
+3,D2,BCSE-501,Monday,09:40,10:40,119,Abhishek Pandey
+3,D2,BCSE-502,Monday,10:40,11:40,167,Ms. Sonam
+3,D2,BCSE-504,Monday,11:40,12:40,167,Anurag Kumar Singh
+3,D2,BCSE-503L,Monday,13:40,15:40,145,Dr. Bandana Sharma
+3,D2,BCSE-502,Thursday,08:40,09:40,119,Ms. Sonam
+3,D2,BCSE-501,Thursday,09:40,10:40,119,Abhishek Pandey
+3,D2,BCSE-503,Thursday,10:40,11:40,119,Dr. Bandana Sharma
+3,D2,BCSE-504,Thursday,11:40,12:40,119,Anurag Kumar Singh
+3,D2,BCSE-505,Thursday,13:40,14:40,119,Dr. Vandana
+3,D2,BCSE-501L,Tuesday,08:40,10:40,142,Abhishek Pandey
+3,D2,BMAT-003C,Tuesday,10:40,11:40,119,Dr. Ravinder
+3,D2,BCSE-504,Tuesday,11:40,12:40,119,Anurag Kumar Singh
+3,D2,BCSE-505,Tuesday,13:40,14:40,119,Dr. Vandana
+3,D2,BET-I,Tuesday,14:40,15:40,119,PD Trainer
+3,D2,BCSE-503,Wednesday,08:40,09:40,119,Dr. Bandana Sharma
+3,D2,BCSE-502L,Wednesday,09:40,11:40,145,Ms. Sonam
+3,D2,BCSE-502,Wednesday,11:40,12:40,119,Ms. Sonam
+3,D2,BCSE-505,Wednesday,13:40,14:40,119,Dr. Vandana
+3,D2,BHUM-118,Wednesday,14:40,15:40,119,"Human Value & Ethics, 119 [Doubt Clearing Session], Dr. Sidharth sharma"
+3,E1,BET-I,Friday,08:40,09:40,167,PD Trainer
+3,E1,BCSE-502,Friday,09:40,10:40,167,Dr. Bhupesh Gupta
+3,E1,BCSE-503L,Friday,10:40,12:40,160,Ms. Neelam Oberoi
+3,E1,BHUM-118,Friday,13:40,14:40,168,"Human Value & Ethics, [Doubt Clearing Session], Dr.Jotesh"
+3,E1,BMAT-003C,Friday,14:40,15:40,168,Dr. Shilpa Garg
+3,E1,BCSE-502,Monday,08:40,09:40,168,Dr. Bhupesh Gupta
+3,E1,BCSE-505,Monday,09:40,10:40,168,Dr. Bandana Sharma
+3,E1,BCSE-504,Monday,10:40,11:40,168,Anurag Kumar Singh
+3,E1,BCSE-503,Monday,11:40,12:40,168,Dr. Daxa Vekariya
+3,E1,BCSE-501,Monday,13:40,14:40,168,Ayush Bhujade
+3,E1,BMAT-003C,Monday,14:40,15:40,168,Dr. Shilpa Garg
+3,E1,BCSE-501,Thursday,08:40,09:40,167,Ayush Bhujade
+3,E1,BCSE-505,Thursday,09:40,10:40,167,Dr. Bandana Sharma
+3,E1,BMAT-003C,Thursday,10:40,11:40,167,Dr. Shilpa Garg
+3,E1,BCSE-503,Thursday,11:40,12:40,167,Dr. Daxa Vekariya
+3,E1,BCSE-504,Thursday,14:40,15:40,119,Anurag Kumar Singh
+3,E1,BCSE-501,Tuesday,08:40,09:40,167,Ayush Bhujade
+3,E1,BCSE-504L,Tuesday,09:40,11:40,144,Anurag Kumar Singh
+3,E1,BET-I,Tuesday,11:40,12:40,167,PD Trainer
+3,E1,BCSE-502L,Tuesday,13:40,15:40,145,Dr. Bhupesh Gupta
+3,E1,BCSE-503,Wednesday,08:40,09:40,167,Dr. Daxa Vekariya
+3,E1,BCSE-502,Wednesday,09:40,10:40,167,Dr. Bhupesh Gupta
+3,E1,BCSE-501L,Wednesday,10:40,12:40,160,Ayush Bhujade
+3,E1,BCSE-505,Wednesday,13:40,14:40,167,Dr. Bandana Sharma
+3,E1,BCSE-504,Wednesday,14:40,15:40,167,Anurag Kumar Singh
+3,E2,BET-I,Friday,08:40,09:40,167,PD Trainer
+3,E2,BCSE-502,Friday,09:40,10:40,167,Dr. Bhupesh Gupta
+3,E2,BCSE-501L,Friday,10:40,12:40,147,Ayush Bhujade
+3,E2,BHUM-118,Friday,13:40,14:40,168,"Human Value & Ethics, [Doubt Clearing Session], Dr.Jotesh"
+3,E2,BMAT-003C,Friday,14:40,15:40,168,Dr. Shilpa Garg
+3,E2,BCSE-502,Monday,08:40,09:40,168,Dr. Bhupesh Gupta
+3,E2,BCSE-505,Monday,09:40,10:40,168,Dr. Bandana Sharma
+3,E2,BCSE-504,Monday,10:40,11:40,168,Anurag Kumar Singh
+3,E2,BCSE-503,Monday,11:40,12:40,168,Dr. Daxa Vekariya
+3,E2,BCSE-501,Monday,13:40,14:40,168,Ayush Bhujade
+3,E2,BMAT-003C,Monday,14:40,15:40,168,Dr. Shilpa Garg
+3,E2,BCSE-501,Thursday,08:40,09:40,167,Ayush Bhujade
+3,E2,BCSE-505,Thursday,09:40,10:40,167,Dr. Bandana Sharma
+3,E2,BMAT-003C,Thursday,10:40,11:40,167,Dr. Shilpa Garg
+3,E2,BCSE-503,Thursday,11:40,12:40,167,Dr. Daxa Vekariya
+3,E2,BCSE-504,Thursday,14:40,15:40,119,Anurag Kumar Singh
+3,E2,BCSE-501,Tuesday,08:40,09:40,167,Ayush Bhujade
+3,E2,BCSE-502L,Tuesday,09:40,11:40,145,Dr. Bhupesh Gupta
+3,E2,BET-I,Tuesday,11:40,12:40,167,PD Trainer
+3,E2,BCSE-504L,Tuesday,13:40,15:40,144,Anurag Kumar Singh
+3,E2,BCSE-503,Wednesday,08:40,09:40,167,Dr. Daxa Vekariya
+3,E2,BCSE-502,Wednesday,09:40,10:40,167,Dr. Bhupesh Gupta
+3,E2,BCSE-503L,Wednesday,10:40,12:40,147,Ms. Neelam Oberoi
+3,E2,BCSE-505,Wednesday,13:40,14:40,167,Dr. Bandana Sharma
+3,E2,BCSE-504,Wednesday,14:40,15:40,167,Anurag Kumar Singh
+3,F1,BCSE-501,Friday,08:40,09:40,168,Ayush Bhujade
+3,F1,BCSE-504,Friday,09:40,10:40,168,Nikhil Patil
+3,F1,BCSE-502,Friday,10:40,11:40,168,Dr. Prachi Garg
+3,F1,BCSE-505,Friday,11:40,12:40,168,Dr. Krishan Tuli
+3,F1,BCSE-503,Friday,13:40,14:40,169,Dr. Sumit Kumar Aggarwal
+3,F1,BET-I,Friday,14:40,15:40,169,Employability Training-I
+3,F1,BCSE-504,Monday,08:40,09:40,169,Nikhil Patil
+3,F1,BHUM-118,Monday,09:40,10:40,169,"Human Value & Ethics, [Doubt Clearing Session], Er. Praveen Kumar"
+3,F1,BCSE-501,Monday,10:40,11:40,169,Ayush Bhujade
+3,F1,BMAT-003C,Monday,11:40,12:40,169,Dr. Pooja Dhawan
+3,F1,BCSE-503,Monday,13:40,14:40,169,Dr. Sumit Kumar Aggarwal
+3,F1,BMAT-003C,Thursday,08:40,09:40,168,Dr. Pooja Dhawan
+3,F1,BET-I,Thursday,09:40,10:40,168,Employability Training-I
+3,F1,BCSE-502L,Thursday,10:40,12:40,145,Dr. Prachi Garg
+3,F1,BCSE-503,Thursday,13:40,14:40,168,Dr. Sumit Kumar Aggarwal
+3,F1,BCSE-502,Thursday,14:40,15:40,168,Dr. Prachi Garg
+3,F1,BCSE-504L,Tuesday,08:40,10:40,147,Nikhil Patil
+3,F1,BCSE-505,Tuesday,10:40,11:40,168,Dr. Krishan Tuli
+3,F1,BCSE-501,Tuesday,11:40,12:40,168,Ayush Bhujade
+3,F1,BCSE-502,Tuesday,13:40,14:40,168,Dr. Prachi Garg
+3,F1,BCSE-504,Tuesday,14:40,15:40,168,Nikhil Patil
+3,F1,BCSE-501L,Wednesday,08:40,10:40,147,Ayush Bhujade
+3,F1,BMAT-003C,Wednesday,10:40,11:40,167,Dr. Pooja Dhawan
+3,F1,BCSE-505,Wednesday,11:40,12:40,167,Dr. Krishan Tuli
+3,F1,BCSE-503L,Wednesday,13:40,15:40,145,Dr. Sumit Kumar Aggarwal
+3,F2,BCSE-501,Friday,08:40,09:40,168,Ayush Bhujade
+3,F2,BCSE-504,Friday,09:40,10:40,168,Nikhil Patil
+3,F2,BCSE-502,Friday,10:40,11:40,168,Dr. Prachi Garg
+3,F2,BCSE-505,Friday,11:40,12:40,168,Dr. Krishan Tuli
+3,F2,BCSE-503,Friday,13:40,14:40,169,Dr. Sumit Kumar Aggarwal
+3,F2,BET-I,Friday,14:40,15:40,169,Employability Training-I
+3,F2,BCSE-504,Monday,08:40,09:40,169,Nikhil Patil
+3,F2,BHUM-118,Monday,09:40,10:40,169,"Human Value & Ethics, [Doubt Clearing Session], Er. Praveen Kumar"
+3,F2,BCSE-501,Monday,10:40,11:40,169,Ayush Bhujade
+3,F2,BMAT-003C,Monday,11:40,12:40,169,Dr. Pooja Dhawan
+3,F2,BCSE-503,Monday,13:40,14:40,169,Dr. Sumit Kumar Aggarwal
+3,F2,BMAT-003C,Thursday,08:40,09:40,168,Dr. Pooja Dhawan
+3,F2,BET-I,Thursday,09:40,10:40,168,Employability Training-I
+3,F2,BCSE-504L,Thursday,10:40,12:40,144,Nikhil Patil
+3,F2,BCSE-503,Thursday,13:40,14:40,168,Dr. Sumit Kumar Aggarwal
+3,F2,BCSE-502,Thursday,14:40,15:40,168,Dr. Prachi Garg
+3,F2,BCSE-502L,Tuesday,08:40,10:40,160,Dr. Vinisha Sumra
+3,F2,BCSE-505,Tuesday,10:40,11:40,168,Dr. Krishan Tuli
+3,F2,BCSE-501,Tuesday,11:40,12:40,168,Ayush Bhujade
+3,F2,BCSE-502,Tuesday,13:40,14:40,168,Dr. Prachi Garg
+3,F2,BCSE-504,Tuesday,14:40,15:40,168,Nikhil Patil
+3,F2,BCSE-503L,Wednesday,08:40,10:40,160,Dr. Sumit Kumar Aggarwal
+3,F2,BMAT-003C,Wednesday,10:40,11:40,167,Dr. Pooja Dhawan
+3,F2,BCSE-505,Wednesday,11:40,12:40,167,Dr. Krishan Tuli
+3,F2,BCSE-501L,Wednesday,13:40,15:40,144,Ayush Bhujade
+3,G1,BCSE-504,Friday,08:40,09:40,206,Nikhil Patil
+3,G1,BMAT-003C,Friday,09:40,10:40,206,Dr. Shilpa Garg
+3,G1,BCSE-505,Friday,10:40,11:40,206,Mr. Ankur Mangla
+3,G1,BCSE-502,Friday,11:40,12:40,206,Dr. Prachi Garg
+3,G1,BCSE-501L,Friday,13:40,15:40,142,Ayush Bhujade
+3,G1,BCSE-503,Monday,08:40,09:40,206,Dr. Sumit Kumar Aggarwal
+3,G1,BCSE-502,Monday,09:40,10:40,206,Dr. Prachi Garg
+3,G1,BCSE-503L,Monday,10:40,12:40,142,Dr. Sumit Kumar Aggarwal
+3,G1,BCSE-505,Monday,13:40,14:40,170,Mr. Ankur Mangla
+3,G1,BCSE-501,Monday,14:40,15:40,170,Ayush Bhujade
+3,G1,BCSE-504,Thursday,08:40,09:40,206,Nikhil Patil
+3,G1,BCSE-501,Thursday,09:40,10:40,206,Ayush Bhujade
+3,G1,BET-I,Thursday,10:40,11:40,169,PD Trainer
+3,G1,BCSE-503,Thursday,11:40,12:40,169,Dr. Sumit Kumar Aggarwal
+3,G1,BCSE-502L,Thursday,13:40,15:40,144,Ms. Sonam
+3,G1,BMAT-003C,Tuesday,08:40,09:40,168,Dr. Shilpa Garg
+3,G1,BCSE-501,Tuesday,09:40,10:40,168,Ayush Bhujade
+3,G1,BCSE-504L,Tuesday,10:40,12:40,147,Nikhil Patil
+3,G1,BCSE-505,Tuesday,13:40,14:40,167,Mr. Ankur Mangla
+3,G1,BCSE-503,Tuesday,14:40,15:40,167,Dr. Sumit Kumar Aggarwal
+3,G1,BCSE-502,Wednesday,08:40,09:40,168,Dr. Prachi Garg
+3,G1,BMAT-003C,Wednesday,09:40,10:40,168,Dr. Shilpa Garg
+3,G1,BCSE-504,Wednesday,10:40,11:40,168,Nikhil Patil
+3,G1,BHUM-118,Wednesday,11:40,12:40,168,"Human Value & Ethics, 168 [Doubt Clearing Session], Er. Praveen Kumar"
+3,G1,BET-I,Wednesday,13:40,14:40,168,PD Trainer
+3,G2,BCSE-504,Friday,08:40,09:40,206,Nikhil Patil
+3,G2,BMAT-003C,Friday,09:40,10:40,206,Dr. Shilpa Garg
+3,G2,BCSE-505,Friday,10:40,11:40,206,Mr. Ankur Mangla
+3,G2,BCSE-502,Friday,11:40,12:40,206,Dr. Prachi Garg
+3,G2,BCSE-502L,Friday,13:40,15:40,143,Dr. Vinisha Sumra
+3,G2,BCSE-503,Monday,08:40,09:40,206,Dr. Sumit Kumar Aggarwal
+3,G2,BCSE-502,Monday,09:40,10:40,206,Dr. Prachi Garg
+3,G2,BCSE-504L,Monday,10:40,12:40,143,Nikhil Patil
+3,G2,BCSE-505,Monday,13:40,14:40,170,Mr. Ankur Mangla
+3,G2,BCSE-501,Monday,14:40,15:40,170,Ayush Bhujade
+3,G2,BCSE-504,Thursday,08:40,09:40,206,Nikhil Patil
+3,G2,BCSE-501,Thursday,09:40,10:40,206,Ayush Bhujade
+3,G2,BET-I,Thursday,10:40,11:40,169,PD Trainer
+3,G2,BCSE-503,Thursday,11:40,12:40,169,Dr. Sumit Kumar Aggarwal
+3,G2,BCSE-501L,Thursday,13:40,15:40,145,Ayush Bhujade
+3,G2,BMAT-003C,Tuesday,08:40,09:40,168,Dr. Shilpa Garg
+3,G2,BCSE-501,Tuesday,09:40,10:40,168,Ayush Bhujade
+3,G2,BCSE-503L,Tuesday,10:40,12:40,160,Dr. Bandana Sharma
+3,G2,BCSE-505,Tuesday,13:40,14:40,167,Mr. Ankur Mangla
+3,G2,BCSE-503,Tuesday,14:40,15:40,167,Dr. Sumit Kumar Aggarwal
+3,G2,BCSE-502,Wednesday,08:40,09:40,168,Dr. Prachi Garg
+3,G2,BMAT-003C,Wednesday,09:40,10:40,168,Dr. Shilpa Garg
+3,G2,BCSE-504,Wednesday,10:40,11:40,168,Nikhil Patil
+3,G2,BHUM-118,Wednesday,11:40,12:40,168,"Human Value & Ethics, 168 [Doubt Clearing Session], Er. Praveen Kumar"
+3,G2,BET-I,Wednesday,13:40,14:40,168,PD Trainer
+3,H1,BET-I,Friday,08:40,09:40,170,PD Trainer
+3,H1,BMAT-003C,Friday,09:40,10:40,170,Dr. Ravinder
+3,H1,BCSE-504L,Friday,10:40,12:40,161,Nikhil Patil
+3,H1,BCSE-505,Friday,13:40,14:40,357,Dr. Bandana Sharma
+3,H1,BHUM-118,Friday,14:40,15:40,170,"Human Value & Ethics, [Doubt Clearing Session], Dr.Jotesh"
+3,H1,BCSE-501,Monday,08:40,10:40,170,Ayush Bhujade
+3,H1,BCSE-505,Monday,10:40,11:40,170,Dr. Bandana Sharma
+3,H1,BCSE-502,Monday,11:40,12:40,170,3I Dr. Vinisha Sumra
+3,H1,BCSE-503,Monday,13:40,14:40,167,Dr. Sandhya Bansal
+3,H1,BMAT-003C,Monday,14:40,15:40,167,Dr. Ravinder
+3,H1,BCSE-502,Thursday,08:40,09:40,170,Dr. Vinisha Sumra
+3,H1,BMAT-003C,Thursday,09:40,10:40,170,Dr. Ravinder
+3,H1,BCSE-503L,Thursday,10:40,12:40,147,Dr. Sandhya Bansal
+3,H1,BCSE-504,Thursday,13:40,15:40,167,Nikhil Patil
+3,H1,BCSE-505,Tuesday,08:40,09:40,169,Dr. Bandana Sharma
+3,H1,BCSE-503,Tuesday,09:40,10:40,169,Dr. Sandhya Bansal
+3,H1,BCSE-501,Tuesday,10:40,11:40,169,Ayush Bhujade
+3,H1,BET-I,Tuesday,11:40,12:40,169,PD Trainer
+3,H1,BCSE-501L,Tuesday,13:40,15:40,147,Ayush Bhujade
+3,H1,BCSE-503,Wednesday,08:40,09:40,169,Dr. Sandhya Bansal
+3,H1,BCSE-502,Wednesday,10:40,11:40,169,Dr. Vinisha Sumra
+3,H1,BCSE-504,Wednesday,11:40,12:40,169,Nikhil Patil
+3,H1,BCSE-502L,Wednesday,13:40,15:40,147,Dr. Vinisha Sumra
+3,H2,BET-I,Friday,08:40,09:40,170,PD Trainer
+3,H2,BMAT-003C,Friday,09:40,10:40,170,Dr. Ravinder
+3,H2,BCSE-502L,Friday,10:40,12:40,162,Dr. Vinisha Sumra (H2)
+3,H2,BCSE-505,Friday,13:40,14:40,357,Dr. Bandana Sharma
+3,H2,BHUM-118,Friday,14:40,15:40,170,"Human Value & Ethics, [Doubt Clearing Session], Dr.Jotesh"
+3,H2,BCSE-501,Monday,08:40,10:40,170,Ayush Bhujade
+3,H2,BCSE-505,Monday,10:40,11:40,170,Dr. Bandana Sharma
+3,H2,BCSE-502,Monday,11:40,12:40,170,3I Dr. Vinisha Sumra
+3,H2,BCSE-503,Monday,13:40,14:40,167,Dr. Sandhya Bansal
+3,H2,BMAT-003C,Monday,14:40,15:40,167,Dr. Ravinder
+3,H2,BCSE-502,Thursday,08:40,09:40,170,Dr. Vinisha Sumra
+3,H2,BMAT-003C,Thursday,09:40,10:40,170,Dr. Ravinder
+3,H2,BCSE-501L,Thursday,10:40,12:40,160,Ayush Bhujade
+3,H2,BCSE-504,Thursday,13:40,15:40,167,Nikhil Patil
+3,H2,BCSE-505,Tuesday,08:40,09:40,169,Dr. Bandana Sharma
+3,H2,BCSE-503,Tuesday,09:40,10:40,169,Dr. Sandhya Bansal
+3,H2,BCSE-501,Tuesday,10:40,11:40,169,Ayush Bhujade
+3,H2,BET-I,Tuesday,11:40,12:40,169,PD Trainer
+3,H2,BCSE-503L,Tuesday,13:40,15:40,160,Dr. Sandhya Bansal
+3,H2,BCSE-503,Wednesday,08:40,09:40,169,Dr. Sandhya Bansal
+3,H2,BCSE-502,Wednesday,10:40,11:40,169,Dr. Vinisha Sumra
+3,H2,BCSE-504,Wednesday,11:40,12:40,169,Nikhil Patil
+3,H2,BCSE-504L,Wednesday,13:40,15:40,160,Nikhil Patil
+3,I1,BCSE-501,Friday,08:40,09:40,169,Ashwani Singh
+3,I1,BCSE-504,Friday,09:40,10:40,169,Mr. Vishal Trainer
+3,I1,BET-I,Friday,10:40,11:40,169,PD Trainer
+3,I1,BCSE-503,Friday,11:40,12:40,169,Dr. Charu Sharma
+3,I1,BCSE-504L,Friday,13:40,15:40,144,Anurag Kumar Singh
+3,I1,BCSE-502L,Monday,08:40,10:40,144,Dr. Naveen Malik
+3,I1,BCSE-505,Monday,10:40,11:40,206,Dr. Vinisha Sumra
+3,I1,BCSE-504,Monday,11:40,12:40,206,Mr. Vishal Trainer
+3,I1,BMAT-003C,Monday,13:40,14:40,170,Dr. Shilpa Garg
+3,I1,BCSE-503,Monday,14:40,15:40,170,Dr. Charu Sharma
+3,I1,BCSE-501L,Thursday,08:40,10:40,144,Ashwani Singh
+3,I1,BCSE-502,Thursday,10:40,11:40,168,Dr. Naveen Malik
+3,I1,BCSE-505,Thursday,11:40,12:40,168,Dr. Vinisha Sumra
+3,I1,BMAT-003C,Thursday,13:40,14:40,169,Dr. Shilpa Garg
+3,I1,BCSE-501,Tuesday,08:40,09:40,170,Ashwani Singh
+3,I1,BCSE-504,Tuesday,09:40,10:40,170,Mr. Vishal Trainer
+3,I1,BCSE-503,Tuesday,10:40,11:40,170,Dr. Charu Sharma
+3,I1,BCSE-505,Tuesday,11:40,12:40,170,Dr. Vinisha Sumra
+3,I1,BET-I,Tuesday,13:40,14:40,206,PD Trainer
+3,I1,BCSE-502,Tuesday,14:40,15:40,206,Dr. Naveen Malik
+3,I1,BCSE-503L,Wednesday,08:40,10:40,161,Dr. Charu Sharma
+3,I1,BHUM-118,Wednesday,10:40,11:40,170,"Human Value & Ethics, [Doubt Clearing Session], Dr. Sidharth sharma"
+3,I1,BCSE-501,Wednesday,11:40,12:40,170,Ashwani Singh
+3,I1,BMAT-003C,Wednesday,13:40,14:40,169,Dr. Shilpa Garg
+3,I1,BCSE-502,Wednesday,14:40,15:40,168,Dr. Naveen Malik
+3,I2,BCSE-501,Friday,08:40,09:40,169,Ashwani Singh
+3,I2,BCSE-504,Friday,09:40,10:40,169,Mr. Vishal Trainer
+3,I2,BET-I,Friday,10:40,11:40,169,PD Trainer
+3,I2,BCSE-503,Friday,11:40,12:40,169,Dr. Charu Sharma
+3,I2,BCSE-503L,Friday,13:40,15:40,145,Dr. Charu Sharma
+3,I2,BCSE-501L,Monday,08:40,10:40,145,Ashwani Singh
+3,I2,BCSE-505,Monday,10:40,11:40,206,Dr. Vinisha Sumra
+3,I2,BCSE-504,Monday,11:40,12:40,206,Mr. Vishal Trainer
+3,I2,BMAT-003C,Monday,13:40,14:40,170,Dr. Shilpa Garg
+3,I2,BCSE-503,Monday,14:40,15:40,170,Dr. Charu Sharma
+3,I2,BCSE-502L,Thursday,08:40,10:40,145,Dr. Naveen Malik
+3,I2,BCSE-502,Thursday,10:40,11:40,168,Dr. Naveen Malik
+3,I2,BCSE-505,Thursday,11:40,12:40,168,Dr. Vinisha Sumra
+3,I2,BMAT-003C,Thursday,13:40,14:40,169,Dr. Shilpa Garg
+3,I2,BCSE-501,Tuesday,08:40,09:40,170,Ashwani Singh
+3,I2,BCSE-504,Tuesday,09:40,10:40,170,Mr. Vishal Trainer
+3,I2,BCSE-503,Tuesday,10:40,11:40,170,Dr. Charu Sharma
+3,I2,BCSE-505,Tuesday,11:40,12:40,170,Dr. Vinisha Sumra
+3,I2,BET-I,Tuesday,13:40,14:40,206,PD Trainer
+3,I2,BCSE-502,Tuesday,14:40,15:40,206,Dr. Naveen Malik
+3,I2,BCSE-504L,Wednesday,08:40,10:40,162,Nikhil Patil (I2)
+3,I2,BHUM-118,Wednesday,10:40,11:40,170,"Human Value & Ethics, [Doubt Clearing Session], Dr. Sidharth sharma"
+3,I2,BCSE-501,Wednesday,11:40,12:40,170,Ashwani Singh
+3,I2,BMAT-003C,Wednesday,13:40,14:40,169,Dr. Shilpa Garg
+3,I2,BCSE-502,Wednesday,14:40,15:40,168,Dr. Naveen Malik
+3,J1,BHUM-118,Friday,08:40,09:40,207,"Human Value & Ethics, Dr. Sidharth sharma"
+3,J1,BCSE-501,Friday,09:40,10:40,119,Ashwani Singh
+3,J1,BCSE-502,Friday,10:40,11:40,119,Dr. Naveen Malik
+3,J1,BCSE-502L,Friday,13:40,15:40,147,Dr. Naveen Malik
+3,J1,BCSE-503,Monday,08:40,09:40,167,Dr. Charu Sharma
+3,J1,BCSE-504,Monday,09:40,10:40,167,Mr. Vishal Trainer
+3,J1,BMAT-003C,Monday,10:40,11:40,207,Dr. Shilpa Garg
+3,J1,BCSE-505,Monday,11:40,12:40,207,Dr. Krishan Tuli
+3,J1,BCSE-501L,Monday,13:40,15:40,147,Ashwani Singh
+3,J1,BMAT-003C,Thursday,08:40,09:40,169,Dr. Shilpa Garg
+3,J1,BCSE-503,Thursday,09:40,10:40,169,Dr. Charu Sharma
+3,J1,BCSE-505,Thursday,10:40,11:40,206,Dr. Krishan Tuli
+3,J1,BET-I,Thursday,11:40,12:40,206,PD Trainer
+3,J1,BCSE-504L,Thursday,13:40,15:40,147,Mr. Vishal Trainer
+3,J1,BCSE-504,Tuesday,08:40,09:40,206,Mr. Vishal Trainer
+3,J1,BCSE-505,Tuesday,09:40,10:40,206,Dr. Krishan Tuli
+3,J1,BCSE-501,Tuesday,10:40,11:40,206,Ashwani Singh
+3,J1,BCSE-502,Tuesday,11:40,12:40,206,Dr. Naveen Malik
+3,J1,BMAT-003C,Tuesday,13:40,14:40,170,Dr. Shilpa Garg
+3,J1,BCSE-503,Tuesday,14:40,15:40,170,Dr. Charu Sharma
+3,J1,BCSE-501,Wednesday,08:40,09:40,170,Ashwani Singh
+3,J1,BCSE-502,Wednesday,09:40,10:40,170,Dr. Naveen Malik
+3,J1,BCSE-504,Wednesday,10:40,11:40,206,Mr. Vishal Trainer
+3,J1,BET-I,Wednesday,11:40,12:40,206,PD Trainer
+3,J1,BCSE-503L,Wednesday,13:40,15:40,161,"Ms. Neelam Oberoi, (161)"
+3,J2,BHUM-118,Friday,08:40,09:40,207,"Human Value & Ethics, Dr. Sidharth sharma"
+3,J2,BCSE-501,Friday,09:40,10:40,119,Ashwani Singh
+3,J2,BCSE-502,Friday,10:40,11:40,119,Dr. Naveen Malik
+3,J2,BCSE-501L,Friday,13:40,15:40,160,Ashwani Singh
+3,J2,BCSE-503,Monday,08:40,09:40,167,Dr. Charu Sharma
+3,J2,BCSE-504,Monday,09:40,10:40,167,Mr. Vishal Trainer
+3,J2,BMAT-003C,Monday,10:40,11:40,207,Dr. Shilpa Garg
+3,J2,BCSE-505,Monday,11:40,12:40,207,Dr. Krishan Tuli
+3,J2,BCSE-502L,Monday,13:40,15:40,160,Dr. Naveen Malik
+3,J2,BMAT-003C,Thursday,08:40,09:40,169,Dr. Shilpa Garg
+3,J2,BCSE-503,Thursday,09:40,10:40,169,Dr. Charu Sharma
+3,J2,BCSE-505,Thursday,10:40,11:40,206,Dr. Krishan Tuli
+3,J2,BET-I,Thursday,11:40,12:40,206,PD Trainer
+3,J2,BCSE-503L,Thursday,13:40,15:40,160,Dr. Charu Sharma
+3,J2,BCSE-504,Tuesday,08:40,09:40,206,Mr. Vishal Trainer
+3,J2,BCSE-505,Tuesday,09:40,10:40,206,Dr. Krishan Tuli
+3,J2,BCSE-501,Tuesday,10:40,11:40,206,Ashwani Singh
+3,J2,BCSE-502,Tuesday,11:40,12:40,206,Dr. Naveen Malik
+3,J2,BMAT-003C,Tuesday,13:40,14:40,170,Dr. Shilpa Garg
+3,J2,BCSE-503,Tuesday,14:40,15:40,170,Dr. Charu Sharma
+3,J2,BCSE-501,Wednesday,08:40,09:40,170,Ashwani Singh
+3,J2,BCSE-502,Wednesday,09:40,10:40,170,Dr. Naveen Malik
+3,J2,BCSE-504,Wednesday,10:40,11:40,206,Mr. Vishal Trainer
+3,J2,BET-I,Wednesday,11:40,12:40,206,PD Trainer
+3,J2,BCSE-504L,Wednesday,13:40,15:40,162,Mr. Vishal Trainer (162)
+3,K1,BCSE-503,Friday,08:40,09:40,208,Dr. Daxa Vekariya
+3,K1,BCSE-505,Friday,09:40,10:40,208,Dr. Kamal Prakash
+3,K1,BCSE-502L,Friday,10:40,12:40,174,Dr. Kajal Jain
+3,K1,BCSE-504,Friday,13:40,14:40,170,Mr. Vishal Trainer
+3,K1,BCSE-503,Monday,08:40,09:40,207,Dr. Daxa Vekariya
+3,K1,BCSE-505,Monday,09:40,10:40,207,Dr. Kamal Prakash
+3,K1,BCSE-501,Monday,10:40,11:40,208,Ashwani Singh
+3,K1,BMAT-003C,Monday,11:40,12:40,208,Dr. Shilpa Garg
+3,K1,BCSE-504L,Monday,13:40,15:40,161,Mr. Vishal Trainer
+3,K1,BCSE-505,Thursday,08:40,09:40,207,Dr. Kamal Prakash
+3,K1,BET-I,Thursday,09:40,10:40,207,PD Trainer
+3,K1,BCSE-501,Thursday,10:40,11:40,170,Ashwani Singh
+3,K1,BCSE-504,Thursday,11:40,12:40,170,Mr. Vishal Trainer
+3,K1,BCSE-502,Thursday,13:40,14:40,170,Dr. Kajal Jain
+3,K1,BMAT-003C,Thursday,14:40,15:40,170,Dr. Shilpa Garg
+3,K1,BCSE-502,Tuesday,08:40,09:40,207,Dr. Kajal Jain
+3,K1,BCSE-501,Tuesday,09:40,10:40,207,Ashwani Singh
+3,K1,BET-I,Tuesday,10:40,11:40,207,PD Trainer
+3,K1,BCSE-504,Tuesday,11:40,12:40,207,Mr. Vishal Trainer
+3,K1,BCSE-501L,Tuesday,13:40,15:40,161,Ashwani Singh
+3,K1,BMAT-003C,Wednesday,08:40,09:40,206,Dr. Shilpa Garg
+3,K1,BHUM-118,Wednesday,09:40,10:40,206,"Human Value & Ethics [Doubt Clearing Session], Dr.Jotesh"
+3,K1,BCSE-503,Wednesday,10:40,11:40,207,Dr. Daxa Vekariya
+3,K1,BCSE-502,Wednesday,11:40,12:40,207,Dr. Kajal Jain
+3,K1,BCSE-503L,Wednesday,13:40,15:40,174,Dr. Daxa Vekariya
+3,K2,BCSE-503,Friday,08:40,09:40,208,Dr. Daxa Vekariya
+3,K2,BCSE-505,Friday,09:40,10:40,208,Dr. Kamal Prakash
+3,K2,BCSE-504L,Friday,10:40,12:40,245,Mr. Vishal Trainer
+3,K2,BCSE-504,Friday,13:40,14:40,170,Mr. Vishal Trainer
+3,K2,BCSE-503,Monday,08:40,09:40,207,Dr. Daxa Vekariya
+3,K2,BCSE-505,Monday,09:40,10:40,207,Dr. Kamal Prakash
+3,K2,BCSE-501,Monday,10:40,11:40,208,Ashwani Singh
+3,K2,BMAT-003C,Monday,11:40,12:40,208,Dr. Shilpa Garg
+3,K2,BCSE-502L,Monday,13:40,15:40,162,Dr. Kajal Jain
+3,K2,BCSE-505,Thursday,08:40,09:40,207,Dr. Kamal Prakash
+3,K2,BET-I,Thursday,09:40,10:40,207,PD Trainer
+3,K2,BCSE-501,Thursday,10:40,11:40,170,Ashwani Singh
+3,K2,BCSE-504,Thursday,11:40,12:40,170,Mr. Vishal Trainer
+3,K2,BCSE-502,Thursday,13:40,14:40,170,Dr. Kajal Jain
+3,K2,BMAT-003C,Thursday,14:40,15:40,170,Dr. Shilpa Garg
+3,K2,BCSE-502,Tuesday,08:40,09:40,207,Dr. Kajal Jain
+3,K2,BCSE-501,Tuesday,09:40,10:40,207,Ashwani Singh
+3,K2,BET-I,Tuesday,10:40,11:40,207,PD Trainer
+3,K2,BCSE-504,Tuesday,11:40,12:40,207,Mr. Vishal Trainer
+3,K2,BCSE-503L,Tuesday,13:40,15:40,162,Dr. Daxa Vekariya
+3,K2,BMAT-003C,Wednesday,08:40,09:40,206,Dr. Shilpa Garg
+3,K2,BHUM-118,Wednesday,09:40,10:40,206,"Human Value & Ethics [Doubt Clearing Session], Dr.Jotesh"
+3,K2,BCSE-503,Wednesday,10:40,11:40,207,Dr. Daxa Vekariya
+3,K2,BCSE-502,Wednesday,11:40,12:40,207,Dr. Kajal Jain
+3,K2,BCSE-501L,Wednesday,13:40,15:40,236,Ashwani Singh
+3,L1,BCSE-504,Friday,08:40,09:40,252,Mr. Vishal Trainer
+3,L1,BCSE-502,Friday,09:40,10:40,252,Dr. Kajal Jain
+3,L1,BCSE-501,Friday,10:40,12:40,167,Ashwani Singh
+3,L1,BCSE-503,Friday,13:40,14:40,206,Ms. Neelam Oberoi
+3,L1,BCSE-505,Friday,14:40,15:40,206,Dr. Sandip Kumar Goyal
+3,L1,BCSE-502,Monday,08:40,09:40,208,Dr. Kajal Jain
+3,L1,BCSE-503,Monday,09:40,10:40,208,Ms. Neelam Oberoi
+3,L1,BCSE-504,Monday,10:40,11:40,252,Mr. Vishal Trainer
+3,L1,BCSE-501,Monday,11:40,12:40,252,Ashwani Singh
+3,L1,BHUM-118,Monday,13:40,14:40,119,"Human Value & Ethics , Er. Praveen Kumar"
+3,L1,BCSE-505,Monday,14:40,15:40,119,Dr. Sandip Kumar Goyal
+3,L1,BCSE-504L,Thursday,08:40,10:40,147,Mr. Vishal Trainer
+3,L1,BET-I,Thursday,10:40,11:40,207,PD Trainer
+3,L1,BMAT-003C,Thursday,11:40,12:40,207,Dr. Ravinder
+3,L1,BCSE-503L,Thursday,13:40,15:40,161,Ms. Neelam Oberoi
+3,L1,BCSE-505,Tuesday,08:40,09:40,208,Dr. Sandip Kumar Goyal
+3,L1,BCSE-503,Tuesday,09:40,10:40,208,Ms. Neelam Oberoi
+3,L1,BCSE-502,Tuesday,10:40,11:40,208,Dr. Kajal Jain
+3,L1,BMAT-003C,Tuesday,11:40,12:40,208,Dr. Ravinder
+3,L1,BCSE-502L,Tuesday,13:40,15:40,174,Dr. Kajal Jain
+3,L1,BCSE-504,Wednesday,08:40,09:40,207,Mr. Vishal Trainer
+3,L1,BCSE-501L,Wednesday,09:40,11:40,174,Ashwani Singh
+3,L1,BET-I,Wednesday,11:40,12:40,208,PD Trainer
+3,L1,BMAT-003C,Wednesday,13:40,14:40,208,Dr. Ravinder
+3,L2,BCSE-504,Friday,08:40,09:40,252,Mr. Vishal Trainer
+3,L2,BCSE-502,Friday,09:40,10:40,252,Dr. Kajal Jain
+3,L2,BCSE-501,Friday,10:40,12:40,167,Ashwani Singh
+3,L2,BCSE-503,Friday,13:40,14:40,206,Ms. Neelam Oberoi
+3,L2,BCSE-505,Friday,14:40,15:40,206,Dr. Sandip Kumar Goyal
+3,L2,BCSE-502,Monday,08:40,09:40,208,Dr. Kajal Jain
+3,L2,BCSE-503,Monday,09:40,10:40,208,Ms. Neelam Oberoi
+3,L2,BCSE-504,Monday,10:40,11:40,252,Mr. Vishal Trainer
+3,L2,BCSE-501,Monday,11:40,12:40,252,Ashwani Singh
+3,L2,BHUM-118,Monday,13:40,14:40,119,"Human Value & Ethics , Er. Praveen Kumar"
+3,L2,BCSE-505,Monday,14:40,15:40,119,Dr. Sandip Kumar Goyal
+3,L2,BCSE-503L,Thursday,08:40,10:40,160,Ms. Neelam Oberoi
+3,L2,BET-I,Thursday,10:40,11:40,207,PD Trainer
+3,L2,BMAT-003C,Thursday,11:40,12:40,207,Dr. Ravinder
+3,L2,BCSE-501L,Thursday,13:40,15:40,162,Ashwani Singh
+3,L2,BCSE-505,Tuesday,08:40,09:40,208,Dr. Sandip Kumar Goyal
+3,L2,BCSE-503,Tuesday,09:40,10:40,208,Ms. Neelam Oberoi
+3,L2,BCSE-502,Tuesday,10:40,11:40,208,Dr. Kajal Jain
+3,L2,BMAT-003C,Tuesday,11:40,12:40,208,Dr. Ravinder
+3,L2,BCSE-504L,Tuesday,13:40,15:40,236,Mr. Vishal Trainer
+3,L2,BCSE-504,Wednesday,08:40,09:40,207,Mr. Vishal Trainer
+3,L2,BCSE-502L,Wednesday,09:40,11:40,236,Dr. Kajal Jain
+3,L2,BET-I,Wednesday,11:40,12:40,208,PD Trainer
+3,L2,BMAT-003C,Wednesday,13:40,14:40,208,Dr. Ravinder

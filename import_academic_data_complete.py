@@ -9,14 +9,13 @@ ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "academic-data"
 
 load_dotenv(ROOT / "backend" / ".env")
-load_dotenv(ROOT / "frontend" / ".env")
 
-SUPABASE_URL = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL") or "https://zokjbhznksyqaisgwvcy.supabase.co"
+SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
 SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-if not SERVICE_ROLE_KEY:
+if not SUPABASE_URL or not SERVICE_ROLE_KEY:
     raise RuntimeError(
-        "Missing SUPABASE_SERVICE_ROLE_KEY in backend/.env. Please add it to backend/.env before running."
+        "Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in backend/.env"
     )
 
 supabase = create_client(SUPABASE_URL, SERVICE_ROLE_KEY)
@@ -51,11 +50,13 @@ def upsert_subjects():
         "section": r["section"],
         "subject_code": r["subject_code"] or None,
         "subject_name": r["subject_name"],
-        "subject_type": r.get("subject_type") or "Theory",
-        "teacher_name": r.get("teacher_name") or None,
-        "room": r.get("room") or None,
+        "subject_type": r["subject_type"] or "Theory",
+        "teacher_name": r["teacher_name"] or None,
+        "room": r["room"] or None,
     } for r in rows]
     if records:
+        # Existing schema has no unique constraint on these fields.
+        # To avoid duplicates, delete only the semester/sections being imported first.
         semesters = sorted({int(r["semester"]) for r in rows})
         sections = sorted({r["section"] for r in rows})
         for sem in semesters:
@@ -69,6 +70,7 @@ def upsert_subjects():
 
 def import_timetable():
     rows = read_csv("timetable.csv")
+    # Remove prior timetable rows for semester 3 sections in this import.
     sems = sorted({int(r["semester"]) for r in rows})
     secs = sorted({r["section"] for r in rows})
     for sem in sems:
@@ -135,6 +137,7 @@ def import_labs():
 
 def import_syllabus():
     rows = read_csv("syllabus.csv")
+    # Remove syllabus rows for the imported subject codes first.
     codes = sorted({r["subject_code"] for r in rows if r.get("subject_code")})
     for code in codes:
         q = supabase.table("academic_subjects").select("id").eq(
@@ -160,7 +163,7 @@ def import_syllabus():
 
         records.append({
             "subject_id": subject["id"],
-            "unit_number": int(r["unit_number"]) if r.get("unit_number") else None,
+            "unit_number": int(r["unit_number"]) if r["unit_number"] else None,
             "topic_name": r["topic_name"],
             "description": r.get("description") or None,
         })

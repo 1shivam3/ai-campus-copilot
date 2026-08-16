@@ -1,5 +1,6 @@
 const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
   "https://ai-campus-copilot-uanp.onrender.com"
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 45000) {
@@ -220,4 +221,271 @@ export async function disconnectCalendarService(userId) {
 
   return response.json()
 }
+
+// ---------------------------------------------------------
+// STUDY MATERIAL SYLLABUS TOPIC MATCHING API
+// ---------------------------------------------------------
+
+export async function matchStudyMaterialTopics(studyMaterialId, userId) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/match-study-material`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        study_material_id: Number(studyMaterialId),
+        user_id: userId,
+      }),
+    },
+    30000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Topic matching failed. Please try again.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// ASK THIS MATERIAL & DOCUMENT ACTIONS API
+// ---------------------------------------------------------
+
+export async function askStudyMaterial({ studyMaterialId, userId, question, actionType = "ask" }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/ask-study-material`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        study_material_id: Number(studyMaterialId),
+        user_id: userId,
+        question: question || "Explain this document",
+        action_type: actionType,
+      }),
+    },
+    35000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Could not generate answer for this study material.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// RAG INDEXING API
+// ---------------------------------------------------------
+
+export async function indexStudyMaterial({ studyMaterialId, userId }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/index-study-material`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        study_material_id: Number(studyMaterialId),
+        user_id: userId,
+      }),
+    },
+    45000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "RAG indexing failed. Please try again.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// AI STUDY PACK GENERATION API
+// ---------------------------------------------------------
+
+export async function generateStudyPack({ studyMaterialId, userId, forceRegenerate = false }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/generate-study-pack`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        study_material_id: Number(studyMaterialId),
+        user_id: userId,
+        force_regenerate: forceRegenerate,
+      }),
+    },
+    45000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Your document is indexed, but the study pack could not be generated. Please try again.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// AI FLASHCARDS GENERATION & SPACED REPETITION API
+// ---------------------------------------------------------
+
+export async function generateFlashcards({ studyMaterialId, userId, count = 15, forceRegenerate = false }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/generate-flashcards`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        study_material_id: Number(studyMaterialId),
+        user_id: userId,
+        count: Number(count),
+        force_regenerate: forceRegenerate,
+      }),
+    },
+    45000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Flashcard generation failed. Please try again.")
+  }
+
+  return response.json()
+}
+
+export async function reviewFlashcard({ flashcardId, userId, rating }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/review-flashcard`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        flashcard_id: Number(flashcardId),
+        user_id: userId,
+        rating,
+      }),
+    },
+    15000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Could not save flashcard review rating.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// PREVIOUS-YEAR QUESTION PAPER ANALYZER API
+// ---------------------------------------------------------
+
+export async function analyzeExamPaper({ studyMaterialId, userId, forceRegenerate = false }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/analyze-exam-paper`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        study_material_id: Number(studyMaterialId),
+        user_id: userId,
+        force_regenerate: forceRegenerate,
+      }),
+    },
+    50000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "The question paper is safely uploaded, but analysis could not be completed. Please try again.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// GLOBAL ACADEMIC SEARCH API
+// ---------------------------------------------------------
+
+export async function searchAcademicWorkspace({ query, userId, semester, section, limit = 25 }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/academic-search`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: query.trim(),
+        user_id: userId,
+        semester: semester ? Number(semester) : null,
+        section: section || null,
+        limit: Number(limit),
+      }),
+    },
+    15000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Search request failed.")
+  }
+
+  return response.json()
+}
+
+// ---------------------------------------------------------
+// AI STUDY COPILOT CHAT API
+// ---------------------------------------------------------
+
+export async function sendCopilotMessage({ message, userId, conversationId = null }) {
+  const response = await fetchWithTimeout(
+    `${API_URL}/api/copilot-chat`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: message.trim(),
+        user_id: userId,
+        conversation_id: conversationId ? Number(conversationId) : null,
+      }),
+    },
+    45000
+  )
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}))
+    throw new Error(errData.detail || "Copilot message failed. Please try again.")
+  }
+
+  return response.json()
+}
+
+
+
+
+
+
+
+
 

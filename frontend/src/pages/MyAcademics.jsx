@@ -17,7 +17,6 @@ function MyAcademics({ profile }) {
     "Wednesday",
     "Thursday",
     "Friday",
-    "Saturday",
   ]
 
   useEffect(() => {

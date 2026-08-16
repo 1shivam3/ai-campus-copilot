@@ -1,10 +1,44 @@
+# Node & Frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+*.local
+
+# Python & Backend
 backend/venv/
+backend/.venv/
+venv/
+.venv/
+__pycache__/
 backend/__pycache__/
+backend/*/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Environment Variables
 .env
 .env.*
 !.env.example
 frontend/.env
+frontend/.env.*
+!frontend/.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Logs & Temporary Files
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.system_generated/
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

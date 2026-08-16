@@ -44,13 +44,13 @@ function AITest({ user, onStartSession, schedule, profile }) {
           .gte("exam_date", new Date().toISOString()),
 
         supabase
-          .from("topics")
-          .select("id, user_id, subject, topic_name, mastery_score")
+          .from("student_topic_progress")
+          .select("id, user_id, mastery_score, syllabus_topic_id, syllabus_topics(topic_name, academic_subjects(subject_name))")
           .eq("user_id", user.id),
       ])
 
-      if (tasksResult.error || examsResult.error || topicsResult.error) {
-        throw tasksResult.error || examsResult.error || topicsResult.error
+      if (tasksResult.error || examsResult.error) {
+        throw tasksResult.error || examsResult.error
       }
 
       const recommendationResult = getAcademicRecommendation(

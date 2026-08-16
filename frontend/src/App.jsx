@@ -7,8 +7,12 @@ import Progress from "./pages/Progress"
 import Tasks from "./pages/Tasks"
 import Exams from "./pages/Exams"
 import ExamMode from "./pages/ExamMode"
-import AITest from "./pages/AITest"
+import CopilotChat from "./pages/CopilotChat"
 import StudyMaterial from "./pages/StudyMaterial"
+import StudyMaterialReader from "./pages/StudyMaterialReader"
+import StudyPack from "./pages/StudyPack"
+import Flashcards from "./pages/Flashcards"
+import ExamPaperAnalysis from "./pages/ExamPaperAnalysis"
 import FocusSession from "./pages/FocusSession"
 import Auth from "./pages/Auth"
 import ProfileSetup from "./pages/ProfileSetup"
@@ -29,6 +33,8 @@ import { fetchCalendarEvents, submitCalendarOAuthCode } from "./lib/api"
 import { generateSmartNotifications, DEFAULT_NOTIFICATION_PREFERENCES } from "./utils/notificationEngine"
 import { dispatchNativeBrowserNotification } from "./lib/notifications"
 import NotificationCenter from "./components/NotificationCenter"
+import GlobalSearch from "./components/GlobalSearch"
+import MobileBottomNav from "./components/MobileBottomNav"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -37,6 +43,13 @@ function App() {
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState("Dashboard")
+  const [selectedMaterialIdForReader, setSelectedMaterialIdForReader] = useState(null)
+  const [selectedMaterialIdForStudyPack, setSelectedMaterialIdForStudyPack] = useState(null)
+  const [selectedMaterialIdForFlashcards, setSelectedMaterialIdForFlashcards] = useState(null)
+  const [selectedMaterialIdForAnalysis, setSelectedMaterialIdForAnalysis] = useState(null)
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
+  const [dueFlashcardsCount, setDueFlashcardsCount] = useState(0)
+  const [dueFlashcardsMaterialId, setDueFlashcardsMaterialId] = useState(null)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [recommendedTaskId, setRecommendedTaskId] = useState(null)
   const [dashboardTasks, setDashboardTasks] = useState([])
@@ -300,14 +313,42 @@ function App() {
           .order("exam_date", { ascending: true }),
 
         supabase
-          .from("topics")
-          .select("id, subject, topic_name, mastery_score")
+          .from("student_topic_progress")
+          .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
           .eq("user_id", user.id),
       ])
 
+      const formattedTopics = (topicsResult.data || []).map((p) => ({
+        id: p.syllabus_topic_id || p.id,
+        topic_name: p.syllabus_topics?.topic_name || "Topic",
+        subject: p.syllabus_topics?.academic_subjects?.subject_name || "Academic Subject",
+        mastery_score: p.mastery_score || 0,
+        status: p.status || "not_started",
+      }))
+
       setDashboardTasks(tasksResult.data || [])
       setDashboardExams(examsResult.data || [])
-      setDashboardTopics(topicsResult.data || [])
+      setDashboardTopics(formattedTopics)
+
+      // Check for due flashcards
+      try {
+        const now = new Date().toISOString()
+        const { data: fcData } = await supabase
+          .from("study_flashcards")
+          .select("id, study_material_id, next_review_at")
+          .eq("user_id", user.id)
+          .lte("next_review_at", now)
+
+        if (fcData && fcData.length > 0) {
+          setDueFlashcardsCount(fcData.length)
+          setDueFlashcardsMaterialId(fcData[0].study_material_id)
+        } else {
+          setDueFlashcardsCount(0)
+          setDueFlashcardsMaterialId(null)
+        }
+      } catch (fcErr) {
+        console.warn("Due flashcards check notice:", fcErr)
+      }
     } catch (err) {
       console.error("Academic data error:", err)
     }
@@ -470,6 +511,52 @@ function App() {
     }
   }
 
+  // Global Shortcut: Ctrl+K or Cmd+K for Academic Search
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setSearchModalOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
+  const handleGlobalSearchNavigation = (type, metadata) => {
+    if (type === "syllabus") {
+      setCurrentPage("Syllabus")
+    } else if (type === "study_material") {
+      if (metadata?.material_id) {
+        setSelectedMaterialIdForReader(metadata.material_id)
+        setSelectedMaterialIdForAnalysis(null)
+        setSelectedMaterialIdForFlashcards(null)
+        setSelectedMaterialIdForStudyPack(null)
+      }
+      setCurrentPage("Study Material")
+    } else if (type === "previous_paper") {
+      if (metadata?.material_id) {
+        setSelectedMaterialIdForAnalysis(metadata.material_id)
+        setSelectedMaterialIdForReader(null)
+        setSelectedMaterialIdForFlashcards(null)
+        setSelectedMaterialIdForStudyPack(null)
+      }
+      setCurrentPage("Study Material")
+    } else if (type === "flashcard") {
+      if (metadata?.material_id) {
+        setSelectedMaterialIdForFlashcards(metadata.material_id)
+        setSelectedMaterialIdForReader(null)
+        setSelectedMaterialIdForAnalysis(null)
+        setSelectedMaterialIdForStudyPack(null)
+      }
+      setCurrentPage("Study Material")
+    } else if (type === "task") {
+      setCurrentPage("Tasks")
+    } else if (type === "exam") {
+      setCurrentPage("Exams")
+    }
+  }
+
   if (authLoading || (user && profileLoading && !profile)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8fafc] p-6 text-slate-900">
@@ -549,23 +636,23 @@ function App() {
       <div className="min-w-0 flex-1 flex flex-col">
         {/* Mobile Top Header */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md lg:hidden">
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setMobileNavOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 transition"
-              aria-label="Open menu"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <div className="flex items-center gap-2">
-              <CoursePilotMark className="h-6 w-6" />
-              <span className="text-sm font-bold text-slate-900">{currentPage}</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <CoursePilotMark className="h-6 w-6" />
+            <span className="text-sm font-bold text-slate-900">{currentPage}</span>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Global Academic Search Trigger (Header) */}
+            <button
+              type="button"
+              onClick={() => setSearchModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/90 px-3 py-1 text-xs text-slate-500 hover:border-slate-300 hover:bg-white transition shadow-2xs group"
+              title="Search your academics (Ctrl+K)"
+            >
+              <span>🔍</span>
+              <span className="hidden sm:inline font-medium">Search...</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setNotificationModalOpen(true)}
@@ -580,14 +667,6 @@ function App() {
               )}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setCalendarModalOpen(true)}
-              className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition"
-            >
-              <span>📅</span>
-              <span className="hidden sm:inline">Calendar</span>
-            </button>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
               Sem {profile.semester}
             </span>
@@ -595,7 +674,7 @@ function App() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1">
+        <main className="flex-1 pb-24 lg:pb-0">
           {currentPage === "Dashboard" && (
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
               {/* Dashboard Greeting Header */}
@@ -613,6 +692,18 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSearchModalOpen(true)}
+                    className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs group"
+                  >
+                    <span>🔍</span>
+                    <span>Search</span>
+                    <kbd className="hidden sm:inline rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400">
+                      Ctrl K
+                    </kbd>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setNotificationModalOpen(true)}
@@ -777,6 +868,69 @@ function App() {
                   )}
                 </section>
               ) : null}
+
+              {/* Flashcards Review Due Recommendation Banner */}
+              {dueFlashcardsCount > 0 && (
+                <div className="mb-8 rounded-3xl border border-amber-200 bg-linear-to-r from-amber-50 via-white to-amber-50/40 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white font-bold text-lg shadow-xs">
+                      🎴
+                    </span>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                        REVIEW DUE
+                      </span>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        {dueFlashcardsCount} {dueFlashcardsCount === 1 ? "flashcard" : "flashcards"} due today
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Spaced repetition interval reached. Review now to consolidate memory.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (dueFlashcardsMaterialId) {
+                        setSelectedMaterialIdForFlashcards(dueFlashcardsMaterialId)
+                      }
+                      setCurrentPage("Study Material")
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition active:scale-[0.98]"
+                  >
+                    <span>Review Now →</span>
+                  </button>
+                </div>
+              )}
+
+              {/* AI Study Copilot Fast Launcher Card */}
+              <div className="mb-8 rounded-3xl border border-blue-200/90 bg-linear-to-r from-blue-50/80 via-white to-blue-50/40 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-xs">
+                    🤖
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
+                      AI STUDY COPILOT
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Ask anything about your academics
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Conversational guidance grounded in your live timetable, weak syllabus topics, and notes.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage("AI Copilot")}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition active:scale-[0.98]"
+                >
+                  <span>Open Copilot Chat →</span>
+                </button>
+              </div>
 
               {/* Schedule & Academic Context Row */}
               <section className="mb-8 grid gap-5 lg:grid-cols-3">
@@ -1082,16 +1236,108 @@ function App() {
           {currentPage === "Tasks" && <Tasks user={user} />}
           {currentPage === "Exams" && <Exams user={user} />}
           {currentPage === "Exam Mode" && <ExamMode user={user} profile={profile} />}
-          {currentPage === "Study Material" && <StudyMaterial user={user} />}
+          {currentPage === "Study Material" && (
+            selectedMaterialIdForAnalysis ? (
+              <ExamPaperAnalysis
+                materialId={selectedMaterialIdForAnalysis}
+                user={user}
+                profile={profile}
+                onBack={() => setSelectedMaterialIdForAnalysis(null)}
+                onOpenReader={(id) => {
+                  setSelectedMaterialIdForAnalysis(null)
+                  setSelectedMaterialIdForReader(id)
+                }}
+                onOpenExamMode={() => {
+                  setSelectedMaterialIdForAnalysis(null)
+                  setCurrentPage("Exam Mode")
+                }}
+                onOpenStudyPack={(id) => {
+                  setSelectedMaterialIdForAnalysis(null)
+                  setSelectedMaterialIdForStudyPack(id)
+                }}
+              />
+            ) : selectedMaterialIdForFlashcards ? (
+              <Flashcards
+                materialId={selectedMaterialIdForFlashcards}
+                user={user}
+                profile={profile}
+                onBack={() => setSelectedMaterialIdForFlashcards(null)}
+                onOpenReader={(id) => {
+                  setSelectedMaterialIdForFlashcards(null)
+                  setSelectedMaterialIdForReader(id)
+                }}
+              />
+            ) : selectedMaterialIdForStudyPack ? (
+              <StudyPack
+                materialId={selectedMaterialIdForStudyPack}
+                user={user}
+                profile={profile}
+                onBack={() => setSelectedMaterialIdForStudyPack(null)}
+                onOpenReader={(id) => {
+                  setSelectedMaterialIdForStudyPack(null)
+                  setSelectedMaterialIdForReader(id)
+                }}
+                onOpenFlashcards={(id) => {
+                  setSelectedMaterialIdForStudyPack(null)
+                  setSelectedMaterialIdForFlashcards(id)
+                }}
+                onNavigateToSyllabus={() => {
+                  setSelectedMaterialIdForStudyPack(null)
+                  setCurrentPage("Syllabus")
+                }}
+              />
+            ) : selectedMaterialIdForReader ? (
+              <StudyMaterialReader
+                materialId={selectedMaterialIdForReader}
+                user={user}
+                profile={profile}
+                onBack={() => setSelectedMaterialIdForReader(null)}
+                onOpenStudyPack={(id) => {
+                  setSelectedMaterialIdForReader(null)
+                  setSelectedMaterialIdForStudyPack(id)
+                }}
+                onOpenFlashcards={(id) => {
+                  setSelectedMaterialIdForReader(null)
+                  setSelectedMaterialIdForFlashcards(id)
+                }}
+                onOpenExamAnalysis={(id) => {
+                  setSelectedMaterialIdForReader(null)
+                  setSelectedMaterialIdForAnalysis(id)
+                }}
+                onNavigateToSyllabus={() => {
+                  setSelectedMaterialIdForReader(null)
+                  setCurrentPage("Syllabus")
+                }}
+              />
+            ) : (
+              <StudyMaterial
+                user={user}
+                profile={profile}
+                onNavigateToSyllabus={() => setCurrentPage("Syllabus")}
+                onOpenReader={(id) => setSelectedMaterialIdForReader(id)}
+                onOpenStudyPack={(id) => setSelectedMaterialIdForStudyPack(id)}
+                onOpenFlashcards={(id) => setSelectedMaterialIdForFlashcards(id)}
+                onOpenExamAnalysis={(id) => setSelectedMaterialIdForAnalysis(id)}
+              />
+            )
+          )}
           {currentPage === "AI Copilot" && (
-            <AITest
+            <CopilotChat
               user={user}
-              schedule={dashboardSchedule}
               profile={profile}
+              onNavigate={(page) => setCurrentPage(page)}
               onStartSession={(taskId) => {
                 setRecommendedTaskId(taskId)
                 setCurrentPage("Focus Session")
               }}
+              onOpenReader={(id) => {
+                setSelectedMaterialIdForReader(id)
+                setSelectedMaterialIdForAnalysis(null)
+                setSelectedMaterialIdForFlashcards(null)
+                setSelectedMaterialIdForStudyPack(null)
+                setCurrentPage("Study Material")
+              }}
+              onOpenExamMode={() => setCurrentPage("Exam Mode")}
             />
           )}
           {currentPage === "Focus Session" && (
@@ -1132,6 +1378,27 @@ function App() {
         }}
         preferences={notificationPreferences}
         onUpdatePreferences={updateNotificationPreferences}
+      />
+
+      {/* Global Academic Search Modal */}
+      <GlobalSearch
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        user={user}
+        profile={profile}
+        onNavigate={handleGlobalSearchNavigation}
+      />
+
+      {/* Mobile Bottom Taskbar Navigation (< 768px) */}
+      <MobileBottomNav
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        user={user}
+        profile={profile}
+        onLogout={handleLogout}
+        onOpenCalendar={() => setCalendarModalOpen(true)}
+        onOpenNotifications={() => setNotificationModalOpen(true)}
+        unreadCount={unreadNotifCount}
       />
     </div>
   )
