@@ -25,9 +25,9 @@ This guide provides structured demonstration flows for presenting CoursePilot to
 - **Action**: Click **Start Now** on the Next Best Action card $\to$ Launch Focus Session $\to$ Click **✓ Mark Task Done & Return to Dashboard**.
 - **Narration**: *"The student clicks 'Start Now' and enters a distraction-free Pomodoro session with context already selected. When they finish and mark it complete, two things happen immediately: their topic mastery score increments in the database, and the engine recalculates priorities in real-time, removing the completed task and surfacing the next critical priority without a page reload."*
 
-### Step 4: AI Schedule-Aware Strategy (1:30 - 2:00)
-- **Action**: Navigate to **AI Copilot** or **Exam Mode** $\to$ Show on-demand Gemini AI strategy.
-- **Narration**: *"Whenever the student needs guidance, our backend AI proxy synthesizes their exact schedule and syllabus risk to formulate a high-yield study plan and adaptive practice MCQs."*
+### Step 4: AI Study Pack & Exam Mode Strategy (1:30 - 2:00)
+- **Action**: Navigate to **Study Material** or **Exam Mode** $\to$ Show on-demand Gemini AI Study Pack and Exam Practice Quiz.
+- **Narration**: *"Whenever the student needs guidance, our backend AI proxy synthesizes their lecture notes via RAG to formulate high-yield study packs, SM-2 flashcards, and adaptive exam practice MCQs."*
 
 ---
 

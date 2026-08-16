@@ -1,6 +1,6 @@
 # CoursePilot Database Architecture & Schema Reference
 
-CoursePilot uses Supabase (PostgreSQL 15) with `pgvector` for Retrieval-Augmented Generation (RAG), coupled with strict Row-Level Security (RLS) policies.
+CoursePilot uses Supabase (PostgreSQL 15) with `pgvector` for Retrieval-Augmented Generation (RAG), coupled with Row-Level Security (RLS) policies, and local IndexedDB for offline-first caching.
 
 ---
 
@@ -18,14 +18,14 @@ Stores valid semester and section identifiers.
 ### `academic_subjects`
 Stores subject listings and metadata.
 - `id` (bigint, PK)
-- `subject_code` (text, e.g. `'CS201'`)
+- `subject_code` (text, e.g. `'BCSE-501'`)
 - `subject_name` (text, e.g. `'Data Structures & Algorithms'`)
 - `semester` (integer)
 - `section` (text)
 - `created_at` (timestamptz)
 
 ### `class_schedule`
-Stores scheduled weekly lectures.
+Stores scheduled weekly lectures and lab sessions across all 24 sections (`A1`–`L2`).
 - `id` (bigint, PK)
 - `subject_id` (bigint, FK -> `academic_subjects.id`)
 - `subject_name` (text)
@@ -33,24 +33,9 @@ Stores scheduled weekly lectures.
 - `day_of_week` (text, e.g. `'Monday'`)
 - `start_time` (time)
 - `end_time` (time)
-- `room_number` (text)
-- `faculty_name` (text)
-- `class_type` (text, `'Lecture'`)
-- `semester` (integer)
-- `section` (text)
-
-### `lab_schedule`
-Stores scheduled laboratory sessions.
-- `id` (bigint, PK)
-- `subject_id` (bigint, FK -> `academic_subjects.id`)
-- `subject_name` (text)
-- `subject_code` (text)
-- `day_of_week` (text)
-- `start_time` (time)
-- `end_time` (time)
-- `lab_name` (text)
-- `faculty_name` (text)
-- `batch` (text)
+- `room` (text)
+- `teacher_name` (text)
+- `class_type` (text, `'Lecture' | 'Lab'`)
 - `semester` (integer)
 - `section` (text)
 
@@ -65,32 +50,34 @@ Hierarchical topic breakdown per subject unit.
 
 ---
 
-## 2. Student Workspace & Intelligence Tables (User-Scoped with RLS)
+## 2. Student Workspace Tables (User-Scoped with RLS)
 
 Every table below has Row Level Security (RLS) enabled. Students can only query, insert, update, or delete records where `user_id = auth.uid()`.
 
-### `profiles` / `student_profiles`
+### `student_profiles`
 Student account and semester enrollment profile.
 - `id` (uuid, PK -> `auth.users.id`)
 - `full_name` (text)
 - `semester` (integer)
 - `section` (text)
-- `college_name` (text)
+- `avatar_url` (text)
+- `public_display_name` (text)
+- `reputation` (integer)
 - `created_at` (timestamptz)
 - `updated_at` (timestamptz)
 
 ### `student_topic_progress`
-Tracks student mastery ($0\% - 100\%$) on syllabus topics.
+Authoritative table for student mastery ($0\% - 100\%$) across syllabus topics.
 - `id` (bigint, PK)
 - `user_id` (uuid, FK -> `auth.users.id`)
 - `syllabus_topic_id` (bigint, FK -> `syllabus_topics.id`)
 - `mastery_score` (integer, 0-100)
-- `status` (text, `'not_started' | 'in_progress' | 'mastered' | 'needs_revision'`)
+- `status` (text, `'not_started' | 'learning' | 'mastered'`)
 - `last_studied_at` (timestamptz)
 - `updated_at` (timestamptz)
 
 ### `topic_quiz_attempts` & `exam_quiz_attempts`
-Records quiz history, answers, and mastery adjustments.
+Records quiz history, answers, and score adjustments.
 - `id` (bigint, PK)
 - `user_id` (uuid, FK -> `auth.users.id`)
 - `syllabus_topic_id` (bigint, FK -> `syllabus_topics.id`)
@@ -177,22 +164,12 @@ Generated comprehensive study packs (summary, key concepts, definitions, high-yi
 - `common_confusions` (jsonb)
 - `examples` (jsonb)
 - `quick_revision` (jsonb)
-- `practice_questions` (jsonb)
 - `created_at` (timestamptz)
 
 ### `study_flashcards` & `flashcard_reviews`
-Spaced-repetition flashcards generated from uploaded documents.
-- `id` (bigint, PK)
-- `user_id` (uuid, FK -> `auth.users.id`)
-- `study_material_id` (bigint, FK -> `study_materials.id`)
-- `question` (text)
-- `answer` (text)
-- `topic` (text)
-- `difficulty` (text)
-- `interval_days` (integer)
-- `repetition_count` (integer)
-- `ease_factor` (float)
-- `next_review_at` (timestamptz)
+Spaced-repetition flashcards generated from uploaded documents with SM-2 metrics.
+- `study_flashcards`: `id`, `user_id`, `study_material_id`, `question`, `answer`, `topic`, `difficulty`, `interval_days`, `repetition_count`, `ease_factor`, `next_review_at`
+- `flashcard_reviews`: `id`, `user_id`, `flashcard_id`, `rating`, `review_duration_ms`, `created_at`
 
 ### `exam_paper_analysis`
 Structured breakdown of previous year exam papers.
@@ -207,11 +184,6 @@ Structured breakdown of previous year exam papers.
 - `difficulty_breakdown` (jsonb)
 - `revision_recommendations` (jsonb)
 - `created_at` (timestamptz)
-
-### `copilot_conversations` & `copilot_messages`
-Academic conversational assistant memory.
-- `copilot_conversations`: `id`, `user_id`, `title`, `created_at`, `updated_at`
-- `copilot_messages`: `id`, `conversation_id`, `user_id`, `role`, `content`, `actions` (jsonb), `sources` (jsonb), `created_at`
 
 ---
 
@@ -249,3 +221,25 @@ as $$
   limit match_count;
 $$;
 ```
+
+---
+
+## 5. Local Offline Database Schema (Dexie IndexedDB)
+
+The client uses IndexedDB (`CoursePilotOfflineDB`) for zero-latency offline caching:
+
+```javascript
+db.version(1).stores({
+  user_profile: "user_id, semester, section, updated_at",
+  academic_subjects: "id, semester, section, subject_code",
+  class_schedule: "id, semester, section, day_of_week, start_time, subject_id",
+  lab_schedule: "id, semester, section, day_of_week, start_time, subject_id",
+  syllabus_topics: "id, subject_id, unit_number",
+  student_topic_progress: "[user_id+syllabus_topic_id], user_id, syllabus_topic_id, status, pending_sync",
+  sync_queue: "++id, user_id, entity_type, entity_id, operation, status, created_at",
+  cached_metadata: "key, last_synced_at, version",
+})
+```
+
+- **User Isolation**: Tables containing private data (`user_profile`, `student_topic_progress`, `sync_queue`) are scoped by `user_id` and wiped on logout.
+- **Reference Persistence**: Academic catalog tables (`class_schedule`, `academic_subjects`, `syllabus_topics`) persist locally for instant offline loading.

@@ -112,24 +112,25 @@ function Sidebar({
   ]
 
   const navContent = (
-    <div className="flex h-full flex-col justify-between p-5">
-      <div>
-        {/* Brand Logo Wordmark */}
-        <div className="mb-6 flex items-center justify-between">
-          <CoursePilotLogo size="sm" showTagline={false} />
+    <div className="flex h-full flex-col justify-between p-4 sm:p-5 overflow-hidden">
+      {/* Brand Logo Wordmark */}
+      <div className="mb-4 shrink-0 flex items-center justify-between">
+        <CoursePilotLogo size="sm" showTagline={false} />
 
-          {/* Close button for mobile drawer */}
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
-            aria-label="Close menu"
-          >
-            ✕
-          </button>
-        </div>
+        {/* Close button for mobile drawer */}
+        <button
+          type="button"
+          onClick={() => setMobileOpen(false)}
+          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+          aria-label="Close menu"
+        >
+          ✕
+        </button>
+      </div>
 
-        {/* Navigation List */}
-        <nav className="space-y-1" aria-label="Sidebar navigation">
+      {/* Scrollable Navigation List */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 -mr-1">
+        <nav className="space-y-0.5" aria-label="Sidebar navigation">
           {menuItems.map((item) => {
             const isActive =
               currentPage === item.name ||
@@ -143,7 +144,7 @@ function Sidebar({
                   setMobileOpen(false)
                 }}
                 aria-current={isActive ? "page" : undefined}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all duration-150 active:scale-[0.98] ${
+                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-150 active:scale-[0.98] ${
                   isActive
                     ? "bg-slate-900 text-white shadow-sm"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -166,63 +167,65 @@ function Sidebar({
         </nav>
       </div>
 
-      {/* Student Profile Card */}
-      <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 shadow-sm">
-        <button
-          type="button"
-          onClick={() => {
-            if (onOpenNotifications) onOpenNotifications()
-            if (setMobileOpen) setMobileOpen(false)
-          }}
-          className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-2">
-            <span>🔔</span>
-            <span>Notifications</span>
-          </div>
-          {unreadCount > 0 ? (
-            <span className="rounded-full bg-red-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
-              {unreadCount} new
-            </span>
-          ) : (
-            <span className="text-[10px] text-slate-400 font-semibold">Feed →</span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setCurrentPage("Profile")
-            if (setMobileOpen) setMobileOpen(false)
-          }}
-          className="flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition hover:bg-slate-200/60 active:scale-[0.98]"
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white shadow-inner">
-            {(profile?.full_name || user?.email || "S").charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p
-              className="truncate text-xs font-bold text-slate-900"
-              title={profile?.full_name || user?.email}
-            >
-              {profile?.full_name || user?.email?.split("@")[0] || "Student"}
-            </p>
-            {profile && (
-              <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-                Sem {profile.semester} • Sec {profile.section}
-              </p>
+      {/* Student Profile & Logout Card (Fixed at Bottom of Viewport) */}
+      <div className="shrink-0 pt-3 mt-2 border-t border-slate-200/70">
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-3 shadow-xs">
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenNotifications) onOpenNotifications()
+              if (setMobileOpen) setMobileOpen(false)
+            }}
+            className="mb-2 flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-2">
+              <span>🔔</span>
+              <span>Notifications</span>
+            </div>
+            {unreadCount > 0 ? (
+              <span className="rounded-full bg-red-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                {unreadCount} new
+              </span>
+            ) : (
+              <span className="text-[10px] text-slate-400 font-semibold">Feed →</span>
             )}
-          </div>
-          <span className="text-xs text-slate-400 font-bold" title="Profile Settings">⚙️</span>
-        </button>
+          </button>
 
-        <button
-          type="button"
-          onClick={onLogout}
-          className="mt-3 w-full rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-100 active:scale-[0.98]"
-        >
-          Log out
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCurrentPage("Profile")
+              if (setMobileOpen) setMobileOpen(false)
+            }}
+            className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition hover:bg-slate-200/60 active:scale-[0.98]"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white shadow-inner">
+              {(profile?.full_name || user?.email || "S").charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-xs font-bold text-slate-900"
+                title={profile?.full_name || user?.email}
+              >
+                {profile?.full_name || user?.email?.split("@")[0] || "Student"}
+              </p>
+              {profile && (
+                <p className="truncate mt-0.5 text-[11px] font-medium text-slate-500">
+                  Sem {profile.semester} • Sec {profile.section}
+                </p>
+              )}
+            </div>
+            <span className="text-xs text-slate-400 font-bold" title="Profile Settings">⚙️</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-100 active:scale-[0.98]"
+          >
+            Log out
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -231,7 +234,7 @@ function Sidebar({
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 shrink-0 border-r border-slate-200/80 bg-white lg:block">
-        <div className="sticky top-0 h-screen">{navContent}</div>
+        <div className="sticky top-0 h-screen overflow-hidden">{navContent}</div>
       </aside>
 
       {/* Mobile Drawer Backdrop and Drawer */}
