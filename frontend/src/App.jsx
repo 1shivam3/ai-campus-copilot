@@ -701,171 +701,7 @@ function App() {
                 </div>
               </div>
 
-              {/* Next Best Action Card (Primary Focal Point) */}
-              {dashboardLoading ? (
-                <SkeletonBanner />
-              ) : bestAction ? (
-                <section className="mb-8 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8 transition-all">
-                  <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
-                          🎯 NEXT BEST ACTION
-                        </p>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider ${
-                            bestAction.priority === "CRITICAL"
-                              ? "bg-red-500/20 text-red-300 border border-red-500/30"
-                              : bestAction.priority === "HIGH"
-                                ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
-                                : "bg-blue-400/20 text-blue-300 border border-blue-400/30"
-                          }`}
-                        >
-                          {bestAction.priority} PRIORITY ({bestAction.score}/100)
-                        </span>
-                      </div>
-
-                      <h3 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                        {bestAction.title}
-                      </h3>
-
-                      <p className="mt-1 text-sm font-semibold text-blue-400">
-                        {bestAction.subject}
-                      </p>
-
-                      <p className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-300">
-                        {bestAction.description}
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200 font-semibold">
-                          ⏱️ {bestAction.estimated_minutes} min
-                        </span>
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300 font-medium">
-                          Source: {bestAction.source}
-                        </span>
-                      </div>
-
-                      {/* Suggested Study Window from Calendar & Timetable */}
-                      {recommendedStudyWindow && (
-                        <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-500/15 border border-blue-400/20 px-3.5 py-2 text-xs text-blue-200">
-                          <span>📅</span>
-                          <span>
-                            <strong className="font-semibold text-white">Suggested Study Window:</strong> Today {recommendedStudyWindow.start} – {recommendedStudyWindow.end} ({recommendedStudyWindow.minutes}m free) · Fits your available time.
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Decision Rationale */}
-                      {bestAction.whyThis && bestAction.whyThis.length > 0 && (
-                        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-                          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">
-                            Why this now?
-                          </p>
-                          <ul className="space-y-1.5 text-xs text-slate-300">
-                            {bestAction.whyThis.map((point, i) => (
-                              <li key={i} className="flex items-center gap-2">
-                                <span className="text-emerald-400 font-bold">•</span>
-                                <span>{point}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Launch Button */}
-                    <div className="self-start md:self-center shrink-0">
-                      <button
-                        onClick={() => handleActionNavigation(bestAction)}
-                        className="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-md active:scale-[0.98] flex items-center gap-2"
-                      >
-                        <span>Start Now</span>
-                        <span>→</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Runner-up Priorities */}
-                  {otherPriorities && otherPriorities.length > 0 && (
-                    <div className="mt-8 border-t border-white/10 pt-6">
-                      <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase mb-3">
-                        OTHER PRIORITIES TODAY
-                      </p>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {otherPriorities.map((item, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => handleActionNavigation(item)}
-                            className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.09]"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase truncate">
-                                {item.subject}
-                              </span>
-                              <span
-                                className={`text-[10px] font-bold ${
-                                  item.priority === "CRITICAL"
-                                    ? "text-red-400"
-                                    : item.priority === "HIGH"
-                                      ? "text-amber-400"
-                                      : "text-blue-400"
-                                }`}
-                              >
-                                {item.priority}
-                              </span>
-                            </div>
-                            <h4 className="mt-1 font-bold text-xs sm:text-sm text-white line-clamp-1">
-                              {item.title}
-                            </h4>
-                            <p className="mt-1 text-xs text-slate-400 line-clamp-1">
-                              {item.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </section>
-              ) : null}
-
-              {/* Flashcards Review Due Recommendation Banner */}
-              {dueFlashcardsCount > 0 && (
-                <div className="mb-8 rounded-3xl border border-amber-200 bg-linear-to-r from-amber-50 via-white to-amber-50/40 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white font-bold text-lg shadow-xs">
-                      🎴
-                    </span>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
-                        REVIEW DUE
-                      </span>
-                      <h4 className="text-sm font-bold text-slate-900">
-                        {dueFlashcardsCount} {dueFlashcardsCount === 1 ? "flashcard" : "flashcards"} due today
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Spaced repetition interval reached. Review now to consolidate memory.
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (dueFlashcardsMaterialId) {
-                        setSelectedMaterialIdForFlashcards(dueFlashcardsMaterialId)
-                      }
-                      setCurrentPage("Study Material")
-                    }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition active:scale-[0.98]"
-                  >
-                    <span>Review Now →</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Schedule & Academic Context Row */}
+              {/* Today's Schedule & Academic Context Row (Top Section) */}
               <section className="mb-8 grid gap-5 lg:grid-cols-3">
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm lg:col-span-2">
                   <div className="flex items-center justify-between">
@@ -953,6 +789,170 @@ function App() {
                   </div>
                 </div>
               </section>
+
+              {/* Next Best Action Card (Under Today's Schedule) */}
+              {dashboardLoading ? (
+                <SkeletonBanner />
+              ) : bestAction ? (
+                <section className="mb-8 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8 transition-all">
+                  <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+                          🎯 NEXT BEST ACTION
+                        </p>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider ${
+                            bestAction.priority === "CRITICAL"
+                              ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                              : bestAction.priority === "HIGH"
+                                ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                                : "bg-blue-400/20 text-blue-300 border border-blue-400/30"
+                          }`}
+                        >
+                          {bestAction.priority} PRIORITY ({bestAction.score}/100)
+                        </span>
+                      </div>
+
+                      <h3 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                        {bestAction.title}
+                      </h3>
+
+                      <p className="mt-1 text-sm font-semibold text-blue-400">
+                        {bestAction.subject}
+                      </p>
+
+                      <p className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-300">
+                        {bestAction.description}
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200 font-semibold">
+                          ⏱️ {bestAction.estimated_minutes} min
+                        </span>
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300 font-medium">
+                          Source: {bestAction.source}
+                        </span>
+                      </div>
+
+                      {/* Suggested Study Window from Timetable */}
+                      {recommendedStudyWindow && (
+                        <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-500/15 border border-blue-400/20 px-3.5 py-2 text-xs text-blue-200">
+                          <span>📅</span>
+                          <span>
+                            <strong className="font-semibold text-white">Suggested Study Window:</strong> Today {recommendedStudyWindow.start} – {recommendedStudyWindow.end} ({recommendedStudyWindow.minutes}m free) · Fits your available time.
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Decision Rationale */}
+                      {bestAction.whyThis && bestAction.whyThis.length > 0 && (
+                        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">
+                            Why this now?
+                          </p>
+                          <ul className="space-y-1.5 text-xs text-slate-300">
+                            {bestAction.whyThis.map((point, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <span className="text-emerald-400 font-bold">•</span>
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Launch Button */}
+                    <div className="self-start md:self-center shrink-0">
+                      <button
+                        onClick={() => handleActionNavigation(bestAction)}
+                        className="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 shadow-md active:scale-[0.98] flex items-center gap-2"
+                      >
+                        <span>Start Now</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Runner-up Priorities */}
+                  {otherPriorities && otherPriorities.length > 0 && (
+                    <div className="mt-8 border-t border-white/10 pt-6">
+                      <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase mb-3">
+                        OTHER PRIORITIES TODAY
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {otherPriorities.map((item, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleActionNavigation(item)}
+                            className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.09]"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase truncate">
+                                {item.subject}
+                              </span>
+                              <span
+                                className={`text-[10px] font-bold ${
+                                  item.priority === "CRITICAL"
+                                    ? "text-red-400"
+                                    : item.priority === "HIGH"
+                                      ? "text-amber-400"
+                                      : "text-blue-400"
+                                }`}
+                              >
+                                {item.priority}
+                              </span>
+                            </div>
+                            <h4 className="mt-1 font-bold text-xs sm:text-sm text-white line-clamp-1">
+                              {item.title}
+                            </h4>
+                            <p className="mt-1 text-xs text-slate-400 line-clamp-1">
+                              {item.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              ) : null}
+
+              {/* Flashcards Review Due Recommendation Banner */}
+              {dueFlashcardsCount > 0 && (
+                <div className="mb-8 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white font-bold text-lg shadow-xs">
+                      🎴
+                    </span>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                        REVIEW DUE
+                      </span>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        {dueFlashcardsCount} {dueFlashcardsCount === 1 ? "flashcard" : "flashcards"} due today
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Spaced repetition interval reached. Review now to consolidate memory.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (dueFlashcardsMaterialId) {
+                        setSelectedMaterialIdForFlashcards(dueFlashcardsMaterialId)
+                      }
+                      setCurrentPage("Study Material")
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition active:scale-[0.98]"
+                  >
+                    <span>Review Now →</span>
+                  </button>
+                </div>
+              )}
 
               {/* Nearest Exam Readiness Indicator */}
               {closestExam && examReadiness && (
