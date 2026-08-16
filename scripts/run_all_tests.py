@@ -101,7 +101,7 @@ def run_tests():
     print("  --> [PASS] AI Study Copilot Chat successfully synthesized grounded response.")
 
     # 8. Dynamic One-at-a-Time Exam Question Generation
-    print("[TEST 8/8] Dynamic Exam Question Generator (MCQ / Short / Long / Practicals)...")
+    print("[TEST 8/9] Dynamic Exam Question Generator (MCQ / Short / Long / Practicals)...")
     r_q_mcq = client.post("/api/generate-exam-question", json={
         "subject_name": "Data Structure and Algorithms",
         "syllabus_type": "theory",
@@ -128,6 +128,30 @@ def run_tests():
     assert "question" in r_q_short.json()
     assert r_q_short.json()["question"]["question_type"] == "short_answer"
     print("  --> [PASS] Dynamic exam question generator verified across theory and lab scopes.")
+
+    # 9. Study Pack Generation Schema & Validation
+    print("[TEST 9/9] Study Pack Generation & JSON Parser Validation...")
+    from main import parse_llm_json, normalize_study_pack_schema
+    sample_llm_raw = """
+    ```json
+    {
+      "summary": "Data structures are specialized formats for organizing, processing, retrieving and storing data.",
+      "key_concepts": ["Stack LIFO behavior", "Queue FIFO behavior"],
+      "definitions": [{"term": "Stack", "definition": "A linear data structure following LIFO principle."}],
+      "high_yield_points": ["Infix to postfix conversion uses a stack.", "BFS uses a queue."],
+      "common_confusions": [{"confusion": "Array vs Linked List", "clarification": "Arrays have O(1) random access; linked lists have O(1) insertion."}],
+      "examples": ["Pushing and popping call frames on execution stack."],
+      "quick_revision": ["Review LIFO/FIFO time complexities."]
+    }
+    ```
+    """
+    parsed = parse_llm_json(sample_llm_raw)
+    normalized = normalize_study_pack_schema(parsed)
+    assert len(normalized["summary"]) > 20
+    assert len(normalized["key_concepts"]) == 2
+    assert len(normalized["definitions"]) == 1
+    assert len(normalized["high_yield_points"]) == 2
+    print("  --> [PASS] Study pack schema parser and normalizer fully verified.")
 
     duration = round(time.time() - start_time, 2)
     print("\n=======================================================")

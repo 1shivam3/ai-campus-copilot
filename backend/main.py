@@ -222,11 +222,10 @@ JSON format:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -567,11 +566,10 @@ JSON format:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -669,11 +667,10 @@ Do not give generic motivational advice.
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -740,11 +737,10 @@ Do not invent facts that are not supported by the document.
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     last_error = None
@@ -1164,11 +1160,10 @@ REQUIRED JSON STRUCTURE:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -1670,11 +1665,10 @@ STRICT RAG RULES:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -1719,8 +1713,140 @@ STRICT RAG RULES:
 
 
 # ---------------------------------------------------------
-# AI STUDY PACK GENERATION ENDPOINT
+# AI STUDY PACK GENERATION & LLM JSON PARSER HELPERS
 # ---------------------------------------------------------
+
+def parse_llm_json(raw_text: str) -> dict:
+    """
+    Robust JSON parser for LLM responses.
+    Handles markdown code fences, leading/trailing conversational text,
+    trailing commas, unescaped newlines, and common formatting anomalies.
+    """
+    if not raw_text or not isinstance(raw_text, str):
+        raise ValueError("Empty or invalid response from AI model.")
+
+    text = raw_text.strip()
+
+    # 1. Direct try
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # 2. Extract content from ```json ... ``` or ``` ... ``` code fence
+    fence_pattern = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
+    fenced_match = fence_pattern.search(text)
+    if fenced_match:
+        candidate = fenced_match.group(1).strip()
+        try:
+            return json.loads(candidate)
+        except Exception:
+            text = candidate
+
+    # 3. Search for outermost JSON object { ... } or array [ ... ]
+    start_brace = text.find("{")
+    start_bracket = text.find("[")
+
+    if start_brace != -1 and (start_bracket == -1 or start_brace < start_bracket):
+        end_brace = text.rfind("}")
+        if end_brace > start_brace:
+            candidate = text[start_brace : end_brace + 1].strip()
+            try:
+                return json.loads(candidate)
+            except Exception:
+                # Remove trailing commas before closing braces/brackets
+                cleaned = re.sub(r",\s*([\]\}])", r"\1", candidate)
+                try:
+                    return json.loads(cleaned)
+                except Exception:
+                    pass
+    elif start_bracket != -1:
+        end_bracket = text.rfind("]")
+        if end_bracket > start_bracket:
+            candidate = text[start_bracket : end_bracket + 1].strip()
+            try:
+                return json.loads(candidate)
+            except Exception:
+                cleaned = re.sub(r",\s*([\]\}])", r"\1", candidate)
+                try:
+                    return json.loads(cleaned)
+                except Exception:
+                    pass
+
+    # 4. Final attempt: normalize newlines inside string literals
+    try:
+        candidate_fixed = re.sub(r'[\r\n\t]+', ' ', text)
+        return json.loads(candidate_fixed)
+    except Exception as final_err:
+        raise ValueError(f"Could not parse valid JSON from AI response: {final_err}")
+
+
+def normalize_study_pack_schema(raw_data: dict) -> dict:
+    """
+    Guarantees that all fields required by study_packs table exist and have the right types.
+    """
+    if not isinstance(raw_data, dict):
+        raw_data = {}
+
+    summary = str(raw_data.get("summary") or "").strip()
+    if not summary:
+        summary = "Structured study summary extracted from the provided academic document."
+
+    def ensure_str_list(val, default_item=""):
+        if isinstance(val, list):
+            res = [str(x).strip() for x in val if x and str(x).strip()]
+            return res if res else ([default_item] if default_item else [])
+        elif isinstance(val, str) and val.strip():
+            return [val.strip()]
+        return [default_item] if default_item else []
+
+    key_concepts = ensure_str_list(raw_data.get("key_concepts"), "Core principles and topics")
+    high_yield_points = ensure_str_list(raw_data.get("high_yield_points"), "Key exam takeaways")
+    examples = ensure_str_list(raw_data.get("examples"), "Applied problems and illustrations")
+    quick_revision = ensure_str_list(raw_data.get("quick_revision"), "Key revision checklist")
+
+    # Normalize definitions
+    raw_defs = raw_data.get("definitions") or []
+    definitions = []
+    if isinstance(raw_defs, list):
+        for item in raw_defs:
+            if isinstance(item, dict):
+                term = str(item.get("term") or item.get("name") or "").strip()
+                defn = str(item.get("definition") or item.get("meaning") or item.get("desc") or "").strip()
+                if term or defn:
+                    definitions.append({"term": term or "Key Term", "definition": defn or "Definition as per syllabus."})
+            elif isinstance(item, str) and ":" in item:
+                parts = item.split(":", 1)
+                definitions.append({"term": parts[0].strip(), "definition": parts[1].strip()})
+            elif isinstance(item, str) and item.strip():
+                definitions.append({"term": item.strip(), "definition": "Academic definition."})
+    elif isinstance(raw_defs, dict):
+        for k, v in raw_defs.items():
+            definitions.append({"term": str(k).strip(), "definition": str(v).strip()})
+
+    # Normalize common confusions
+    raw_conf = raw_data.get("common_confusions") or []
+    common_confusions = []
+    if isinstance(raw_conf, list):
+        for item in raw_conf:
+            if isinstance(item, dict):
+                conf = str(item.get("confusion") or item.get("misconception") or item.get("term") or "").strip()
+                clar = str(item.get("clarification") or item.get("resolution") or item.get("explanation") or "").strip()
+                if conf or clar:
+                    common_confusions.append({"confusion": conf or "Common Pitfall", "clarification": clar or "Careful distinction."})
+            elif isinstance(item, str) and item.strip():
+                common_confusions.append({"confusion": item.strip(), "clarification": "Review conceptual differences."})
+
+    return {
+        "summary": summary,
+        "key_concepts": key_concepts,
+        "definitions": definitions,
+        "high_yield_points": high_yield_points,
+        "common_confusions": common_confusions,
+        "examples": examples,
+        "quick_revision": quick_revision,
+    }
+
 
 class GenerateStudyPackRequest(BaseModel):
     study_material_id: int
@@ -1799,16 +1925,25 @@ async def generate_study_pack(request: GenerateStudyPackRequest):
     except Exception:
         pass
 
-    # 5. Retrieve representative RAG chunks
+    # 5. Retrieve representative RAG chunks with balanced distribution
     retrieved_passages = []
     try:
         chunks_res = supabase_client.table("study_material_chunks").select(
             "chunk_index, content, page_number"
-        ).eq("study_material_id", request.study_material_id).order("chunk_index").limit(14).execute()
-        if chunks_res.data:
+        ).eq("study_material_id", request.study_material_id).order("chunk_index").execute()
+        
+        all_chunks = chunks_res.data or []
+        if all_chunks:
+            if len(all_chunks) <= 15:
+                selected_chunks = all_chunks
+            else:
+                # Evenly sample 15 chunks across start, middle, and end of document
+                indices = [int(i * (len(all_chunks) - 1) / 14) for i in range(15)]
+                selected_chunks = [all_chunks[i] for i in sorted(list(set(indices)))]
+            
             retrieved_passages = [
                 f"[Passage {c['chunk_index'] + 1} - Pg {c.get('page_number', 1)}]\n{c['content']}"
-                for c in chunks_res.data
+                for c in selected_chunks
             ]
     except Exception as chunk_err:
         logger.warning(f"[STUDY_PACK] Chunks query notice: {chunk_err}")
@@ -1822,30 +1957,33 @@ async def generate_study_pack(request: GenerateStudyPackRequest):
     if not source_context.strip():
         raise HTTPException(
             status_code=400,
-            detail="This study document does not contain readable extracted text.",
+            detail="The document was indexed, but no readable extracted text was found for the study pack.",
         )
 
     title = material.get("title", "Study Material")
-    unit_str = f"Unit {material.get('unit_number')}" if material.get("unit_number") else "General Unit"
+    mat_type = material.get("material_type", "document")
+    unit_str = f"Unit {material.get('unit_number')}" if material.get("unit_number") else "General Scope"
 
     # 6. Prompt Gemini for structured JSON Study Pack
     prompt = f"""
 You are an expert academic study-pack generator for CoursePilot.
 Create a comprehensive, high-yield study pack derived STRICTLY from the student's uploaded material below.
 
-DOCUMENT: {title}
+DOCUMENT TITLE: {title}
 SUBJECT: {subject_name}
-UNIT: {unit_str}
+SCOPE / UNIT: {unit_str}
+DOCUMENT TYPE: {mat_type}
 MATCHED SYLLABUS TOPICS: {matched_topics_str}
 
 RETRIEVED MATERIAL:
 \"\"\"{source_context}\"\"\"
 
 RULES:
-- Do not invent, hallucinate, or assume facts not supported by the material.
-- Preserve technical terms, definitions, and code/algorithm steps accurately.
+- Derive all study content STRICTLY from the provided material without inventing facts.
+- Do NOT assume this is a 4-unit theory syllabus. The document may be lecture notes, syllabus, lab manual, experiment sheet, question bank, or reference material. Adapt to the document's actual structure (e.g. practicals, steps, formulas, code).
+- Preserve technical terms, definitions, theorems, formulas, and code/algorithm steps accurately.
 - Keep explanations suitable and clear for a university B.Tech student.
-- Return ONLY valid raw JSON with NO markdown code fences or backticks.
+- Return ONLY valid raw JSON matching the exact schema below, with NO markdown code fences or backticks.
 
 REQUIRED JSON SCHEMA:
 {{
@@ -1866,7 +2004,7 @@ REQUIRED JSON SCHEMA:
   ],
   "common_confusions": [
     {{
-      "confusion": "Common misconception or tricky distinction (e.g. Array vs Linked List insertion)",
+      "confusion": "Common misconception or tricky distinction",
       "clarification": "Clear, precise explanation resolving the confusion"
     }}
   ],
@@ -1881,11 +2019,10 @@ REQUIRED JSON SCHEMA:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -1907,43 +2044,56 @@ REQUIRED JSON SCHEMA:
             if response_text:
                 break
         except Exception as err:
+            logger.warning(f"[STUDY_PACK] Model {model_name} failed: {err}")
             last_error = err
 
     if not response_text:
-        logger.error(f"[STUDY_PACK] Gemini error: {last_error}")
+        logger.error(f"[STUDY_PACK] Gemini generation error: {last_error}")
         raise HTTPException(
             status_code=500,
-            detail="Your document is indexed, but the study pack could not be generated. Please try again.",
+            detail="The study pack could not be generated right now. Please try again.",
         )
 
-    # 7. Parse and validate JSON
-    clean_json = response_text.strip()
-    if clean_json.startswith("```json"): clean_json = clean_json[7:]
-    if clean_json.startswith("```"): clean_json = clean_json[3:]
-    if clean_json.endswith("```"): clean_json = clean_json[:-3]
-    clean_json = clean_json.strip()
-
+    # 7. Robust parse and schema normalization
     try:
-        pack_data = json.loads(clean_json)
+        raw_dict = parse_llm_json(response_text)
+        normalized_pack = normalize_study_pack_schema(raw_dict)
     except Exception as parse_err:
-        logger.error(f"[STUDY_PACK] JSON parse error: {parse_err}. Response was: {clean_json[:300]}")
-        raise HTTPException(
-            status_code=500,
-            detail="Could not structure study pack JSON. Please try again.",
-        )
+        logger.error(f"[STUDY_PACK] JSON parse error: {parse_err}. Response snippet: {response_text[:300]}")
+        # Secondary repair attempt with lightweight model if initial parse failed
+        try:
+            repair_prompt = f"Fix and convert this text into valid JSON matching the schema:\n\n{response_text}"
+            if USE_NEW_SDK:
+                rep_resp = client.models.generate_content(
+                    model="gemini-flash-lite-latest",
+                    contents=repair_prompt,
+                )
+                raw_dict = parse_llm_json(rep_resp.text)
+                normalized_pack = normalize_study_pack_schema(raw_dict)
+            else:
+                rep_model = genai_legacy.GenerativeModel("gemini-flash-lite-latest")
+                rep_resp = rep_model.generate_content(repair_prompt)
+                raw_dict = parse_llm_json(rep_resp.text)
+                normalized_pack = normalize_study_pack_schema(raw_dict)
+        except Exception as repair_err:
+            logger.error(f"[STUDY_PACK] Secondary JSON repair failed: {repair_err}")
+            raise HTTPException(
+                status_code=500,
+                detail="Could not structure study pack JSON. Please try again.",
+            )
 
     # 8. Persist into study_packs table (Upsert)
     now_iso = datetime.now(timezone.utc).isoformat()
     db_payload = {
         "study_material_id": request.study_material_id,
         "user_id": request.user_id,
-        "summary": pack_data.get("summary", ""),
-        "key_concepts": pack_data.get("key_concepts", []),
-        "definitions": pack_data.get("definitions", []),
-        "high_yield_points": pack_data.get("high_yield_points", []),
-        "common_confusions": pack_data.get("common_confusions", []),
-        "examples": pack_data.get("examples", []),
-        "quick_revision": pack_data.get("quick_revision", []),
+        "summary": normalized_pack["summary"],
+        "key_concepts": normalized_pack["key_concepts"],
+        "definitions": normalized_pack["definitions"],
+        "high_yield_points": normalized_pack["high_yield_points"],
+        "common_confusions": normalized_pack["common_confusions"],
+        "examples": normalized_pack["examples"],
+        "quick_revision": normalized_pack["quick_revision"],
         "generated_at": now_iso,
         "updated_at": now_iso,
     }
@@ -2114,11 +2264,10 @@ REQUIRED JSON SCHEMA:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -2140,6 +2289,7 @@ REQUIRED JSON SCHEMA:
             if response_text:
                 break
         except Exception as err:
+            logger.warning(f"[FLASHCARDS] Model {model_name} failed: {err}")
             last_error = err
 
     if not response_text:
@@ -2150,19 +2300,13 @@ REQUIRED JSON SCHEMA:
         )
 
     # 6. Parse and validate JSON
-    clean_json = response_text.strip()
-    if clean_json.startswith("```json"): clean_json = clean_json[7:]
-    if clean_json.startswith("```"): clean_json = clean_json[3:]
-    if clean_json.endswith("```"): clean_json = clean_json[:-3]
-    clean_json = clean_json.strip()
-
     try:
-        cards_data = json.loads(clean_json)
-        raw_cards = cards_data.get("flashcards", [])
+        cards_data = parse_llm_json(response_text)
+        raw_cards = cards_data.get("flashcards", []) if isinstance(cards_data, dict) else (cards_data if isinstance(cards_data, list) else [])
         if not isinstance(raw_cards, list) or len(raw_cards) == 0:
             raise ValueError("No flashcards array in response.")
     except Exception as parse_err:
-        logger.error(f"[FLASHCARDS] Parse error: {parse_err}. Response was: {clean_json[:300]}")
+        logger.error(f"[FLASHCARDS] Parse error: {parse_err}. Response snippet: {response_text[:300]}")
         raise HTTPException(
             status_code=500,
             detail="Could not parse generated flashcards JSON. Please try again.",
@@ -2466,11 +2610,10 @@ REQUIRED JSON SCHEMA:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -2492,6 +2635,7 @@ REQUIRED JSON SCHEMA:
             if response_text:
                 break
         except Exception as err:
+            logger.warning(f"[EXAM_ANALYZER] Model {model_name} failed: {err}")
             last_error = err
 
     if not response_text:
@@ -2502,16 +2646,10 @@ REQUIRED JSON SCHEMA:
         )
 
     # 6. Parse and validate JSON
-    clean_json = response_text.strip()
-    if clean_json.startswith("```json"): clean_json = clean_json[7:]
-    if clean_json.startswith("```"): clean_json = clean_json[3:]
-    if clean_json.endswith("```"): clean_json = clean_json[:-3]
-    clean_json = clean_json.strip()
-
     try:
-        analysis_data = json.loads(clean_json)
+        analysis_data = parse_llm_json(response_text)
     except Exception as parse_err:
-        logger.error(f"[EXAM_ANALYZER] Parse error: {parse_err}. Response was: {clean_json[:300]}")
+        logger.error(f"[EXAM_ANALYZER] Parse error: {parse_err}. Response snippet: {response_text[:300]}")
         raise HTTPException(
             status_code=500,
             detail="Could not structure paper analysis JSON. Please try again.",
@@ -2785,11 +2923,10 @@ OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
 """
 
     models_to_try = [
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-3.7-flash",
-        "gemini-2.0-flash",
     ]
 
     response_text = None
@@ -2826,16 +2963,10 @@ OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
         }
 
     # 6. Parse JSON Response
-    clean_json = response_text.strip()
-    if clean_json.startswith("```json"): clean_json = clean_json[7:]
-    if clean_json.startswith("```"): clean_json = clean_json[3:]
-    if clean_json.endswith("```"): clean_json = clean_json[:-3]
-    clean_json = clean_json.strip()
-
     try:
-        parsed_resp = json.loads(clean_json)
-        assistant_msg = parsed_resp.get("message", response_text)
-        actions = parsed_resp.get("actions", [])
+        parsed_resp = parse_llm_json(response_text)
+        assistant_msg = parsed_resp.get("message", response_text) if isinstance(parsed_resp, dict) else response_text
+        actions = parsed_resp.get("actions", []) if isinstance(parsed_resp, dict) else []
     except Exception:
         assistant_msg = response_text
         actions = []

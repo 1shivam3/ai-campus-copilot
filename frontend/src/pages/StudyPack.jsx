@@ -100,7 +100,7 @@ function StudyPack({ materialId, user, profile, onBack, onOpenReader, onNavigate
         }
       } catch (err) {
         console.error("Study Pack load error:", err)
-        setError(err.message || "Your document is indexed, but the study pack could not be generated. Please try again.")
+        setError(err.message || "The study pack could not be generated right now. Please try again.")
       } finally {
         setLoading(false)
       }

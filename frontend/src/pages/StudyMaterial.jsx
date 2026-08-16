@@ -547,7 +547,7 @@ function StudyMaterial({
       }
     } catch (err) {
       console.error("Create study pack error:", err)
-      setError("Your document is indexed, but the study pack could not be generated. Please try again.")
+      setError(err.message || "The study pack could not be generated right now. Please try again.")
     } finally {
       setGeneratingPackId(null)
     }

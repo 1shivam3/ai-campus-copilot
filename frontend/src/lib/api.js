@@ -357,7 +357,7 @@ export async function generateStudyPack({ studyMaterialId, userId, forceRegenera
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}))
-    throw new Error(errData.detail || "Your document is indexed, but the study pack could not be generated. Please try again.")
+    throw new Error(errData.detail || "The study pack could not be generated right now. Please try again.")
   }
 
   return response.json()
