@@ -18,8 +18,15 @@ export default function Leaderboard({
   onNavigate,
 }) {
   const [timeframe, setTimeframe] = useState("global")
-  const [remoteRankings, setRemoteRankings] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [remoteRankings, setRemoteRankings] = useState(() => {
+    try {
+      const cached = localStorage.getItem("coursepilot_leaderboard_cache_global")
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [loading, setLoading] = useState(false)
 
   // Safe display name for current student
   const userDisplayName = useMemo(() => {
@@ -32,56 +39,84 @@ export default function Leaderboard({
   useEffect(() => {
     let isMounted = true
 
+    // Load timeframe cache first
+    try {
+      const cached = localStorage.getItem(`coursepilot_leaderboard_cache_${timeframe}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRemoteRankings(parsed)
+        }
+      }
+    } catch {}
+
     async function syncAndFetch() {
       setLoading(true)
 
-      // 1. Sync current student metrics to the live server
-      if (user?.id) {
-        await syncUserLearningStats({
-          user_id: user.id,
-          full_name: profile?.full_name || "Student",
-          public_display_name: userDisplayName,
-          avatar_url: profile?.avatar_url || null,
-          semester: profile?.semester || 3,
-          section: profile?.section || "B2",
-          total_xp: totalXP,
-          this_week_xp: thisWeekXP,
-          streak: streak,
-          reputation: profile?.reputation || reputation || 91,
-          solved_count: Math.floor(totalXP / 25),
-        })
+      // Parallel execution: sync user stats AND fetch live campus standings simultaneously
+      const syncPromise = user?.id
+        ? syncUserLearningStats({
+            user_id: user.id,
+            full_name: profile?.full_name || "Student",
+            public_display_name: userDisplayName,
+            avatar_url: profile?.avatar_url || null,
+            semester: profile?.semester || 3,
+            section: profile?.section || "B2",
+            total_xp: totalXP,
+            this_week_xp: thisWeekXP,
+            streak: streak,
+            reputation: profile?.reputation || reputation || 91,
+            solved_count: Math.floor(totalXP / 25),
+          })
+        : Promise.resolve(null)
+
+      const fetchPromise = fetchCampusLeaderboard(timeframe)
+
+      try {
+        const [, leaderboardData] = await Promise.all([syncPromise, fetchPromise])
+
+        if (isMounted && Array.isArray(leaderboardData) && leaderboardData.length > 0) {
+          setRemoteRankings(leaderboardData)
+          try {
+            localStorage.setItem(
+              `coursepilot_leaderboard_cache_${timeframe}`,
+              JSON.stringify(leaderboardData)
+            )
+          } catch {}
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.warn("Leaderboard live sync note:", e)
       }
 
-      // 2. Fetch all registered and active peers from campus backend
-      const leaderboardData = await fetchCampusLeaderboard(timeframe)
-      if (isMounted && Array.isArray(leaderboardData) && leaderboardData.length > 0) {
-        setRemoteRankings(leaderboardData)
-        setLoading(false)
-        return
-      }
-
-      // 3. Fallback: Query Supabase student_profiles directly
+      // Fallback: Query Supabase student_profiles
       try {
         const { data } = await supabase
           .from("student_profiles")
           .select("id, full_name, semester, section")
           .order("created_at", { ascending: true })
 
-        if (isMounted && data) {
-          setRemoteRankings(
-            data.map((p, i) => ({
-              id: p.id,
-              display_name: p.full_name || `Learner_${p.id.slice(0, 6)}`,
-              avatar_url: p.id === user?.id ? profile?.avatar_url : null,
-              semester: p.semester,
-              section: p.section,
-              xp: p.id === user?.id ? (timeframe === "weekly" ? thisWeekXP : totalXP) : 0,
-              streak: p.id === user?.id ? streak : 0,
-              reputation: 90,
-              solved: p.id === user?.id ? Math.floor(totalXP / 25) : 0,
-              rank: i + 1,
-            }))
-          )
+        if (isMounted && data && data.length > 0) {
+          const fallbackList = data.map((p, i) => ({
+            id: p.id,
+            display_name: p.full_name || `Learner_${p.id.slice(0, 6)}`,
+            avatar_url: p.id === user?.id ? profile?.avatar_url : null,
+            semester: p.semester,
+            section: p.section,
+            xp: p.id === user?.id ? (timeframe === "weekly" ? thisWeekXP : totalXP) : 0,
+            streak: p.id === user?.id ? streak : 0,
+            reputation: 90,
+            solved: p.id === user?.id ? Math.floor(totalXP / 25) : 0,
+            rank: i + 1,
+          }))
+          setRemoteRankings(fallbackList)
+          try {
+            localStorage.setItem(
+              `coursepilot_leaderboard_cache_${timeframe}`,
+              JSON.stringify(fallbackList)
+            )
+          } catch {}
         }
       } catch (err) {
         console.error("Leaderboard fallback note:", err)

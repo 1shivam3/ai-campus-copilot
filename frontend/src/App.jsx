@@ -207,15 +207,80 @@ function App() {
         reputation: cloudStats?.reputation || 91,
       })
 
-      // If cloud stats has transactions or history, sync immediately
-      if (cloudStats?.xp_transactions && cloudStats.xp_transactions.length > 0) {
-        setXpTransactions(cloudStats.xp_transactions)
-        try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(cloudStats.xp_transactions)) } catch {}
+      // 3. Robust Bi-directional XP Sync: Merge local and cloud transactions
+      let localTxs = []
+      try {
+        const raw = localStorage.getItem(`coursepilot_xp_transactions_cache_${currentUser.id}`)
+        if (raw) localTxs = JSON.parse(raw)
+      } catch {}
+
+      const cloudTxs = Array.isArray(cloudStats?.xp_transactions) ? cloudStats.xp_transactions : []
+      const mergedMap = new Map()
+
+      // Add local transactions
+      localTxs.forEach((tx) => {
+        const key = tx.reference_key || tx.id || `${tx.reason}_${tx.created_at}`
+        mergedMap.set(key, tx)
+      })
+
+      // Add cloud transactions (takes precedence)
+      cloudTxs.forEach((tx) => {
+        const key = tx.reference_key || tx.id || `${tx.reason}_${tx.created_at}`
+        mergedMap.set(key, tx)
+      })
+
+      // If cloud reported higher total_xp but no granular transactions, inject a base transaction
+      if (cloudStats?.total_xp && mergedMap.size === 0) {
+        mergedMap.set("cloud_initial_xp", {
+          user_id: currentUser.id,
+          amount: cloudStats.total_xp,
+          reason: "Academic Progression",
+          reference_key: "cloud_initial_xp",
+          created_at: new Date().toISOString(),
+        })
       }
-      if (cloudStats?.challenge_history && cloudStats.challenge_history.length > 0) {
-        setChallengeHistory(cloudStats.challenge_history)
-        try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(cloudStats.challenge_history)) } catch {}
+
+      const mergedTxs = Array.from(mergedMap.values())
+      const xpSum = calculateXPSummary(mergedTxs)
+
+      if (mergedTxs.length > 0) {
+        setXpTransactions(mergedTxs)
+        try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(mergedTxs)) } catch {}
       }
+
+      // Merge challenge history
+      let localHist = []
+      try {
+        const rawH = localStorage.getItem("coursepilot_challenge_history")
+        if (rawH) localHist = JSON.parse(rawH)
+      } catch {}
+      const cloudHist = Array.isArray(cloudStats?.challenge_history) ? cloudStats.challenge_history : []
+      const histMap = new Map()
+      localHist.forEach((h) => histMap.set(h.challenge_id, h))
+      cloudHist.forEach((h) => histMap.set(h.challenge_id, h))
+      const mergedHist = Array.from(histMap.values())
+
+      if (mergedHist.length > 0) {
+        setChallengeHistory(mergedHist)
+        try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(mergedHist)) } catch {}
+      }
+
+      // Immediately push consolidated state to cloud backend
+      syncUserLearningStats({
+        user_id: currentUser.id,
+        full_name: data?.full_name || currentUser.email?.split("@")[0] || "Student",
+        public_display_name: finalDisplayName,
+        avatar_url: finalAvatar,
+        semester: data?.semester || 3,
+        section: data?.section || "B2",
+        total_xp: xpSum.totalXP,
+        this_week_xp: xpSum.thisWeekXP,
+        streak: cloudStats?.streak || 0,
+        reputation: cloudStats?.reputation || 91,
+        solved_count: Math.floor(xpSum.totalXP / 25),
+        xp_transactions: mergedTxs,
+        challenge_history: mergedHist,
+      }).catch(() => {})
     } catch (err) {
       console.error("Profile fetch error:", err)
     } finally {

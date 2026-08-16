@@ -533,23 +533,26 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
 
 export async function fetchUserStats(userId) {
   if (!userId) return null
-  try {
-    const response = await fetchWithTimeout(
-      `${API_URL}/api/user-stats/${userId}`,
-      { method: "GET" },
-      10000
-    )
-    if (response.ok) {
-      const data = await response.json()
-      return data.stats || null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_URL}/api/user-stats/${userId}`,
+        { method: "GET" },
+        25000
+      )
+      if (response.ok) {
+        const data = await response.json()
+        return data.stats || null
+      }
+    } catch (err) {
+      if (attempt === 1) console.warn("User stats fetch notice:", err)
     }
-  } catch (err) {
-    console.warn("User stats fetch notice:", err)
   }
   return null
 }
 
 export async function syncUserLearningStats(stats) {
+  if (!stats?.user_id) return null
   try {
     const response = await fetchWithTimeout(
       `${API_URL}/api/sync-user-stats`,
@@ -558,7 +561,7 @@ export async function syncUserLearningStats(stats) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stats),
       },
-      10000
+      25000
     )
     if (response.ok) {
       return await response.json()
@@ -570,18 +573,20 @@ export async function syncUserLearningStats(stats) {
 }
 
 export async function fetchCampusLeaderboard(timeframe = "global") {
-  try {
-    const response = await fetchWithTimeout(
-      `${API_URL}/api/leaderboard?timeframe=${timeframe}`,
-      { method: "GET" },
-      10000
-    )
-    if (response.ok) {
-      const data = await response.json()
-      return data.leaderboard || []
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_URL}/api/leaderboard?timeframe=${timeframe}`,
+        { method: "GET" },
+        25000
+      )
+      if (response.ok) {
+        const data = await response.json()
+        return data.leaderboard || []
+      }
+    } catch (err) {
+      if (attempt === 1) console.warn("Campus leaderboard fetch notice:", err)
     }
-  } catch (err) {
-    console.warn("Campus leaderboard fetch notice:", err)
   }
   return []
 }
