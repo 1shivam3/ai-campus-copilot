@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
 import TopicQuiz from "./TopicQuiz"
+import {
+  saveAcademicSubjects,
+  getCachedAcademicSubjects,
+  saveSyllabusTopics,
+  getCachedSyllabusTopics,
+  saveTopicProgress,
+  updateLocalTopicProgress,
+  getCachedTopicProgress,
+} from "../lib/offlineDb"
+import { enqueueOperation } from "../lib/syncQueue"
 import { SkeletonCard, SkeletonList } from "../components/SkeletonLoader"
 import EmptyState from "../components/EmptyState"
 import ErrorState from "../components/ErrorState"
@@ -15,6 +25,27 @@ function Progress({ profile, user }) {
   const [savingId, setSavingId] = useState(null)
   const [quizTopic, setQuizTopic] = useState(null)
   const [error, setError] = useState("")
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true)
+
+  useEffect(() => {
+    function handleOnline() { setIsOnline(true) }
+    function handleOffline() { setIsOnline(false) }
+    function handleSyncComplete() {
+      if (user?.id && selectedSubject) {
+        loadTopics(selectedSubject)
+      }
+    }
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    window.addEventListener("coursepilot:sync-complete", handleSyncComplete)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+      window.removeEventListener("coursepilot:sync-complete", handleSyncComplete)
+    }
+  }, [user, selectedSubject])
 
   useEffect(() => {
     loadSubjects()
@@ -26,6 +57,19 @@ function Progress({ profile, user }) {
     setLoading(true)
     setError("")
 
+    const cachedSubs = await getCachedAcademicSubjects(profile.semester, profile.section)
+    if (cachedSubs && cachedSubs.length > 0) {
+      setSubjects(cachedSubs)
+      const firstId = String(cachedSubs[0].id)
+      setSelectedSubject(firstId)
+      loadTopics(firstId)
+    }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setLoading(false)
+      return
+    }
+
     try {
       const { data, error: subErr } = await supabase
         .from("academic_subjects")
@@ -36,16 +80,20 @@ function Progress({ profile, user }) {
 
       if (subErr) throw subErr
 
-      setSubjects(data || [])
-
-      if (data?.length > 0) {
-        const firstSubject = String(data[0].id)
-        setSelectedSubject(firstSubject)
-        await loadTopics(firstSubject)
+      if (data && data.length > 0) {
+        setSubjects(data)
+        saveAcademicSubjects(profile.semester, profile.section, data)
+        if (!selectedSubject) {
+          const firstSubject = String(data[0].id)
+          setSelectedSubject(firstSubject)
+          await loadTopics(firstSubject)
+        }
       }
     } catch (err) {
-      console.error(err)
-      setError("Could not load semester subjects.")
+      console.warn("[Progress] Subjects online query notice:", err)
+      if (!cachedSubs || cachedSubs.length === 0) {
+        setError("Could not load semester subjects.")
+      }
     } finally {
       setLoading(false)
     }
@@ -61,6 +109,23 @@ function Progress({ profile, user }) {
     setTopicsLoading(true)
     setError("")
 
+    // 1. Instant Cache Load
+    const cachedTopics = await getCachedSyllabusTopics(subjectId)
+    if (cachedTopics && cachedTopics.length > 0) {
+      setTopics(cachedTopics)
+      if (user?.id) {
+        const topicIds = cachedTopics.map((t) => t.id)
+        const cachedProgress = await getCachedTopicProgress(user.id, topicIds)
+        setProgress(cachedProgress)
+      }
+    }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setTopicsLoading(false)
+      return
+    }
+
+    // 2. Online Refresh
     try {
       const { data: topicData, error: topicError } = await supabase
         .from("syllabus_topics")
@@ -71,28 +136,33 @@ function Progress({ profile, user }) {
 
       if (topicError) throw topicError
 
-      setTopics(topicData || [])
-      const topicIds = (topicData || []).map((t) => t.id)
-      const progressMap = {}
+      if (topicData) {
+        setTopics(topicData)
+        saveSyllabusTopics(subjectId, topicData)
 
-      if (topicIds.length > 0 && user?.id) {
-        const { data: pData } = await supabase
-          .from("student_topic_progress")
-          .select("id, syllabus_topic_id, status, mastery_score")
-          .eq("user_id", user.id)
-          .in("syllabus_topic_id", topicIds)
+        const topicIds = topicData.map((t) => t.id)
+        if (topicIds.length > 0 && user?.id) {
+          const { data: pData } = await supabase
+            .from("student_topic_progress")
+            .select("id, syllabus_topic_id, status, mastery_score")
+            .eq("user_id", user.id)
+            .in("syllabus_topic_id", topicIds)
 
-        if (pData) {
-          pData.forEach((item) => {
-            progressMap[item.syllabus_topic_id] = item
-          })
+          if (pData) {
+            saveTopicProgress(user.id, pData)
+            const progressMap = {}
+            pData.forEach((item) => {
+              progressMap[item.syllabus_topic_id] = item
+            })
+            setProgress(progressMap)
+          }
         }
       }
-
-      setProgress(progressMap)
     } catch (err) {
-      console.error("Topic load error:", err)
-      setError("Could not load syllabus topics.")
+      console.warn("[Progress] Topic online load notice:", err)
+      if (!cachedTopics || cachedTopics.length === 0) {
+        setError("Could not load syllabus topics.")
+      }
     } finally {
       setTopicsLoading(false)
     }
@@ -110,8 +180,9 @@ function Progress({ profile, user }) {
     }
 
     const masteryScore = masteryByStatus[status]
+    const isCurrentlyOffline = typeof navigator !== "undefined" && !navigator.onLine
 
-    // Optimistic UI update
+    // 1. Optimistic UI update
     setProgress((current) => ({
       ...current,
       [topic.id]: {
@@ -119,36 +190,28 @@ function Progress({ profile, user }) {
         syllabus_topic_id: topic.id,
         status,
         mastery_score: masteryScore,
+        pending_sync: isCurrentlyOffline,
       },
     }))
 
-    try {
-      const { data, error: upErr } = await supabase
-        .from("student_topic_progress")
-        .upsert(
-          {
-            user_id: user.id,
-            syllabus_topic_id: topic.id,
-            status,
-            mastery_score: masteryScore,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id,syllabus_topic_id",
-          }
-        )
-        .select()
-        .maybeSingle()
+    // 2. Local IndexedDB update
+    await updateLocalTopicProgress(user.id, topic.id, status, masteryScore, isCurrentlyOffline)
 
-      if (upErr) throw upErr
-      if (data) {
-        setProgress((curr) => ({ ...curr, [topic.id]: data }))
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setSavingId(null)
-    }
+    // 3. Queue offline sync
+    await enqueueOperation({
+      userId: user.id,
+      entityType: "student_topic_progress",
+      entityId: topic.id,
+      operation: "upsert",
+      payload: {
+        syllabus_topic_id: topic.id,
+        status,
+        mastery_score: masteryScore,
+        updated_at: new Date().toISOString(),
+      },
+    })
+
+    setSavingId(null)
   }
 
   const overallMastery = useMemo(() => {
@@ -316,6 +379,13 @@ function Progress({ profile, user }) {
                                     {status === "learning" && (
                                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
                                         LEARNING
+                                      </span>
+                                    )}
+
+                                    {current?.pending_sync && (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        Pending sync
                                       </span>
                                     )}
                                   </div>

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
+import {
+  saveAcademicSubjects,
+  getCachedAcademicSubjects,
+  saveSyllabusTopics,
+  getCachedSyllabusTopics,
+} from "../lib/offlineDb"
 
 function Syllabus({ profile }) {
   const [subjects, setSubjects] = useState([])
@@ -8,6 +14,18 @@ function Syllabus({ profile }) {
   const [loading, setLoading] = useState(true)
   const [topicsLoading, setTopicsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true)
+
+  useEffect(() => {
+    function handleOnline() { setIsOnline(true) }
+    function handleOffline() { setIsOnline(false) }
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     loadSubjects()
@@ -19,26 +37,44 @@ function Syllabus({ profile }) {
     setLoading(true)
     setError("")
 
-    const { data, error } = await supabase
-      .from("academic_subjects")
-      .select("id, subject_code, subject_name, subject_type, teacher_name")
-      .eq("semester", profile.semester)
-      .eq("section", profile.section)
-      .order("subject_name")
-
-    if (error) {
-      console.error(error)
-      setError("Could not load subjects.")
-    } else {
-      setSubjects(data || [])
-
-      if (data?.length > 0) {
-        setSelectedSubject(String(data[0].id))
-        loadTopics(data[0].id)
-      }
+    const cachedSubjects = await getCachedAcademicSubjects(profile.semester, profile.section)
+    if (cachedSubjects && cachedSubjects.length > 0) {
+      setSubjects(cachedSubjects)
+      setSelectedSubject(String(cachedSubjects[0].id))
+      loadTopics(cachedSubjects[0].id)
     }
 
-    setLoading(false)
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("academic_subjects")
+        .select("id, subject_code, subject_name, subject_type, teacher_name")
+        .eq("semester", profile.semester)
+        .eq("section", profile.section)
+        .order("subject_name")
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        setSubjects(data)
+        saveAcademicSubjects(profile.semester, profile.section, data)
+        if (!selectedSubject) {
+          setSelectedSubject(String(data[0].id))
+          loadTopics(data[0].id)
+        }
+      }
+    } catch (err) {
+      console.warn("[Syllabus] Online subjects fetch notice:", err)
+      if (!cachedSubjects || cachedSubjects.length === 0) {
+        setError("Could not load subjects.")
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function loadTopics(subjectId) {
@@ -50,21 +86,38 @@ function Syllabus({ profile }) {
     setTopicsLoading(true)
     setError("")
 
-    const { data, error } = await supabase
-      .from("syllabus_topics")
-      .select("*")
-      .eq("subject_id", Number(subjectId))
-      .order("unit_number")
-      .order("id")
-
-    if (error) {
-      console.error(error)
-      setError("Could not load syllabus.")
-    } else {
-      setTopics(data || [])
+    const cachedTopics = await getCachedSyllabusTopics(subjectId)
+    if (cachedTopics && cachedTopics.length > 0) {
+      setTopics(cachedTopics)
     }
 
-    setTopicsLoading(false)
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setTopicsLoading(false)
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("syllabus_topics")
+        .select("*")
+        .eq("subject_id", Number(subjectId))
+        .order("unit_number")
+        .order("id")
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        setTopics(data)
+        saveSyllabusTopics(subjectId, data)
+      }
+    } catch (err) {
+      console.warn("[Syllabus] Online topics fetch notice:", err)
+      if (!cachedTopics || cachedTopics.length === 0) {
+        setError("Could not load syllabus topics.")
+      }
+    } finally {
+      setTopicsLoading(false)
+    }
   }
 
   function handleSubjectChange(e) {

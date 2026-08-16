@@ -103,9 +103,16 @@ function CopilotChat({
   // ---------------------------------------------------------
   // 3. SEND MESSAGE TO COPILOT
   // ---------------------------------------------------------
-  async function handleSendMessage(textToSend) {
-    const text = (textToSend || inputMessage).trim()
-    if (!text || sending || !user?.id) return
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
+
+  async function handleSendMessage(msgText = inputMessage) {
+    const textToSend = (msgText || "").trim()
+    if (!textToSend || sending || !user?.id) return
+
+    if (isOffline) {
+      setError("You're offline. Connect to the internet to chat with AI Copilot.")
+      return
+    }
 
     setInputMessage("")
     if (textareaRef.current) {
@@ -516,7 +523,7 @@ function CopilotChat({
               ref={textareaRef}
               rows={1}
               value={inputMessage}
-              disabled={sending}
+              disabled={sending || isOffline}
               onChange={(e) => {
                 setInputMessage(e.target.value)
                 e.target.style.height = "auto"
@@ -528,14 +535,18 @@ function CopilotChat({
                   handleSendMessage()
                 }
               }}
-              placeholder="Ask your Copilot anything about your academics... (Enter to send)"
-              className="flex-1 resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none max-h-28"
+              placeholder={
+                isOffline
+                  ? "AI Copilot requires an internet connection (You're currently offline)"
+                  : "Ask your Copilot anything about your academics... (Enter to send)"
+              }
+              className="flex-1 resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none max-h-28 disabled:opacity-60"
             />
 
             <button
               type="submit"
-              disabled={!inputMessage.trim() || sending}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white font-bold transition hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 shadow-xs"
+              disabled={sending || !inputMessage.trim() || isOffline}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white font-bold transition hover:bg-blue-700 disabled:opacity-30 disabled:hover:bg-blue-600 shadow-xs active:scale-95"
               aria-label="Send message"
             >
               {sending ? (

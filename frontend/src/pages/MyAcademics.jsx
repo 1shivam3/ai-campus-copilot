@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { getAcademicData, getClassSchedule } from "../lib/academicData"
+import { getSyncMetadata } from "../lib/offlineDb"
 import { SkeletonGrid } from "../components/SkeletonLoader"
 import EmptyState from "../components/EmptyState"
 import ErrorState from "../components/ErrorState"
@@ -10,6 +11,8 @@ function MyAcademics({ profile }) {
   const [schedule, setSchedule] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [lastSyncedStr, setLastSyncedStr] = useState("")
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true)
 
   const days = [
     "Monday",
@@ -18,6 +21,17 @@ function MyAcademics({ profile }) {
     "Thursday",
     "Friday",
   ]
+
+  useEffect(() => {
+    function handleOnline() { setIsOnline(true) }
+    function handleOffline() { setIsOnline(false) }
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     loadAcademicData()
@@ -30,14 +44,20 @@ function MyAcademics({ profile }) {
     setError("")
 
     try {
-      const [academicData, scheduleData] = await Promise.all([
+      const [academicData, scheduleData, meta] = await Promise.all([
         getAcademicData(profile.semester, profile.section),
         getClassSchedule(profile.semester, profile.section),
+        getSyncMetadata(`schedule_${profile.semester}_${profile.section}`),
       ])
 
       setSubjects(academicData.subjects || [])
       setLabs(academicData.labs || [])
       setSchedule(scheduleData || [])
+
+      if (meta?.last_synced_at) {
+        const d = new Date(meta.last_synced_at)
+        setLastSyncedStr(d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
+      }
     } catch (err) {
       console.error(err)
       setError("Could not load your academic schedule and courses.")
@@ -57,15 +77,33 @@ function MyAcademics({ profile }) {
         {/* Page Heading */}
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
-              ACADEMIC TIMETABLE & COURSES
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
+                ACADEMIC TIMETABLE & COURSES
+              </p>
+              {!isOnline ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  Offline Mode
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  Synced
+                </span>
+              )}
+            </div>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               Semester {profile?.semester} · Section {profile?.section}
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500">
-              Your official lecture schedule, laboratory practicals, and faculty directory.
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500">
+              <span>Your official lecture schedule, laboratory practicals, and faculty directory.</span>
+              {lastSyncedStr && (
+                <span className="text-[11px] font-medium text-slate-400">
+                  · (Last synced at {lastSyncedStr})
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-sm self-start sm:self-auto">

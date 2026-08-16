@@ -52,6 +52,18 @@ import {
 } from "./utils/dailyChallengeEngine"
 import { getUserSavedItems } from "./utils/socialInteractions"
 import { fetchUserStats, syncUserLearningStats } from "./lib/api"
+import {
+  saveUserProfile,
+  getCachedUserProfile,
+  saveAcademicSubjects,
+  getCachedAcademicSubjects,
+  saveSyllabusTopics,
+  getCachedSyllabusTopics,
+  saveTopicProgress,
+  getCachedTopicProgress,
+  clearUserScopedCache,
+} from "./lib/offlineDb"
+import { initSyncQueueListener, getPendingQueueCount, processSyncQueue } from "./lib/syncQueue"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -59,6 +71,9 @@ function App() {
   const [authView, setAuthView] = useState(null) // null (landing), "login", "signup"
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true)
+  const [pendingSyncCount, setPendingSyncCount] = useState(0)
+  const [showOfflineBanner, setShowOfflineBanner] = useState(true)
   const [currentPage, setCurrentPage] = useState("Home")
   const [selectedMaterialIdForReader, setSelectedMaterialIdForReader] = useState(null)
   const [selectedMaterialIdForStudyPack, setSelectedMaterialIdForStudyPack] = useState(null)
@@ -133,6 +148,26 @@ function App() {
     initTheme()
     checkUser()
 
+    initSyncQueueListener(() => user?.id)
+
+    function handleOnline() {
+      setIsOnline(true)
+      if (user?.id) processSyncQueue(user.id)
+    }
+    function handleOffline() {
+      setIsOnline(false)
+      setShowOfflineBanner(true)
+    }
+    function handleQueueUpdate(e) {
+      if (e.detail?.count !== undefined) {
+        setPendingSyncCount(e.detail.count)
+      }
+    }
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    window.addEventListener("coursepilot:sync-queue-updated", handleQueueUpdate)
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -140,6 +175,7 @@ function App() {
       setUser(currentUser)
 
       if (currentUser) {
+        getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
         await fetchProfile(currentUser)
       } else {
         setProfile(null)
@@ -148,8 +184,11 @@ function App() {
 
     return () => {
       subscription.unsubscribe()
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+      window.removeEventListener("coursepilot:sync-queue-updated", handleQueueUpdate)
     }
-  }, [])
+  }, [user?.id])
 
   async function checkUser() {
     try {
@@ -174,6 +213,27 @@ function App() {
     if (!currentUser?.id) return
     setProfileLoading(true)
 
+    // 0. Load cached profile from IndexedDB immediately (instant 0ms)
+    try {
+      const cachedProfile = await getCachedUserProfile(currentUser.id)
+      if (cachedProfile) {
+        setProfile((prev) => prev || {
+          id: currentUser.id,
+          full_name: cachedProfile.full_name,
+          semester: cachedProfile.semester,
+          section: cachedProfile.section,
+          avatar_url: cachedProfile.avatar_url,
+          public_display_name: cachedProfile.full_name,
+          reputation: 91,
+        })
+      }
+    } catch {}
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setProfileLoading(false)
+      return
+    }
+
     try {
       // 1. Fetch Supabase profile record
       const { data, error } = await supabase
@@ -181,6 +241,10 @@ function App() {
         .select("*")
         .eq("id", currentUser.id)
         .maybeSingle()
+
+      if (data) {
+        saveUserProfile(data)
+      }
 
       // 2. Fetch cross-device cloud synced stats (avatar, XP, streak, displayName, challenge history)
       const cloudStats = await fetchUserStats(currentUser.id)
@@ -245,10 +309,10 @@ function App() {
       const mergedTxs = Array.from(mergedMap.values())
       const xpSum = calculateXPSummary(mergedTxs)
 
-      if (mergedTxs.length > 0) {
-        setXpTransactions(mergedTxs)
-        try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(mergedTxs)) } catch {}
-      }
+      setXpTransactions(mergedTxs)
+      try {
+        localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(mergedTxs))
+      } catch {}
 
       // Merge challenge history
       let localHist = []
@@ -307,6 +371,9 @@ function App() {
   }
 
   async function handleLogout() {
+    if (user?.id) {
+      await clearUserScopedCache(user.id)
+    }
     try {
       await supabase.auth.signOut()
     } catch (error) {
@@ -369,6 +436,32 @@ function App() {
   async function loadSyllabusProgress() {
     if (!user?.id || !profile) return
 
+    // 0. Instant Cache Load from IndexedDB
+    try {
+      const cachedSubs = await getCachedAcademicSubjects(profile.semester, profile.section)
+      if (cachedSubs && cachedSubs.length > 0) {
+        setAcademicSubjects(cachedSubs)
+        const subIds = cachedSubs.map((s) => s.id)
+        const cachedTopicsList = []
+        for (const sid of subIds) {
+          const topList = await getCachedSyllabusTopics(sid)
+          cachedTopicsList.push(...topList)
+        }
+        if (cachedTopicsList.length > 0) {
+          setSyllabusTopics(cachedTopicsList)
+          const tIds = cachedTopicsList.map((t) => t.id)
+          const cachedProg = await getCachedTopicProgress(user.id, tIds)
+          setTopicProgress(cachedProg)
+        }
+      }
+    } catch (cacheErr) {
+      console.warn("[App] Syllabus offline cache read notice:", cacheErr)
+    }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return
+    }
+
     try {
       const { data: subjectData, error: subjectError } = await supabase
         .from("academic_subjects")
@@ -382,6 +475,10 @@ function App() {
       }
 
       setAcademicSubjects(subjectData || [])
+      if (subjectData && subjectData.length > 0) {
+        saveAcademicSubjects(profile.semester, profile.section, subjectData)
+      }
+
       const subjectIds = (subjectData || []).map((item) => item.id)
 
       if (!subjectIds.length) {
@@ -400,6 +497,17 @@ function App() {
         return
       }
 
+      if (topicData && topicData.length > 0) {
+        const bySubject = {}
+        topicData.forEach((t) => {
+          if (!bySubject[t.subject_id]) bySubject[t.subject_id] = []
+          bySubject[t.subject_id].push(t)
+        })
+        for (const [sId, sTopics] of Object.entries(bySubject)) {
+          saveSyllabusTopics(sId, sTopics)
+        }
+      }
+
       const topicIds = (topicData || []).map((topic) => topic.id)
       let progressData = []
 
@@ -412,6 +520,7 @@ function App() {
 
         if (!error && data) {
           progressData = data
+          saveTopicProgress(user.id, data)
         }
       }
 
@@ -879,14 +988,44 @@ function App() {
               )}
             </button>
 
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
-              Sem {profile.semester}
-            </span>
+            {/* Offline / Sync Badge */}
+            {!isOnline ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                Offline
+              </span>
+            ) : pendingSyncCount > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-300 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-spin"></span>
+                ↻ {pendingSyncCount}
+              </span>
+            ) : (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
+                Sem {profile.semester}
+              </span>
+            )}
           </div>
         </header>
 
         {/* Main Content Area */}
         <main className="flex-1 pb-24 lg:pb-0">
+          {/* Offline Notice Banner */}
+          {!isOnline && showOfflineBanner && (
+            <div className="bg-amber-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse"></span>
+                <span>You&apos;re currently offline. Your timetable, syllabus, and today&apos;s classes are fully available.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOfflineBanner(false)}
+                className="text-amber-100 hover:text-white px-2 py-0.5 rounded text-xs transition font-bold"
+                aria-label="Dismiss offline banner"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {(currentPage === "Home" || currentPage === "Dashboard") && (
             <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 lg:py-6 space-y-6">
               {/* 1. Student Mini-Profile Strip & Stats Header */}
