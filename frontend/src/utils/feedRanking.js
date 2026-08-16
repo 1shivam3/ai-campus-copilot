@@ -1,15 +1,15 @@
 /**
  * Deterministic Feed Ranking Algorithm for CoursePilot
- * Ranks educational content based on academic state, weak topics, exam urgency, and novelty.
+ * Ranks universal educational challenges and learning briefs.
  * 
  * Weights:
- * - Academic Relevance:    30%
- * - Weak Topic Relevance:  25%
+ * - Academic Relevance:    25%
+ * - Weak Topic Relevance:  20%
  * - Exam Urgency:          15%
  * - Career Relevance:      10%
  * - Novelty:               10%
- * - Difficulty Fit:         5%
- * - Social Relevance:       5%
+ * - Difficulty Fit:        10%
+ * - Social Popularity:     10%
  */
 
 export function rankFeedItems({
@@ -18,7 +18,9 @@ export function rankFeedItems({
   topicProgress = [],
   exams = [],
   completedReferenceKeys = new Set(),
-  activeTab = "For You"
+  likedItemIds = new Set(),
+  activeTab = "For You",
+  targetDifficulty = "Medium",
 }) {
   if (!Array.isArray(feedItems) || feedItems.length === 0) {
     return []
@@ -33,7 +35,7 @@ export function rankFeedItems({
 
   // 2. Identify nearest exam subjects and remaining days
   const now = new Date()
-  const urgentExamSubjects = new Map() // subject_name -> days_remaining
+  const urgentExamSubjects = new Map()
   exams.forEach((exam) => {
     if (!exam.exam_date) return
     const examDate = new Date(exam.exam_date)
@@ -69,18 +71,18 @@ export function rankFeedItems({
 
   // 4. Calculate deterministic multi-factor score for each item
   const scoredItems = filteredItems.map((item) => {
-    let academicScore = 70 // default standard academic relevance
+    let academicScore = 75
     let weakTopicScore = 0
     let examUrgencyScore = 0
-    let careerScore = 50
+    let careerScore = 60
     let noveltyScore = 100
-    let difficultyFitScore = 75
-    let socialScore = 30
+    let difficultyFitScore = 70
+    let socialScore = 50
 
     const itemTopic = (item.topic || "").toLowerCase()
     const itemSubject = (item.subject || "").toLowerCase()
 
-    // A. Academic Relevance (Matches Semester 3 Subjects: DSA, DBMS, OS, Java, Math)
+    // A. Academic Relevance
     if (
       itemSubject.includes("data structure") ||
       itemSubject.includes("algorithm") ||
@@ -92,7 +94,7 @@ export function rankFeedItems({
       academicScore = 100
     }
 
-    // B. Weak Topic Relevance (Matches low-mastery topics)
+    // B. Weak Topic Relevance
     for (const weakTopic of weakTopicNames) {
       if (itemTopic.includes(weakTopic) || weakTopic.includes(itemTopic)) {
         weakTopicScore = 100
@@ -108,10 +110,9 @@ export function rankFeedItems({
       }
     }
 
-    // C. Exam Urgency (Upcoming exam within 14 days)
+    // C. Exam Urgency
     for (const [subj, days] of urgentExamSubjects.entries()) {
       if (itemSubject.includes(subj) || subj.includes(itemSubject)) {
-        // Closer exam = higher score: 0-2 days -> 100, 3-7 days -> 80, 8-14 days -> 50
         if (days <= 2) examUrgencyScore = 100
         else if (days <= 7) examUrgencyScore = 80
         else examUrgencyScore = 50
@@ -120,61 +121,57 @@ export function rankFeedItems({
     }
 
     // D. Career Relevance
-    if (item.tags?.some((t) => ["DSA", "Architecture", "AI", "Performance"].includes(t))) {
-      careerScore = 90
+    if (item.tags?.some((t) => ["DSA", "Architecture", "AI", "Performance", "RAG"].includes(t))) {
+      careerScore = 95
     }
 
     // E. Novelty & Completion Penalty
-    const isCompleted = completedReferenceKeys.has(`challenge_completion:${item.id}`)
+    const isCompleted =
+      completedReferenceKeys.has(`challenge_completion:${item.id}`) ||
+      completedReferenceKeys.has(item.id)
+
     if (isCompleted) {
-      noveltyScore = 15 // deprioritize completed items
+      noveltyScore = 10 // deprioritize completed items in main feed
     } else {
-      // Age decay (newer = higher novelty)
       const ageHours = (Date.now() - new Date(item.created_at || Date.now()).getTime()) / 3600000
       noveltyScore = Math.max(40, 100 - Math.min(60, ageHours * 1.5))
     }
 
     // F. Difficulty Fit
-    if (item.difficulty === "Easy") difficultyFitScore = 80
-    else if (item.difficulty === "Medium") difficultyFitScore = 95
-    else if (item.difficulty === "Hard") difficultyFitScore = 70
-
-    // G. Social Relevance
-    if (item.category === "Community" || item.type.includes("peer")) {
-      socialScore = 95
+    if (item.difficulty === targetDifficulty) {
+      difficultyFitScore = 100
+    } else {
+      difficultyFitScore = 60
     }
+
+    // G. Social Popularity / Helpful Metric
+    const likes = (item.likes_count || 0) + (likedItemIds.has(item.id) ? 1 : 0)
+    const participation = item.participation_count || 0
+    socialScore = Math.min(100, Math.round(likes * 0.15 + (participation / 20)))
 
     // Weighted Total Score (0 - 100)
     const finalScore = Math.round(
-      academicScore * 0.30 +
-      weakTopicScore * 0.25 +
+      academicScore * 0.25 +
+      weakTopicScore * 0.20 +
       examUrgencyScore * 0.15 +
       careerScore * 0.10 +
       noveltyScore * 0.10 +
-      difficultyFitScore * 0.05 +
-      socialScore * 0.05
+      difficultyFitScore * 0.10 +
+      socialScore * 0.10
     )
 
     return {
       ...item,
       rankingScore: finalScore,
       isCompleted,
-      scoreBreakdown: {
-        academicScore,
-        weakTopicScore,
-        examUrgencyScore,
-        careerScore,
-        noveltyScore,
-        difficultyFitScore,
-        socialScore,
-      },
+      likes_count: likes,
     }
   })
 
   // Sort descending by score, prioritizing uncompleted high-yield items
   return scoredItems.sort((a, b) => {
     if (a.isCompleted !== b.isCompleted) {
-      return a.isCompleted ? 1 : -1 // Uncompleted items first
+      return a.isCompleted ? 1 : -1
     }
     return b.rankingScore - a.rankingScore
   })

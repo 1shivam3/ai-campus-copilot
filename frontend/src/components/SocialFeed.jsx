@@ -1,14 +1,22 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { FEED_CATALOG } from "../data/feedCatalog"
 import { rankFeedItems } from "../utils/feedRanking"
-import { awardXP, XP_REWARDS } from "../utils/xpEngine"
+import { awardXP } from "../utils/xpEngine"
+import {
+  getUserLikes,
+  toggleFeedItemLike,
+  getUserSavedItems,
+  toggleSavedItem,
+  shareChallenge,
+} from "../utils/socialInteractions"
+import { recordChallengeAttempt } from "../utils/dailyChallengeEngine"
 
 const FEED_TABS = [
   { id: "For You", label: "For You", icon: "✨" },
-  { id: "Challenges", label: "Challenges", icon: "🔥" },
-  { id: "Learn", label: "Learn", icon: "🧠" },
+  { id: "Challenges", label: "Challenges", icon: "⚡" },
+  { id: "Learn", label: "Learn", icon: "📚" },
   { id: "Tech", label: "Tech Radar", icon: "🌍" },
-  { id: "Community", label: "Community", icon: "🏆" },
+  { id: "Community", label: "Community", icon: "👥" },
 ]
 
 export default function SocialFeed({
@@ -19,14 +27,30 @@ export default function SocialFeed({
   completedKeys = new Set(),
   onXPUpdated,
   onOpenFocusSession,
+  onChallengeSolved,
 }) {
   const [activeTab, setActiveTab] = useState("For You")
-  const [activeChallenge, setActiveChallenge] = useState(null) // item currently in solver modal
-  const [selectedOption, setSelectedOption] = useState(null)
-  const [submissionResult, setSubmissionResult] = useState(null) // { isCorrect, xpAwarded, explanation }
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeSolverItem, setActiveSolverItem] = useState(null)
+  const [likedIds, setLikedIds] = useState(() => new Set())
+  const [savedIds, setSavedIds] = useState(() => new Set())
+  const [shareToast, setShareToast] = useState(null)
 
-  // Deterministically ranked feed items
+  // Load user likes and saves
+  useEffect(() => {
+    if (!user?.id) return
+    let isMounted = true
+    Promise.all([getUserLikes(user.id), getUserSavedItems(user.id)]).then(([likes, saves]) => {
+      if (isMounted) {
+        setLikedIds(likes)
+        setSavedIds(saves)
+      }
+    })
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
+
+  // Ranked feed items
   const rankedItems = useMemo(() => {
     return rankFeedItems({
       feedItems: FEED_CATALOG,
@@ -34,358 +58,428 @@ export default function SocialFeed({
       topicProgress,
       exams,
       completedReferenceKeys: completedKeys,
+      likedItemIds: likedIds,
       activeTab,
     })
-  }, [profile, topicProgress, exams, completedKeys, activeTab])
+  }, [profile, topicProgress, exams, completedKeys, likedIds, activeTab])
 
-  // Top highlight "One Thing For You"
-  const topHighlight = activeTab === "For You" && rankedItems.length > 0 ? rankedItems[0] : null
-  const regularItems = activeTab === "For You" ? rankedItems.slice(1) : rankedItems
-
-  // Open Challenge Modal
-  function handleOpenChallenge(item) {
-    setActiveChallenge(item)
-    setSelectedOption(null)
-    setSubmissionResult(null)
+  // Social interactions
+  async function handleToggleLike(itemId, e) {
+    e?.stopPropagation()
+    if (!user?.id) return
+    const res = await toggleFeedItemLike(user.id, itemId)
+    setLikedIds((prev) => {
+      const next = new Set(prev)
+      if (res.isLiked) next.add(itemId)
+      else next.delete(itemId)
+      return next
+    })
   }
 
-  // Handle Challenge Submission & XP Award
-  async function handleSubmitAnswer(e) {
-    e?.preventDefault()
-    if (!activeChallenge || selectedOption === null || !user?.id) return
+  async function handleToggleSave(itemId, e) {
+    e?.stopPropagation()
+    if (!user?.id) return
+    const res = await toggleSavedItem(user.id, itemId)
+    setSavedIds((prev) => {
+      const next = new Set(prev)
+      if (res.isSaved) next.add(itemId)
+      else next.delete(itemId)
+      return next
+    })
+  }
 
-    setIsSubmitting(true)
-    const isCorrect = selectedOption === activeChallenge.correct_index
-    const xpAmount = activeChallenge.xp_reward || XP_REWARDS.QUICK_CHALLENGE
-
-    if (isCorrect) {
-      const awardResult = await awardXP({
-        userId: user.id,
-        amount: xpAmount,
-        reason: `Solved: ${activeChallenge.title}`,
-        referenceType: activeChallenge.type || "challenge",
-        referenceId: activeChallenge.id,
-      })
-
-      setSubmissionResult({
-        isCorrect: true,
-        xpAwarded: awardResult.alreadyAwarded ? 0 : xpAmount,
-        alreadyAwarded: awardResult.alreadyAwarded,
-        explanation: activeChallenge.explanation,
-      })
-
-      if (onXPUpdated) {
-        onXPUpdated()
-      }
-    } else {
-      setSubmissionResult({
-        isCorrect: false,
-        xpAwarded: 0,
-        explanation: activeChallenge.explanation,
-      })
+  async function handleShare(item, e) {
+    e?.stopPropagation()
+    const res = await shareChallenge(item)
+    if (res.success) {
+      setShareToast("Link copied to clipboard!")
+      setTimeout(() => setShareToast(null), 2500)
     }
-
-    setIsSubmitting(false)
   }
 
   return (
-    <section className="mb-8">
-      {/* Section Title & Tagline */}
-      <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <section className="mb-8 space-y-5">
+      {/* Toast Notification */}
+      {shareToast && (
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-xl dark:bg-blue-600 animate-fade-in">
+          {shareToast}
+        </div>
+      )}
+
+      {/* Header & Tabs */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
-              SOCIAL LEARNING HUB
+            <span className="text-[11px] font-extrabold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+              SOCIAL LEARNING & ADAPTIVE FEED
             </span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-white">
-            For You · High-Yield Feed
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Curated daily challenges, syllabus breakdowns, and verified tech radar tailored to your cohort.
-          </p>
+          <h3 className="mt-0.5 text-xl font-bold text-slate-900 dark:text-white">
+            Curated Academic Challenges
+          </h3>
         </div>
-      </div>
 
-      {/* Feed Tabs Navigation */}
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {FEED_TABS.map((tab) => {
-          const isActive = activeTab === tab.id
-          return (
+        {/* Tab Navigation */}
+        <div className="flex overflow-x-auto pb-1 scrollbar-none gap-1.5">
+          {FEED_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-bold transition-all duration-150 active:scale-[0.98] shrink-0 ${
-                isActive
+              className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                activeTab === tab.id
                   ? "bg-slate-900 text-white shadow-xs dark:bg-blue-600"
-                  : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
               }`}
             >
               <span>{tab.icon}</span>
               <span>{tab.label}</span>
             </button>
-          )
-        })}
+          ))}
+        </div>
       </div>
 
-      {/* Top Highlight Card: "One Thing For You" */}
-      {topHighlight && (
-        <div className="mb-6 overflow-hidden rounded-3xl border border-blue-200/80 bg-linear-to-br from-blue-500/10 via-indigo-500/5 to-transparent p-5 sm:p-7 shadow-xs dark:border-blue-900/60 dark:bg-slate-900/90 relative">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-            <div className="space-y-2 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-2xs">
-                  🔥 TOP PRIORITY FOR YOU
-                </span>
-                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                  {topHighlight.subject}
-                </span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {topHighlight.title}
-              </h3>
-
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {topHighlight.content}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:bg-slate-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/40">
-                  ⭐ +{topHighlight.xp_reward} XP
-                </span>
-                <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800">
-                  🏷️ {topHighlight.topic}
-                </span>
-                {topHighlight.isCompleted && (
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200">
-                    ✓ Completed
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleOpenChallenge(topHighlight)}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition active:scale-[0.98] shrink-0"
-            >
-              <span>{topHighlight.isCompleted ? "Review Solution →" : `${topHighlight.action || "Start Challenge"} →`}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Feed Grid */}
+      {/* Feed Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        {regularItems.map((item) => {
-          const isCompleted = item.isCompleted
+        {rankedItems.map((item, index) => {
+          const isSolved =
+            completedKeys.has(`challenge_completion:${item.id}`) ||
+            completedKeys.has(item.id)
+          const isLiked = likedIds.has(item.id)
+          const isSaved = savedIds.has(item.id)
+          const isTopForYou = activeTab === "For You" && index === 0 && !isSolved
 
           return (
             <div
               key={item.id}
-              className={`flex flex-col justify-between rounded-3xl border p-5 sm:p-6 transition-all duration-150 ${
-                isCompleted
-                  ? "border-slate-200/60 bg-slate-50/40 opacity-80 dark:border-slate-800/60 dark:bg-slate-900/50"
-                  : "border-slate-200/80 bg-white hover:border-slate-300 shadow-xs dark:border-slate-800/80 dark:bg-slate-900 dark:hover:border-slate-700"
+              className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border p-5 transition-all ${
+                isTopForYou
+                  ? "border-blue-500/80 bg-linear-to-br from-blue-50/70 via-white to-indigo-50/40 shadow-md ring-1 ring-blue-500/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/40 dark:border-blue-500/50"
+                  : isSolved
+                  ? "border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/50 opacity-90"
+                  : "border-slate-200/80 bg-white hover:border-slate-300 shadow-xs dark:border-slate-800 dark:bg-slate-900"
               }`}
             >
+              {/* Top Priority Badge */}
+              {isTopForYou && (
+                <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-2xs self-start">
+                  <span>🔥 Priority Topic For You</span>
+                </div>
+              )}
+
               <div>
-                {/* Header Row */}
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {/* Subject & Difficulty Header */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-[11px] font-bold text-blue-600 uppercase dark:text-blue-400">
                     {item.subject}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/40">
-                      ⭐ +{item.xp_reward} XP
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                        item.difficulty === "Easy"
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                          : item.difficulty === "Hard"
+                          ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                          : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                      }`}
+                    >
+                      {item.difficulty}
                     </span>
-                    {isCompleted && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                    {isSolved && (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
                         ✓ Solved
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Title */}
-                <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-2">
+                {/* Challenge Title */}
+                <h4 className="mt-2 text-base font-bold text-slate-900 dark:text-white">
                   {item.title}
-                </h3>
+                </h4>
 
-                {/* Content snippet */}
-                <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">
+                {/* Question / Description Snippet */}
+                <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">
                   {item.content}
                 </p>
 
-                {/* Code Preview if present */}
-                {item.code_snippet && (
-                  <div className="mt-3 overflow-hidden rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-slate-300">
-                    <pre className="overflow-x-auto whitespace-pre no-scrollbar">
-                      {item.code_snippet.split("\n").slice(0, 3).join("\n")}
-                      {item.code_snippet.split("\n").length > 3 && "\n..."}
-                    </pre>
-                  </div>
-                )}
+                {/* Social Proof Statistics */}
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-2.5">
+                  <span>👥 {item.participation_count?.toLocaleString()} participated</span>
+                  <span>·</span>
+                  <span>🎯 {item.success_rate}% success</span>
+                </div>
               </div>
 
-              {/* Bottom Action Row */}
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 dark:border-slate-800">
-                <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                  {item.source}
-                </span>
+              {/* Bottom Actions Row */}
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+                {/* Social Buttons: Helpful, Save, Share */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleLike(item.id, e)}
+                    className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
+                      isLiked
+                        ? "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-300"
+                        : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                    }`}
+                    title="Helpful"
+                  >
+                    <span>{isLiked ? "❤️" : "🤍"}</span>
+                    <span>{(item.likes_count || 0) + (isLiked ? 1 : 0)}</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenChallenge(item)}
-                  className={`inline-flex items-center gap-1 rounded-xl px-3.5 py-1.5 text-xs font-bold transition active:scale-[0.98] ${
-                    isCompleted
-                      ? "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                      : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700"
-                  }`}
-                >
-                  <span>{isCompleted ? "View Solution" : item.action || "Solve"}</span>
-                  <span>→</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleSave(item.id, e)}
+                    className={`rounded-xl p-1.5 text-xs transition ${
+                      isSaved
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300"
+                        : "text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                    title={isSaved ? "Saved" : "Save challenge"}
+                  >
+                    {isSaved ? "🔖" : "🏷️"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => handleShare(item, e)}
+                    className="rounded-xl p-1.5 text-xs text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    title="Share challenge"
+                  >
+                    ↗️
+                  </button>
+                </div>
+
+                {/* Primary Action Button */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-slate-900 dark:text-white">
+                    ⭐ +{item.xp_reward} XP
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSolverItem(item)}
+                    className={`rounded-2xl px-4 py-2 text-xs font-bold transition active:scale-95 ${
+                      isSolved
+                        ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        : "bg-slate-900 text-white hover:bg-slate-800 shadow-2xs dark:bg-blue-600 dark:hover:bg-blue-700"
+                    }`}
+                  >
+                    {isSolved ? "Review" : item.action || "Solve"}
+                  </button>
+                </div>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* ========================================================================= */}
-      {/* INTERACTIVE CHALLENGE / CONCEPT SOLVER MODAL */}
-      {/* ========================================================================= */}
-      {activeChallenge && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                  {activeChallenge.subject} · {activeChallenge.difficulty}
-                </span>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {activeChallenge.title}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveChallenge(null)}
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {/* Content Explanation */}
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                {activeChallenge.content}
-              </p>
-
-              {/* Code Snippet */}
-              {activeChallenge.code_snippet && (
-                <div className="rounded-2xl bg-slate-950 p-4 font-mono text-xs text-slate-200 overflow-x-auto shadow-inner">
-                  <pre>{activeChallenge.code_snippet}</pre>
-                </div>
-              )}
-
-              {/* Markdown Brief if concept drop */}
-              {activeChallenge.brief_markdown && (
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 text-xs sm:text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300 whitespace-pre-line leading-relaxed">
-                  {activeChallenge.brief_markdown}
-                </div>
-              )}
-
-              {/* Question */}
-              {activeChallenge.question && (
-                <div className="pt-2">
-                  <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-3">
-                    {activeChallenge.question}
-                  </p>
-
-                  {/* Options List */}
-                  <div className="space-y-2.5">
-                    {activeChallenge.options?.map((opt, idx) => {
-                      const isSelected = selectedOption === idx
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          disabled={submissionResult !== null && submissionResult.isCorrect}
-                          onClick={() => setSelectedOption(idx)}
-                          className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-medium transition ${
-                            isSelected
-                              ? "border-blue-600 bg-blue-50/80 text-blue-900 ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200"
-                              : "border-slate-200 bg-slate-50/50 hover:bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:text-slate-200"
-                          }`}
-                        >
-                          <span>{opt}</span>
-                          {isSelected && <span className="text-blue-600 font-bold">●</span>}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Submission Result & Explanation */}
-              {submissionResult && (
-                <div
-                  className={`mt-4 rounded-2xl p-4 border text-xs sm:text-sm ${
-                    submissionResult.isCorrect
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
-                      : "border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold mb-1">
-                    <span>{submissionResult.isCorrect ? "🎉 Correct Answer!" : "❌ Incorrect, try again"}</span>
-                    {submissionResult.isCorrect && submissionResult.xpAwarded > 0 && (
-                      <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] text-white">
-                        +{submissionResult.xpAwarded} XP Awarded
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs opacity-90 leading-relaxed">
-                    {submissionResult.explanation}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                Reward: ⭐ +{activeChallenge.xp_reward} XP
-              </span>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveChallenge(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
-                >
-                  Close
-                </button>
-
-                {(!submissionResult || !submissionResult.isCorrect) && (
-                  <button
-                    type="button"
-                    disabled={selectedOption === null || isSubmitting}
-                    onClick={handleSubmitAnswer}
-                    className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Checking..." : "Submit Answer"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Interactive Challenge Solver Modal */}
+      {activeSolverItem && (
+        <ChallengeSolverModal
+          challenge={activeSolverItem}
+          user={user}
+          isAlreadySolved={
+            completedKeys.has(`challenge_completion:${activeSolverItem.id}`) ||
+            completedKeys.has(activeSolverItem.id)
+          }
+          onClose={() => setActiveSolverItem(null)}
+          onXPUpdated={onXPUpdated}
+          onChallengeSolved={onChallengeSolved}
+        />
       )}
     </section>
+  )
+}
+
+/**
+ * Interactive Challenge Solver Modal with Instant Validation & Social Percentile Comparison.
+ */
+function ChallengeSolverModal({
+  challenge,
+  user,
+  isAlreadySolved,
+  onClose,
+  onXPUpdated,
+  onChallengeSolved,
+}) {
+  const [selectedIdx, setSelectedIdx] = useState(null)
+  const [submitted, setSubmitted] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(false)
+  const [awardedXP, setAwardedXP] = useState(0)
+
+  async function handleValidate() {
+    if (selectedIdx === null || submitted) return
+    const correct = selectedIdx === challenge.correct_index
+    setIsCorrect(correct)
+    setSubmitted(true)
+
+    // Record attempt for strict non-repetition
+    if (user?.id) {
+      await recordChallengeAttempt({
+        userId: user.id,
+        challengeId: challenge.id,
+        passed: correct,
+        score: correct ? 100 : 0,
+        selectedOption: selectedIdx,
+      })
+    }
+
+    if (correct && user?.id) {
+      const res = await awardXP({
+        userId: user.id,
+        amount: challenge.xp_reward || 25,
+        reason: `Solved Universal Challenge: ${challenge.title}`,
+        referenceType: "challenge",
+        referenceId: challenge.id,
+      })
+      if (!res.alreadyAwarded) {
+        setAwardedXP(res.amount)
+        if (onXPUpdated) onXPUpdated()
+      }
+      if (onChallengeSolved) onChallengeSolved(challenge.id)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-scale-in">
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-5 right-5 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+          aria-label="Close solver"
+        >
+          ✕
+        </button>
+
+        {/* Modal Header */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+              {challenge.subject}
+            </span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+              {challenge.difficulty}
+            </span>
+          </div>
+          <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+            {challenge.title}
+          </h3>
+        </div>
+
+        {/* Code Snippet (if available) */}
+        {challenge.code_snippet && (
+          <pre className="mb-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 font-mono text-xs text-slate-200 dark:bg-black/80">
+            <code>{challenge.code_snippet}</code>
+          </pre>
+        )}
+
+        {/* Question Text */}
+        <p className="mb-4 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {challenge.question || challenge.content}
+        </p>
+
+        {/* Interactive MCQ Options */}
+        {challenge.options && (
+          <div className="space-y-2 mb-5">
+            {challenge.options.map((opt, idx) => {
+              let optStyle =
+                "border-slate-200 bg-slate-50/80 hover:bg-slate-100 text-slate-800 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200"
+
+              if (submitted) {
+                if (idx === challenge.correct_index) {
+                  optStyle =
+                    "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold dark:bg-emerald-950/60 dark:text-emerald-200"
+                } else if (idx === selectedIdx && !isCorrect) {
+                  optStyle =
+                    "border-rose-500 bg-rose-50 text-rose-900 font-bold dark:bg-rose-950/60 dark:text-rose-200"
+                } else {
+                  optStyle = "opacity-40 border-slate-200 dark:border-slate-800"
+                }
+              } else if (selectedIdx === idx) {
+                optStyle =
+                  "border-blue-600 bg-blue-50 text-blue-900 font-bold dark:bg-blue-950/60 dark:text-blue-200 shadow-2xs"
+              }
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => setSelectedIdx(idx)}
+                  className={`w-full rounded-2xl border p-3.5 text-left text-xs sm:text-sm transition ${optStyle}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{opt}</span>
+                    {submitted && idx === challenge.correct_index && <span>✓</span>}
+                    {submitted && idx === selectedIdx && !isCorrect && <span>✗</span>}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Post-Submit Result & Community Comparison */}
+        {submitted && (
+          <div
+            className={`mb-5 rounded-2xl p-4 text-xs ${
+              isCorrect
+                ? "border border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+                : "border border-rose-200 bg-rose-50/80 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-extrabold">
+                {isCorrect ? "🎉 Correct! High Yield Answer" : "❌ Incorrect Attempt"}
+              </span>
+              {awardedXP > 0 && (
+                <span className="font-black text-emerald-700 dark:text-emerald-300">
+                  ⭐ +{awardedXP} XP Earned!
+                </span>
+              )}
+            </div>
+
+            <p className="mt-1 leading-relaxed text-slate-700 dark:text-slate-300">
+              {challenge.explanation}
+            </p>
+
+            {/* Social Performance Proof */}
+            <div className="mt-3 border-t border-black/10 pt-2 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+              {isCorrect ? (
+                <span>🏆 You solved this faster than {challenge.success_rate}% of participants!</span>
+              ) : (
+                <span>💡 {challenge.success_rate}% of students solved this on their first attempt.</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+          {!submitted ? (
+            <button
+              type="button"
+              disabled={selectedIdx === null}
+              onClick={handleValidate}
+              className="rounded-2xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 disabled:opacity-40 transition active:scale-95"
+            >
+              Verify Answer & Submit
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition active:scale-95 dark:bg-blue-600"
+            >
+              Done
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

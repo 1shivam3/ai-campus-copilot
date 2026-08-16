@@ -35,6 +35,7 @@ export default function MyProfile({
 }) {
   // Form State
   const [fullName, setFullName] = useState(profile?.full_name || "")
+  const [publicDisplayName, setPublicDisplayName] = useState(profile?.public_display_name || "")
   const [bio, setBio] = useState(profile?.bio || "")
   const [semester, setSemester] = useState(profile?.semester ? String(profile.semester) : "3")
   const [section, setSection] = useState(profile?.section || "B2")
@@ -67,6 +68,7 @@ export default function MyProfile({
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || "")
+      setPublicDisplayName(profile.public_display_name || "")
       setBio(profile.bio || "")
       if (profile.semester) setSemester(String(profile.semester))
       if (profile.section) setSection(profile.section)
@@ -256,6 +258,7 @@ export default function MyProfile({
       const updatePayload = {
         id: user.id,
         full_name: finalName,
+        public_display_name: publicDisplayName.trim() || null,
         bio: bio.trim() || null,
         semester: Number(semester),
         section: finalSection,
@@ -601,6 +604,26 @@ export default function MyProfile({
                   placeholder="e.g. Shivam Kumar"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white dark:focus:bg-slate-800"
                 />
+              </div>
+
+              {/* Public Display Name / Alias */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Leaderboard Display Name (Public Alias)
+                  </label>
+                  <span className="text-[10px] text-slate-400">Optional</span>
+                </div>
+                <input
+                  type="text"
+                  value={publicDisplayName}
+                  onChange={(e) => setPublicDisplayName(e.target.value)}
+                  placeholder="e.g. CodeNinja, AlgoMaster"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                />
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  Visible on public leaderboards. If empty or profile is private, a safe tag like <code>Learner_7421</code> is displayed.
+                </p>
               </div>
 
               {/* Bio */}

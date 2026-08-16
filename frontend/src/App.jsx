@@ -37,9 +37,18 @@ import { initTheme } from "./utils/theme"
 import HomeHeader from "./components/HomeHeader"
 import TodayTimetableStrip from "./components/TodayTimetableStrip"
 import SocialFeed from "./components/SocialFeed"
+import DailyProgressCard from "./components/DailyProgressCard"
+import Leaderboard from "./pages/Leaderboard"
+import SavedChallenges from "./pages/SavedChallenges"
 import { getXPTransactions, calculateXPSummary } from "./utils/xpEngine"
 import { calculateLearningStreak } from "./utils/streakEngine"
 import { evaluateAndAwardBadges } from "./utils/badgeEngine"
+import {
+  getUserChallengeHistory,
+  getDailyChallengeSet,
+  awardDailySetBonus,
+} from "./utils/dailyChallengeEngine"
+import { getUserSavedItems } from "./utils/socialInteractions"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -67,6 +76,10 @@ function App() {
   const [xpTransactions, setXpTransactions] = useState([])
   const [studySessions, setStudySessions] = useState([])
   const [quizAttempts, setQuizAttempts] = useState([])
+  const [challengeHistory, setChallengeHistory] = useState([])
+  const [savedItemIds, setSavedItemIds] = useState(() => new Set())
+  const [isBonusMode, setIsBonusMode] = useState(false)
+  const [activeSelectedChallenge, setActiveSelectedChallenge] = useState(null)
   const [dashboardLoading, setDashboardLoading] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [deliveredKeys, setDeliveredKeys] = useState(() => new Set())
@@ -280,39 +293,49 @@ function App() {
     if (!user?.id) return
 
     try {
-      const [tasksResult, examsResult, topicsResult, sessionsResult, quizzesResult, xpData] =
-        await Promise.all([
-          supabase
-            .from("tasks")
-            .select("id, title, subject, deadline, importance, estimated_minutes, status, is_completed, completed_at, updated_at")
-            .eq("user_id", user.id)
-            .eq("status", "pending")
-            .order("deadline", { ascending: true }),
+      const [
+        tasksResult,
+        examsResult,
+        topicsResult,
+        sessionsResult,
+        quizzesResult,
+        xpData,
+        histData,
+        savedData,
+      ] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("id, title, subject, deadline, importance, estimated_minutes, status, is_completed, completed_at, updated_at")
+          .eq("user_id", user.id)
+          .eq("status", "pending")
+          .order("deadline", { ascending: true }),
 
-          supabase
-            .from("exams")
-            .select("id, subject, exam_date, importance")
-            .eq("user_id", user.id)
-            .gte("exam_date", new Date().toISOString())
-            .order("exam_date", { ascending: true }),
+        supabase
+          .from("exams")
+          .select("id, subject, exam_date, importance")
+          .eq("user_id", user.id)
+          .gte("exam_date", new Date().toISOString())
+          .order("exam_date", { ascending: true }),
 
-          supabase
-            .from("student_topic_progress")
-            .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
-            .eq("user_id", user.id),
+        supabase
+          .from("student_topic_progress")
+          .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
+          .eq("user_id", user.id),
 
-          supabase
-            .from("study_sessions")
-            .select("id, duration_minutes, completed_at, created_at")
-            .eq("user_id", user.id),
+        supabase
+          .from("study_sessions")
+          .select("id, duration_minutes, completed_at, created_at")
+          .eq("user_id", user.id),
 
-          supabase
-            .from("topic_quiz_attempts")
-            .select("id, score_percentage, attempted_at, created_at")
-            .eq("user_id", user.id),
+        supabase
+          .from("topic_quiz_attempts")
+          .select("id, score_percentage, attempted_at, created_at")
+          .eq("user_id", user.id),
 
-          getXPTransactions(user.id),
-        ])
+        getXPTransactions(user.id),
+        getUserChallengeHistory(user.id),
+        getUserSavedItems(user.id),
+      ])
 
       const formattedTopics = (topicsResult.data || []).map((p) => ({
         id: p.syllabus_topic_id || p.id,
@@ -328,6 +351,8 @@ function App() {
       setStudySessions(sessionsResult.data || [])
       setQuizAttempts(quizzesResult.data || [])
       setXpTransactions(xpData || [])
+      setChallengeHistory(histData || [])
+      setSavedItemIds(savedData || new Set())
 
       // Check for due flashcards
       try {
@@ -357,6 +382,25 @@ function App() {
   const xpSummary = useMemo(() => {
     return calculateXPSummary(xpTransactions)
   }, [xpTransactions])
+
+  const dailyChallengeSet = useMemo(() => {
+    return getDailyChallengeSet({
+      userId: user?.id,
+      challengeHistory,
+      isBonusMode,
+    })
+  }, [user?.id, challengeHistory, isBonusMode])
+
+  // Check Daily Set Completion Bonus
+  useEffect(() => {
+    if (dailyChallengeSet.isSetComplete && user?.id) {
+      awardDailySetBonus(user.id).then((res) => {
+        if (res.awarded) {
+          loadAllDashboardData()
+        }
+      })
+    }
+  }, [dailyChallengeSet.isSetComplete, user?.id])
 
   const learningStreak = useMemo(() => {
     return calculateLearningStreak({
@@ -711,7 +755,17 @@ function App() {
                 onNavigateToAcademics={() => setCurrentPage("My Academics")}
               />
 
-              {/* 3. For You Social Learning Feed */}
+              {/* 3. Daily 5-Question Challenge Progress & Bonus Card */}
+              <DailyProgressCard
+                completedCount={dailyChallengeSet.completedCount}
+                totalCount={dailyChallengeSet.totalCount}
+                isSetComplete={dailyChallengeSet.isSetComplete}
+                isBonusMode={isBonusMode}
+                adaptiveLevel={dailyChallengeSet.adaptiveLevel}
+                onToggleBonusMode={() => setIsBonusMode((prev) => !prev)}
+              />
+
+              {/* 4. For You Social Learning Feed */}
               <SocialFeed
                 user={user}
                 profile={profile}
@@ -720,6 +774,7 @@ function App() {
                 completedKeys={xpSummary.completedKeys}
                 onXPUpdated={loadAllDashboardData}
                 onOpenFocusSession={() => setCurrentPage("Focus Session")}
+                onChallengeSolved={() => loadAllDashboardData()}
               />
 
               {/* 4. Next Best Action Card */}
@@ -1212,6 +1267,26 @@ function App() {
                 setProfile(updatedProfile)
                 loadAllDashboardData()
               }}
+              onNavigate={(page) => setCurrentPage(page)}
+            />
+          )}
+          {currentPage === "Leaderboard" && (
+            <Leaderboard
+              user={user}
+              profile={profile}
+              totalXP={xpSummary.totalXP}
+              thisWeekXP={xpSummary.thisWeekXP}
+              streak={learningStreak.currentStreak}
+              reputation={profile.reputation || 91}
+              onNavigate={(page) => setCurrentPage(page)}
+            />
+          )}
+          {(currentPage === "Saved" || currentPage === "Saved Challenges") && (
+            <SavedChallenges
+              user={user}
+              savedItemIds={savedItemIds}
+              completedKeys={xpSummary.completedKeys}
+              onSavedUpdated={loadAllDashboardData}
               onNavigate={(page) => setCurrentPage(page)}
             />
           )}
