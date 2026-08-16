@@ -7,7 +7,6 @@ import Progress from "./pages/Progress"
 import Tasks from "./pages/Tasks"
 import Exams from "./pages/Exams"
 import ExamMode from "./pages/ExamMode"
-import CopilotChat from "./pages/CopilotChat"
 import StudyMaterial from "./pages/StudyMaterial"
 import StudyMaterialReader from "./pages/StudyMaterialReader"
 import StudyPack from "./pages/StudyPack"
@@ -28,8 +27,6 @@ import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/Skeleto
 import EmptyState from "./components/EmptyState"
 import { CoursePilotMark } from "./components/CoursePilotLogo"
 import PWAInstallBanner from "./components/PWAInstallBanner"
-import CalendarIntegrationModal from "./components/CalendarIntegrationModal"
-import { fetchCalendarEvents, submitCalendarOAuthCode } from "./lib/api"
 import { generateSmartNotifications, DEFAULT_NOTIFICATION_PREFERENCES } from "./utils/notificationEngine"
 import { dispatchNativeBrowserNotification } from "./lib/notifications"
 import NotificationCenter from "./components/NotificationCenter"
@@ -60,8 +57,6 @@ function App() {
   const [syllabusTopics, setSyllabusTopics] = useState([])
   const [topicProgress, setTopicProgress] = useState({})
   const [dashboardLoading, setDashboardLoading] = useState(true)
-  const [calendarEvents, setCalendarEvents] = useState([])
-  const [calendarModalOpen, setCalendarModalOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [deliveredKeys, setDeliveredKeys] = useState(() => new Set())
   const [notificationModalOpen, setNotificationModalOpen] = useState(false)
@@ -106,10 +101,8 @@ function App() {
 
       if (currentUser) {
         await fetchProfile(currentUser)
-        loadCalendar(currentUser.id)
       } else {
         setProfile(null)
-        setCalendarEvents([])
       }
     })
 
@@ -117,28 +110,6 @@ function App() {
       subscription.unsubscribe()
     }
   }, [])
-
-  async function loadCalendar(userId) {
-    if (!userId) return
-    try {
-      // Check if URL has Google OAuth code callback
-      const params = new URLSearchParams(window.location.search)
-      const oauthCode = params.get("code")
-
-      if (oauthCode) {
-        // Clean URL query params to preserve clean routing
-        window.history.replaceState({}, document.title, window.location.pathname)
-        await submitCalendarOAuthCode(oauthCode, userId)
-      }
-
-      const res = await fetchCalendarEvents(userId)
-      if (res.connected && res.events) {
-        setCalendarEvents(res.events)
-      }
-    } catch (err) {
-      console.warn("Calendar load notice:", err)
-    }
-  }
 
   async function checkUser() {
     try {
@@ -374,16 +345,16 @@ function App() {
   const freeWindows = useMemo(() => {
     return getMergedFreeWindows({
       schedule: dashboardSchedule,
-      calendarEvents,
+      calendarEvents: [],
       date: new Date(),
       dayStart: "08:00",
       dayEnd: "22:00",
     })
-  }, [dashboardSchedule, calendarEvents])
+  }, [dashboardSchedule])
 
   const recommendedStudyWindow = useMemo(() => {
-    return getBestStudyWindow(dashboardSchedule, 45, new Date(), calendarEvents)
-  }, [dashboardSchedule, calendarEvents])
+    return getBestStudyWindow(dashboardSchedule, 45, new Date(), [])
+  }, [dashboardSchedule])
 
   const dailyPlan = useMemo(() => {
     return buildDailyPlan({
@@ -626,7 +597,6 @@ function App() {
         user={user}
         profile={profile}
         onLogout={handleLogout}
-        onOpenCalendar={() => setCalendarModalOpen(true)}
         onOpenNotifications={() => setNotificationModalOpen(true)}
         unreadCount={unreadNotifCount}
         mobileOpen={mobileNavOpen}
@@ -716,15 +686,6 @@ function App() {
                         {unreadNotifCount}
                       </span>
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCalendarModalOpen(true)}
-                    className="flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
-                  >
-                    <span>📅</span>
-                    <span>Calendar Sync</span>
                   </button>
 
                   <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-xs">
@@ -903,34 +864,6 @@ function App() {
                   </button>
                 </div>
               )}
-
-              {/* AI Study Copilot Fast Launcher Card */}
-              <div className="mb-8 rounded-3xl border border-blue-200/90 bg-linear-to-r from-blue-50/80 via-white to-blue-50/40 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-xs">
-                    🤖
-                  </span>
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
-                      AI STUDY COPILOT
-                    </span>
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Ask anything about your academics
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Conversational guidance grounded in your live timetable, weak syllabus topics, and notes.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage("AI Copilot")}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition active:scale-[0.98]"
-                >
-                  <span>Open Copilot Chat →</span>
-                </button>
-              </div>
 
               {/* Schedule & Academic Context Row */}
               <section className="mb-8 grid gap-5 lg:grid-cols-3">
@@ -1321,25 +1254,6 @@ function App() {
               />
             )
           )}
-          {currentPage === "AI Copilot" && (
-            <CopilotChat
-              user={user}
-              profile={profile}
-              onNavigate={(page) => setCurrentPage(page)}
-              onStartSession={(taskId) => {
-                setRecommendedTaskId(taskId)
-                setCurrentPage("Focus Session")
-              }}
-              onOpenReader={(id) => {
-                setSelectedMaterialIdForReader(id)
-                setSelectedMaterialIdForAnalysis(null)
-                setSelectedMaterialIdForFlashcards(null)
-                setSelectedMaterialIdForStudyPack(null)
-                setCurrentPage("Study Material")
-              }}
-              onOpenExamMode={() => setCurrentPage("Exam Mode")}
-            />
-          )}
           {currentPage === "Focus Session" && (
             <FocusSession
               user={user}
@@ -1352,15 +1266,6 @@ function App() {
           )}
         </main>
       </div>
-
-      {/* Google Calendar Integration Modal */}
-      <CalendarIntegrationModal
-        isOpen={calendarModalOpen}
-        onClose={() => setCalendarModalOpen(false)}
-        user={user}
-        schedule={dashboardSchedule}
-        onCalendarUpdated={(newEvents) => setCalendarEvents(newEvents)}
-      />
 
       {/* Smart Notification Center Modal */}
       <NotificationCenter
@@ -1396,7 +1301,6 @@ function App() {
         user={user}
         profile={profile}
         onLogout={handleLogout}
-        onOpenCalendar={() => setCalendarModalOpen(true)}
         onOpenNotifications={() => setNotificationModalOpen(true)}
         unreadCount={unreadNotifCount}
       />

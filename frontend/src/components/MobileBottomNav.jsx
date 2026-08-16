@@ -123,21 +123,6 @@ function MobileBottomNav({
       ),
     },
     {
-      id: "AI Copilot",
-      label: "AI Copilot",
-      desc: "Context-aware academic chat",
-      icon: (
-        <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-          />
-        </svg>
-      ),
-    },
-    {
       id: "Exams",
       label: "Exams",
       desc: "Datesheet & weightage tracking",
@@ -261,31 +246,17 @@ function MobileBottomNav({
 
             {/* Quick Actions Row in Bottom Sheet */}
             <div className="border-t border-slate-100 pt-3 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenNotifications) onOpenNotifications()
-                    setMoreOpen(false)
-                  }}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-                >
-                  <span>🔔</span>
-                  <span>Alerts {unreadCount > 0 ? `(${unreadCount})` : ""}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenCalendar) onOpenCalendar()
-                    setMoreOpen(false)
-                  }}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-                >
-                  <span>📅</span>
-                  <span>Calendar</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenNotifications) onOpenNotifications()
+                  setMoreOpen(false)
+                }}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+              >
+                <span>🔔</span>
+                <span>Notifications & Alerts {unreadCount > 0 ? `(${unreadCount})` : ""}</span>
+              </button>
 
               {onLogout && (
                 <button
