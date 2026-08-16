@@ -139,8 +139,8 @@ export default function SocialFeed({
         </div>
       </div>
 
-      {/* Feed Cards Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Feed Cards List (Single Column Feed, Max Responsive Readability) */}
+      <div className="space-y-4">
         {rankedItems.map((item, index) => {
           const isSolved =
             completedKeys.has(`challenge_completion:${item.id}`) ||
@@ -148,29 +148,31 @@ export default function SocialFeed({
           const isLiked = likedIds.has(item.id)
           const isSaved = savedIds.has(item.id)
           const isTopForYou = activeTab === "For You" && index === 0 && !isSolved
+          const realLikes = (item.likes_count || 0) + (isLiked ? 1 : 0)
+          const realParticipation = item.participation_count || 0
 
           return (
             <div
               key={item.id}
-              className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border p-5 transition-all ${
+              className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border p-4 sm:p-5 transition-all ${
                 isTopForYou
-                  ? "border-blue-500/80 bg-linear-to-br from-blue-50/70 via-white to-indigo-50/40 shadow-md ring-1 ring-blue-500/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/40 dark:border-blue-500/50"
+                  ? "border-blue-500/80 bg-linear-to-br from-blue-50/60 via-white to-indigo-50/30 shadow-sm ring-1 ring-blue-500/20 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/30 dark:border-blue-500/40"
                   : isSolved
-                  ? "border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/50 opacity-90"
+                  ? "border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/40 opacity-85"
                   : "border-slate-200/80 bg-white hover:border-slate-300 shadow-xs dark:border-slate-800 dark:bg-slate-900"
               }`}
             >
               {/* Top Priority Badge */}
               {isTopForYou && (
-                <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-2xs self-start">
-                  <span>🔥 Priority Topic For You</span>
+                <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-2xs self-start">
+                  <span>🔥 Recommended For You</span>
                 </div>
               )}
 
               <div>
                 {/* Subject & Difficulty Header */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11px] font-bold text-blue-600 uppercase dark:text-blue-400">
+                  <span className="truncate text-[11px] font-extrabold text-blue-600 uppercase dark:text-blue-400">
                     {item.subject}
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -194,25 +196,37 @@ export default function SocialFeed({
                 </div>
 
                 {/* Challenge Title */}
-                <h4 className="mt-2 text-base font-bold text-slate-900 dark:text-white">
+                <h4 className="mt-2 text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                   {item.title}
                 </h4>
 
                 {/* Question / Description Snippet */}
-                <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">
+                <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">
                   {item.content}
                 </p>
 
-                {/* Social Proof Statistics */}
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-2.5">
-                  <span>👥 {item.participation_count?.toLocaleString()} participated</span>
-                  <span>·</span>
-                  <span>🎯 {item.success_rate}% success</span>
+                {/* Real-Data Social Metrics */}
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-medium text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 pt-2.5">
+                  {realParticipation > 0 ? (
+                    <>
+                      <span>👥 {realParticipation} participated</span>
+                      <span>·</span>
+                      <span>🎯 {item.success_rate}% success</span>
+                    </>
+                  ) : (
+                    <span>🎯 Be the first to solve!</span>
+                  )}
+                  {item.source && (
+                    <>
+                      <span>·</span>
+                      <span className="truncate">{item.source}</span>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Bottom Actions Row */}
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+              <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
                 {/* Social Buttons: Helpful, Save, Share */}
                 <div className="flex items-center gap-1">
                   <button
@@ -226,29 +240,31 @@ export default function SocialFeed({
                     title="Helpful"
                   >
                     <span>{isLiked ? "❤️" : "🤍"}</span>
-                    <span>{(item.likes_count || 0) + (isLiked ? 1 : 0)}</span>
+                    <span>{realLikes > 0 ? realLikes : "Helpful"}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={(e) => handleToggleSave(item.id, e)}
-                    className={`rounded-xl p-1.5 text-xs transition ${
+                    className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
                       isSaved
                         ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300"
-                        : "text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                     }`}
                     title={isSaved ? "Saved" : "Save challenge"}
                   >
-                    {isSaved ? "🔖" : "🏷️"}
+                    <span>{isSaved ? "🔖" : "🏷️"}</span>
+                    <span>{isSaved ? "Saved" : "Save"}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={(e) => handleShare(item, e)}
-                    className="rounded-xl p-1.5 text-xs text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition"
                     title="Share challenge"
                   >
-                    ↗️
+                    <span>↗️</span>
+                    <span className="hidden sm:inline">Share</span>
                   </button>
                 </div>
 
@@ -260,7 +276,7 @@ export default function SocialFeed({
                   <button
                     type="button"
                     onClick={() => setActiveSolverItem(item)}
-                    className={`rounded-2xl px-4 py-2 text-xs font-bold transition active:scale-95 ${
+                    className={`rounded-2xl px-4 py-1.5 text-xs font-bold transition active:scale-95 ${
                       isSolved
                         ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                         : "bg-slate-900 text-white hover:bg-slate-800 shadow-2xs dark:bg-blue-600 dark:hover:bg-blue-700"

@@ -11,7 +11,7 @@ export default function DailyProgressCard({
   const remaining = Math.max(0, totalCount - completedCount)
 
   return (
-    <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs transition-all dark:border-slate-800/80 dark:bg-slate-900">
+    <div className="mb-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition-all dark:border-slate-800/80 dark:bg-slate-900">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         {/* Left: Progress Summary */}
         <div className="space-y-1.5 flex-1 min-w-0">

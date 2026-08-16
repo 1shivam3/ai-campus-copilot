@@ -42,7 +42,7 @@ export default function TodayTimetableStrip({
   const sectionLabel = profile?.section ? ` · Section ${profile.section}` : ""
 
   return (
-    <section className="mb-8 rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs transition-all dark:border-slate-800/80 dark:bg-slate-900">
+    <section className="mb-6 rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition-all dark:border-slate-800/80 dark:bg-slate-900">
       {/* Top Section Header */}
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
