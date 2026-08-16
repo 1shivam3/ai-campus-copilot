@@ -13,6 +13,7 @@ import StudyPack from "./pages/StudyPack"
 import Flashcards from "./pages/Flashcards"
 import ExamPaperAnalysis from "./pages/ExamPaperAnalysis"
 import FocusSession from "./pages/FocusSession"
+import MyProfile from "./pages/MyProfile"
 import Auth from "./pages/Auth"
 import ProfileSetup from "./pages/ProfileSetup"
 import LandingPage from "./pages/LandingPage"
@@ -32,6 +33,7 @@ import { dispatchNativeBrowserNotification } from "./lib/notifications"
 import NotificationCenter from "./components/NotificationCenter"
 import GlobalSearch from "./components/GlobalSearch"
 import MobileBottomNav from "./components/MobileBottomNav"
+import { initTheme } from "./utils/theme"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -91,6 +93,7 @@ function App() {
   }
 
   useEffect(() => {
+    initTheme()
     checkUser()
 
     const {
@@ -1262,6 +1265,17 @@ function App() {
                 loadAllDashboardData()
                 setCurrentPage("Dashboard")
               }}
+            />
+          )}
+          {currentPage === "Profile" && (
+            <MyProfile
+              user={user}
+              profile={profile}
+              onProfileUpdated={(updatedProfile) => {
+                setProfile(updatedProfile)
+                loadAllDashboardData()
+              }}
+              onNavigate={(page) => setCurrentPage(page)}
             />
           )}
         </main>

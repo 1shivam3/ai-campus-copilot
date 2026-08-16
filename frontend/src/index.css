@@ -13,6 +13,13 @@
     color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  :root.dark body,
+  html.dark body {
+    background-color: #090d16;
+    color: #f1f5f9;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -37,6 +44,16 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+  }
+
+  :root.dark ::-webkit-scrollbar-thumb,
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+  }
+
+  :root.dark ::-webkit-scrollbar-thumb:hover,
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
   }
 }
 

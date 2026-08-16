@@ -85,6 +85,14 @@ function Sidebar({
         </svg>
       ),
     },
+    {
+      name: "Profile",
+      icon: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
   ]
 
   const navContent = (
@@ -163,7 +171,14 @@ function Sidebar({
           )}
         </button>
 
-        <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            setCurrentPage("Profile")
+            if (setMobileOpen) setMobileOpen(false)
+          }}
+          className="flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition hover:bg-slate-200/60 active:scale-[0.98]"
+        >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white shadow-inner">
             {(profile?.full_name || user?.email || "S").charAt(0).toUpperCase()}
           </div>
@@ -180,7 +195,8 @@ function Sidebar({
               </p>
             )}
           </div>
-        </div>
+          <span className="text-xs text-slate-400 font-bold" title="Profile Settings">⚙️</span>
+        </button>
 
         <button
           type="button"
