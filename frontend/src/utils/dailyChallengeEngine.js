@@ -22,11 +22,17 @@ const DAILY_BONUS_XP_CAP = 100
 export async function getUserChallengeHistory(userId) {
   if (!userId) return getCachedChallengeHistory()
 
+  const cached = getCachedChallengeHistory()
+  if (cached && cached.length > 0) {
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from("user_challenge_history")
-      .select("*")
+      .select("challenge_id, passed, attempted_at")
       .eq("user_id", userId)
+      .limit(100)
 
     if (!error && data && data.length > 0) {
       setCachedChallengeHistory(data)
@@ -34,7 +40,7 @@ export async function getUserChallengeHistory(userId) {
     }
   } catch {}
 
-  // Fallback to cloud backend store
+  // Fallback to cloud backend store if not yet cached
   try {
     const cloudStats = await fetchUserStats(userId)
     if (cloudStats?.challenge_history && cloudStats.challenge_history.length > 0) {
@@ -43,7 +49,7 @@ export async function getUserChallengeHistory(userId) {
     }
   } catch {}
 
-  return getCachedChallengeHistory()
+  return cached || []
 }
 
 /**

@@ -1,24 +1,41 @@
 import { useEffect, useMemo, useState, lazy, Suspense } from "react"
 import { supabase } from "./lib/supabase"
 import Sidebar from "./components/Sidebar"
-import MyAcademics from "./pages/MyAcademics"
-import Syllabus from "./pages/Syllabus"
-import Progress from "./pages/Progress"
-import Tasks from "./pages/Tasks"
-import Exams from "./pages/Exams"
-import ExamMode from "./pages/ExamMode"
-import StudyMaterial from "./pages/StudyMaterial"
-import StudyPack from "./pages/StudyPack"
-import Flashcards from "./pages/Flashcards"
-import FocusSession from "./pages/FocusSession"
-import MyProfile from "./pages/MyProfile"
-import Auth from "./pages/Auth"
-import ProfileSetup from "./pages/ProfileSetup"
-import LandingPage from "./pages/LandingPage"
+import HomeHeader from "./components/HomeHeader"
+import TodayTimetableStrip from "./components/TodayTimetableStrip"
+import SocialFeed from "./components/SocialFeed"
+import DailyProgressCard from "./components/DailyProgressCard"
+import MobileBottomNav from "./components/MobileBottomNav"
+import { CoursePilotMark } from "./components/CoursePilotLogo"
+import PWAInstallBanner from "./components/PWAInstallBanner"
+import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/SkeletonLoader"
+import EmptyState from "./components/EmptyState"
 
-// Code-split heavy document reading and parsing modules
+// =========================================================
+// ROUTE-BASED CODE SPLITTING (Lazy-loaded Subpages & Heavy Modals)
+// Keeps initial bundle ultra-compact and speeds up first frame render
+// =========================================================
+const MyAcademics = lazy(() => import("./pages/MyAcademics"))
+const Syllabus = lazy(() => import("./pages/Syllabus"))
+const Progress = lazy(() => import("./pages/Progress"))
+const Tasks = lazy(() => import("./pages/Tasks"))
+const Exams = lazy(() => import("./pages/Exams"))
+const ExamMode = lazy(() => import("./pages/ExamMode"))
+const StudyMaterial = lazy(() => import("./pages/StudyMaterial"))
+const StudyPack = lazy(() => import("./pages/StudyPack"))
+const Flashcards = lazy(() => import("./pages/Flashcards"))
+const FocusSession = lazy(() => import("./pages/FocusSession"))
+const MyProfile = lazy(() => import("./pages/MyProfile"))
+const Leaderboard = lazy(() => import("./pages/Leaderboard"))
+const SavedChallenges = lazy(() => import("./pages/SavedChallenges"))
+const Auth = lazy(() => import("./pages/Auth"))
+const ProfileSetup = lazy(() => import("./pages/ProfileSetup"))
+const LandingPage = lazy(() => import("./pages/LandingPage"))
+const GlobalSearch = lazy(() => import("./components/GlobalSearch"))
+const NotificationCenter = lazy(() => import("./components/NotificationCenter"))
 const StudyMaterialReader = lazy(() => import("./pages/StudyMaterialReader"))
 const ExamPaperAnalysis = lazy(() => import("./pages/ExamPaperAnalysis"))
+
 import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
@@ -26,22 +43,9 @@ import { buildDailyPlan } from "./utils/dailyPlan"
 import { getWeakestSyllabusTopic, calculateSyllabusMastery } from "./utils/syllabusProgress"
 import { calculateExamReadiness } from "./utils/examReadiness"
 import { runNextBestActionEngine, getDaysRemaining } from "./utils/nextBestActionEngine"
-import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/SkeletonLoader"
-import EmptyState from "./components/EmptyState"
-import { CoursePilotMark } from "./components/CoursePilotLogo"
-import PWAInstallBanner from "./components/PWAInstallBanner"
 import { generateSmartNotifications, DEFAULT_NOTIFICATION_PREFERENCES } from "./utils/notificationEngine"
 import { dispatchNativeBrowserNotification } from "./lib/notifications"
-import NotificationCenter from "./components/NotificationCenter"
-import GlobalSearch from "./components/GlobalSearch"
-import MobileBottomNav from "./components/MobileBottomNav"
 import { initTheme } from "./utils/theme"
-import HomeHeader from "./components/HomeHeader"
-import TodayTimetableStrip from "./components/TodayTimetableStrip"
-import SocialFeed from "./components/SocialFeed"
-import DailyProgressCard from "./components/DailyProgressCard"
-import Leaderboard from "./pages/Leaderboard"
-import SavedChallenges from "./pages/SavedChallenges"
 import { getXPTransactions, calculateXPSummary } from "./utils/xpEngine"
 import { calculateLearningStreak } from "./utils/streakEngine"
 import { evaluateAndAwardBadges } from "./utils/badgeEngine"
@@ -55,15 +59,24 @@ import { fetchUserStats, syncUserLearningStats } from "./lib/api"
 import {
   saveUserProfile,
   getCachedUserProfile,
-  saveAcademicSubjects,
-  getCachedAcademicSubjects,
-  saveSyllabusTopics,
-  getCachedSyllabusTopics,
-  saveTopicProgress,
-  getCachedTopicProgress,
+  getCachedClassSchedule,
   clearUserScopedCache,
 } from "./lib/offlineDb"
 import { initSyncQueueListener, getPendingQueueCount, processSyncQueue } from "./lib/syncQueue"
+
+function PageSuspenseFallback() {
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 animate-pulse">
+      <div className="h-8 w-48 rounded-xl bg-slate-200" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="h-40 rounded-2xl bg-white border border-slate-200 p-4 shadow-xs" />
+        <div className="h-40 rounded-2xl bg-white border border-slate-200 p-4 shadow-xs" />
+        <div className="h-40 rounded-2xl bg-white border border-slate-200 p-4 shadow-xs" />
+      </div>
+      <div className="h-64 rounded-2xl bg-white border border-slate-200 p-6 shadow-xs" />
+    </div>
+  )
+}
 
 function App() {
   const [user, setUser] = useState(null)
@@ -88,9 +101,6 @@ function App() {
   const [dashboardExams, setDashboardExams] = useState([])
   const [dashboardTopics, setDashboardTopics] = useState([])
   const [dashboardSchedule, setDashboardSchedule] = useState([])
-  const [academicSubjects, setAcademicSubjects] = useState([])
-  const [syllabusTopics, setSyllabusTopics] = useState([])
-  const [topicProgress, setTopicProgress] = useState({})
   const [xpTransactions, setXpTransactions] = useState([])
   const [studySessions, setStudySessions] = useState([])
   const [quizAttempts, setQuizAttempts] = useState([])
@@ -98,7 +108,7 @@ function App() {
   const [savedItemIds, setSavedItemIds] = useState(() => new Set())
   const [isBonusMode, setIsBonusMode] = useState(false)
   const [activeSelectedChallenge, setActiveSelectedChallenge] = useState(null)
-  const [dashboardLoading, setDashboardLoading] = useState(true)
+  const [dashboardLoading, setDashboardLoading] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [deliveredKeys, setDeliveredKeys] = useState(() => {
     try {
@@ -144,10 +154,11 @@ function App() {
     setNotifications([])
   }
 
+  // -------------------------------------------------------------
+  // 1. FAST INITIALIZATION & INSTANT SESSION RESTORE
+  // -------------------------------------------------------------
   useEffect(() => {
     initTheme()
-    checkUser()
-
     initSyncQueueListener(() => user?.id)
 
     function handleOnline() {
@@ -168,6 +179,41 @@ function App() {
     window.addEventListener("offline", handleOffline)
     window.addEventListener("coursepilot:sync-queue-updated", handleQueueUpdate)
 
+    // Fast-path auth initialization
+    async function initAuth() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        const currentUser = session?.user || null
+        setUser(currentUser)
+
+        if (currentUser) {
+          getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
+
+          // 0ms instant cached profile restore
+          const cached = await getCachedUserProfile(currentUser.id)
+          if (cached) {
+            setProfile(cached)
+            setAuthLoading(false) // Unblock UI immediately!
+            // Background refresh without blocking initial render
+            fetchProfile(currentUser, false)
+          } else {
+            // Fresh profile query required
+            await fetchProfile(currentUser, true)
+          }
+        } else {
+          setAuthLoading(false)
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err)
+        setAuthLoading(false)
+      }
+    }
+
+    initAuth()
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -176,7 +222,7 @@ function App() {
 
       if (currentUser) {
         getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
-        await fetchProfile(currentUser)
+        fetchProfile(currentUser, false)
       } else {
         setProfile(null)
       }
@@ -190,183 +236,127 @@ function App() {
     }
   }, [user?.id])
 
-  async function checkUser() {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      const currentUser = session?.user || null
-      setUser(currentUser)
-
-      if (currentUser) {
-        await fetchProfile(currentUser)
-      }
-    } catch (err) {
-      console.error("Auth check error:", err)
-    } finally {
-      setAuthLoading(false)
-    }
-  }
-
-  async function fetchProfile(currentUser) {
+  // -------------------------------------------------------------
+  // 2. PROFILE LOADING & ASYNCHRONOUS STATS SYNC
+  // -------------------------------------------------------------
+  async function fetchProfile(currentUser, isBlocking = false) {
     if (!currentUser?.id) return
-    setProfileLoading(true)
+    if (isBlocking) setProfileLoading(true)
 
-    // 0. Load cached profile from IndexedDB immediately (instant 0ms)
+    // 0. Instant Cache Fallback
     try {
       const cachedProfile = await getCachedUserProfile(currentUser.id)
       if (cachedProfile) {
-        setProfile((prev) => prev || {
-          id: currentUser.id,
-          full_name: cachedProfile.full_name,
-          semester: cachedProfile.semester,
-          section: cachedProfile.section,
-          avatar_url: cachedProfile.avatar_url,
-          public_display_name: cachedProfile.full_name,
-          reputation: 91,
-        })
+        setProfile((prev) => prev || cachedProfile)
+        if (isBlocking) {
+          setAuthLoading(false)
+          setProfileLoading(false)
+        }
       }
     } catch {}
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       setProfileLoading(false)
+      setAuthLoading(false)
       return
     }
 
     try {
-      // 1. Fetch Supabase profile record
+      // 1. Fetch minimum required profile columns
       const { data, error } = await supabase
         .from("student_profiles")
-        .select("*")
+        .select("id, full_name, semester, section, avatar_url, public_display_name, reputation")
         .eq("id", currentUser.id)
         .maybeSingle()
 
       if (data) {
         saveUserProfile(data)
-      }
-
-      // 2. Fetch cross-device cloud synced stats (avatar, XP, streak, displayName, challenge history)
-      const cloudStats = await fetchUserStats(currentUser.id)
-
-      const localAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
-      const localDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
-
-      const finalAvatar = cloudStats?.avatar_url || data?.avatar_url || localAvatar || null
-      const finalDisplayName = cloudStats?.display_name || data?.public_display_name || localDisplayName || data?.full_name || currentUser.email?.split("@")[0] || "Student"
-
-      if (finalAvatar) {
-        try { localStorage.setItem(`coursepilot_avatar_${currentUser.id}`, finalAvatar) } catch {}
-      }
-      if (finalDisplayName) {
-        try { localStorage.setItem(`coursepilot_display_name_${currentUser.id}`, finalDisplayName) } catch {}
-      }
-
-      setProfile({
-        ...(data || {}),
-        id: currentUser.id,
-        full_name: data?.full_name || currentUser.email?.split("@")[0] || "Student",
-        semester: data?.semester || 3,
-        section: data?.section || "B2",
-        avatar_url: finalAvatar,
-        public_display_name: finalDisplayName,
-        reputation: cloudStats?.reputation || 91,
-      })
-
-      // 3. Robust Bi-directional XP Sync: Merge local and cloud transactions
-      let localTxs = []
-      try {
-        const raw = localStorage.getItem(`coursepilot_xp_transactions_cache_${currentUser.id}`)
-        if (raw) localTxs = JSON.parse(raw)
-      } catch {}
-
-      const cloudTxs = Array.isArray(cloudStats?.xp_transactions) ? cloudStats.xp_transactions : []
-      const mergedMap = new Map()
-
-      // Add local transactions
-      localTxs.forEach((tx) => {
-        const key = tx.reference_key || tx.id || `${tx.reason}_${tx.created_at}`
-        mergedMap.set(key, tx)
-      })
-
-      // Add cloud transactions (takes precedence)
-      cloudTxs.forEach((tx) => {
-        const key = tx.reference_key || tx.id || `${tx.reason}_${tx.created_at}`
-        mergedMap.set(key, tx)
-      })
-
-      // If cloud reported higher total_xp but no granular transactions, inject a base transaction
-      if (cloudStats?.total_xp && mergedMap.size === 0) {
-        mergedMap.set("cloud_initial_xp", {
-          user_id: currentUser.id,
-          amount: cloudStats.total_xp,
-          reason: "Academic Progression",
-          reference_key: "cloud_initial_xp",
-          created_at: new Date().toISOString(),
+        setProfile({
+          id: currentUser.id,
+          full_name: data.full_name || currentUser.email?.split("@")[0] || "Student",
+          semester: data.semester || 3,
+          section: data.section || "B2",
+          avatar_url: data.avatar_url || null,
+          public_display_name: data.public_display_name || data.full_name || "Student",
+          reputation: data.reputation || 91,
         })
       }
 
-      const mergedTxs = Array.from(mergedMap.values())
-      const xpSum = calculateXPSummary(mergedTxs)
-
-      setXpTransactions(mergedTxs)
-      try {
-        localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(mergedTxs))
-      } catch {}
-
-      // Merge challenge history
-      let localHist = []
-      try {
-        const rawH = localStorage.getItem("coursepilot_challenge_history")
-        if (rawH) localHist = JSON.parse(rawH)
-      } catch {}
-      const cloudHist = Array.isArray(cloudStats?.challenge_history) ? cloudStats.challenge_history : []
-      const histMap = new Map()
-      localHist.forEach((h) => histMap.set(h.challenge_id, h))
-      cloudHist.forEach((h) => histMap.set(h.challenge_id, h))
-      const mergedHist = Array.from(histMap.values())
-
-      if (mergedHist.length > 0) {
-        setChallengeHistory(mergedHist)
-        try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(mergedHist)) } catch {}
+      // Unblock UI as soon as Supabase profile is available
+      if (isBlocking) {
+        setAuthLoading(false)
+        setProfileLoading(false)
       }
 
-      // Immediately push consolidated state to cloud backend and receive authoritative unified stats
-      try {
-        const syncResult = await syncUserLearningStats({
-          user_id: currentUser.id,
-          full_name: data?.full_name || currentUser.email?.split("@")[0] || "Student",
-          public_display_name: finalDisplayName,
-          avatar_url: finalAvatar,
-          semester: data?.semester || 3,
-          section: data?.section || "B2",
-          total_xp: xpSum.totalXP,
-          this_week_xp: xpSum.thisWeekXP,
-          streak: cloudStats?.streak || 0,
-          reputation: cloudStats?.reputation || 91,
-          solved_count: Math.floor(xpSum.totalXP / 25),
-          xp_transactions: mergedTxs,
-          challenge_history: mergedHist,
-        })
+      // 2. Non-blocking background cross-device stats synchronization
+      setTimeout(async () => {
+        try {
+          const cloudStats = await fetchUserStats(currentUser.id)
+          const localAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
+          const localDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`)
 
-        if (syncResult?.stats) {
-          const auth = syncResult.stats
-          if (Array.isArray(auth.xp_transactions) && auth.xp_transactions.length > 0) {
-            setXpTransactions(auth.xp_transactions)
-            try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(auth.xp_transactions)) } catch {}
+          const finalAvatar = cloudStats?.avatar_url || data?.avatar_url || localAvatar || null
+          const finalDisplayName = cloudStats?.display_name || data?.public_display_name || localDisplayName || data?.full_name || "Student"
+
+          let localTxs = []
+          try {
+            const raw = localStorage.getItem(`coursepilot_xp_transactions_cache_${currentUser.id}`)
+            if (raw) localTxs = JSON.parse(raw)
+          } catch {}
+
+          const cloudTxs = Array.isArray(cloudStats?.xp_transactions) ? cloudStats.xp_transactions : []
+          const mergedMap = new Map()
+          localTxs.forEach((tx) => mergedMap.set(tx.reference_key || tx.id || `${tx.reason}_${tx.created_at}`, tx))
+          cloudTxs.forEach((tx) => mergedMap.set(tx.reference_key || tx.id || `${tx.reason}_${tx.created_at}`, tx))
+
+          const mergedTxs = Array.from(mergedMap.values())
+          const xpSum = calculateXPSummary(mergedTxs)
+
+          setXpTransactions(mergedTxs)
+          try { localStorage.setItem(`coursepilot_xp_transactions_cache_${currentUser.id}`, JSON.stringify(mergedTxs)) } catch {}
+
+          let localHist = []
+          try {
+            const rawH = localStorage.getItem("coursepilot_challenge_history")
+            if (rawH) localHist = JSON.parse(rawH)
+          } catch {}
+          const cloudHist = Array.isArray(cloudStats?.challenge_history) ? cloudStats.challenge_history : []
+          const histMap = new Map()
+          localHist.forEach((h) => histMap.set(h.challenge_id, h))
+          cloudHist.forEach((h) => histMap.set(h.challenge_id, h))
+          const mergedHist = Array.from(histMap.values())
+
+          if (mergedHist.length > 0) {
+            setChallengeHistory(mergedHist)
+            try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(mergedHist)) } catch {}
           }
-          if (Array.isArray(auth.challenge_history) && auth.challenge_history.length > 0) {
-            setChallengeHistory(auth.challenge_history)
-            try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(auth.challenge_history)) } catch {}
-          }
+
+          await syncUserLearningStats({
+            user_id: currentUser.id,
+            full_name: data?.full_name || "Student",
+            public_display_name: finalDisplayName,
+            avatar_url: finalAvatar,
+            semester: data?.semester || 3,
+            section: data?.section || "B2",
+            total_xp: xpSum.totalXP,
+            this_week_xp: xpSum.thisWeekXP,
+            streak: cloudStats?.streak || 0,
+            reputation: cloudStats?.reputation || 91,
+            solved_count: Math.floor(xpSum.totalXP / 25),
+            xp_transactions: mergedTxs,
+            challenge_history: mergedHist,
+          })
+        } catch (bgSyncErr) {
+          console.warn("Background stats sync note:", bgSyncErr)
         }
-      } catch (syncErr) {
-        console.warn("Stats cloud synchronization notice:", syncErr)
-      }
+      }, 50)
     } catch (err) {
       console.error("Profile fetch error:", err)
     } finally {
-      setProfileLoading(false)
+      if (isBlocking) {
+        setProfileLoading(false)
+        setAuthLoading(false)
+      }
     }
   }
 
@@ -379,7 +369,6 @@ function App() {
     } catch (error) {
       console.error("Sign out error:", error)
     }
-    // Clean all user-specific state to prevent cross-user state bleed
     setUser(null)
     setProfile(null)
     setDashboardTasks([])
@@ -392,157 +381,51 @@ function App() {
     setSavedItemIds(new Set())
     setNotifications([])
     setDashboardSchedule([])
-    setAcademicSubjects([])
-    setSyllabusTopics([])
-    setTopicProgress({})
     setSelectedMaterialIdForReader(null)
     setRecommendedTaskId(null)
     setCurrentPage("Home")
   }
 
+  // -------------------------------------------------------------
+  // 3. PROGRESSIVE DASHBOARD DATA LOADING (CRITICAL FIRST)
+  // -------------------------------------------------------------
   useEffect(() => {
-    if (user?.id && profile) {
+    if (user?.id && profile && (currentPage === "Home" || currentPage === "Dashboard")) {
       loadAllDashboardData()
     }
-  }, [user, profile, currentPage])
+  }, [user?.id, profile?.semester, profile?.section, currentPage])
 
-  // Parallelized dashboard data fetching
   async function loadAllDashboardData() {
     if (!user?.id || !profile) return
-    setDashboardLoading(true)
 
-    try {
-      await Promise.all([
-        fetchAcademicData(),
-        loadSyllabusProgress(),
-        loadDashboardSchedule(),
-      ])
-    } catch (e) {
-      console.error("Dashboard data load error:", e)
-    } finally {
-      setDashboardLoading(false)
-    }
+    // 1. Critical first: Timetable (0ms cached + background refresh)
+    loadDashboardSchedule()
+
+    // 2. Secondary in background: Tasks, Exams, Study sessions
+    loadSecondaryDashboardData()
   }
 
   async function loadDashboardSchedule() {
     try {
+      // 0ms Instant cache check
+      const cached = await getCachedClassSchedule(profile.semester, profile.section)
+      if (cached && cached.length > 0) {
+        setDashboardSchedule(cached)
+      }
+
+      if (typeof navigator !== "undefined" && !navigator.onLine) return
+
+      // Fresh background fetch
       const data = await getClassSchedule(profile.semester, profile.section)
-      setDashboardSchedule(data || [])
+      if (data && data.length > 0) {
+        setDashboardSchedule(data)
+      }
     } catch (error) {
-      console.error("Dashboard schedule error:", error)
+      console.warn("Dashboard schedule note:", error)
     }
   }
 
-  async function loadSyllabusProgress() {
-    if (!user?.id || !profile) return
-
-    // 0. Instant Cache Load from IndexedDB
-    try {
-      const cachedSubs = await getCachedAcademicSubjects(profile.semester, profile.section)
-      if (cachedSubs && cachedSubs.length > 0) {
-        setAcademicSubjects(cachedSubs)
-        const subIds = cachedSubs.map((s) => s.id)
-        const cachedTopicsList = []
-        for (const sid of subIds) {
-          const topList = await getCachedSyllabusTopics(sid)
-          cachedTopicsList.push(...topList)
-        }
-        if (cachedTopicsList.length > 0) {
-          setSyllabusTopics(cachedTopicsList)
-          const tIds = cachedTopicsList.map((t) => t.id)
-          const cachedProg = await getCachedTopicProgress(user.id, tIds)
-          setTopicProgress(cachedProg)
-        }
-      }
-    } catch (cacheErr) {
-      console.warn("[App] Syllabus offline cache read notice:", cacheErr)
-    }
-
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      return
-    }
-
-    try {
-      const { data: subjectData, error: subjectError } = await supabase
-        .from("academic_subjects")
-        .select("id, subject_code, subject_name")
-        .eq("semester", profile.semester)
-        .eq("section", profile.section)
-
-      if (subjectError) {
-        console.error(subjectError)
-        return
-      }
-
-      setAcademicSubjects(subjectData || [])
-      if (subjectData && subjectData.length > 0) {
-        saveAcademicSubjects(profile.semester, profile.section, subjectData)
-      }
-
-      const subjectIds = (subjectData || []).map((item) => item.id)
-
-      if (!subjectIds.length) {
-        setSyllabusTopics([])
-        setTopicProgress({})
-        return
-      }
-
-      const { data: topicData, error: topicError } = await supabase
-        .from("syllabus_topics")
-        .select("id, subject_id, unit_number, topic_name, description, academic_subjects(subject_name, subject_code)")
-        .in("subject_id", subjectIds)
-
-      if (topicError) {
-        console.error(topicError)
-        return
-      }
-
-      if (topicData && topicData.length > 0) {
-        const bySubject = {}
-        topicData.forEach((t) => {
-          if (!bySubject[t.subject_id]) bySubject[t.subject_id] = []
-          bySubject[t.subject_id].push(t)
-        })
-        for (const [sId, sTopics] of Object.entries(bySubject)) {
-          saveSyllabusTopics(sId, sTopics)
-        }
-      }
-
-      const topicIds = (topicData || []).map((topic) => topic.id)
-      let progressData = []
-
-      if (topicIds.length > 0) {
-        const { data, error } = await supabase
-          .from("student_topic_progress")
-          .select("id, syllabus_topic_id, status, mastery_score")
-          .eq("user_id", user.id)
-          .in("syllabus_topic_id", topicIds)
-
-        if (!error && data) {
-          progressData = data
-          saveTopicProgress(user.id, data)
-        }
-      }
-
-      const progressMap = {}
-      progressData.forEach((item) => {
-        progressMap[item.syllabus_topic_id] = item
-      })
-
-      const normalizedTopics = (topicData || []).map((t) => ({
-        ...t,
-        subject_name: t.academic_subjects?.subject_name || "",
-        subject_code: t.academic_subjects?.subject_code || "",
-      }))
-
-      setSyllabusTopics(normalizedTopics)
-      setTopicProgress(progressMap)
-    } catch (err) {
-      console.error("Syllabus progress loading error:", err)
-    }
-  }
-
-  async function fetchAcademicData() {
+  async function loadSecondaryDashboardData() {
     if (!user?.id) return
 
     try {
@@ -561,29 +444,34 @@ function App() {
           .select("id, title, subject, deadline, importance, estimated_minutes, status, is_completed, completed_at, updated_at")
           .eq("user_id", user.id)
           .eq("status", "pending")
-          .order("deadline", { ascending: true }),
+          .order("deadline", { ascending: true })
+          .limit(10),
 
         supabase
           .from("exams")
           .select("id, subject, exam_date, importance")
           .eq("user_id", user.id)
           .gte("exam_date", new Date().toISOString())
-          .order("exam_date", { ascending: true }),
+          .order("exam_date", { ascending: true })
+          .limit(5),
 
         supabase
           .from("student_topic_progress")
           .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
-          .eq("user_id", user.id),
+          .eq("user_id", user.id)
+          .limit(15),
 
         supabase
           .from("study_sessions")
           .select("id, duration_minutes, completed_at, created_at")
-          .eq("user_id", user.id),
+          .eq("user_id", user.id)
+          .limit(10),
 
         supabase
           .from("topic_quiz_attempts")
           .select("id, score_percentage, attempted_at, created_at")
-          .eq("user_id", user.id),
+          .eq("user_id", user.id)
+          .limit(10),
 
         getXPTransactions(user.id),
         getUserChallengeHistory(user.id),
@@ -598,16 +486,16 @@ function App() {
         status: p.status || "not_started",
       }))
 
-      setDashboardTasks(tasksResult.data || [])
-      setDashboardExams(examsResult.data || [])
-      setDashboardTopics(formattedTopics)
-      setStudySessions(sessionsResult.data || [])
-      setQuizAttempts(quizzesResult.data || [])
-      setXpTransactions(xpData || [])
-      setChallengeHistory(histData || [])
-      setSavedItemIds(savedData || new Set())
+      if (tasksResult.data) setDashboardTasks(tasksResult.data)
+      if (examsResult.data) setDashboardExams(examsResult.data)
+      if (formattedTopics.length > 0) setDashboardTopics(formattedTopics)
+      if (sessionsResult.data) setStudySessions(sessionsResult.data)
+      if (quizzesResult.data) setQuizAttempts(quizzesResult.data)
+      if (xpData) setXpTransactions(xpData)
+      if (histData) setChallengeHistory(histData)
+      if (savedData) setSavedItemIds(savedData)
 
-      // Check for due flashcards
+      // Background due flashcards check
       try {
         const now = new Date().toISOString()
         const { data: fcData } = await supabase
@@ -615,6 +503,7 @@ function App() {
           .select("id, study_material_id, next_review_at")
           .eq("user_id", user.id)
           .lte("next_review_at", now)
+          .limit(1)
 
         if (fcData && fcData.length > 0) {
           setDueFlashcardsCount(fcData.length)
@@ -623,11 +512,9 @@ function App() {
           setDueFlashcardsCount(0)
           setDueFlashcardsMaterialId(null)
         }
-      } catch (fcErr) {
-        console.warn("Due flashcards check notice:", fcErr)
-      }
+      } catch {}
     } catch (err) {
-      console.error("Academic data error:", err)
+      console.warn("Secondary academic data note:", err)
     }
   }
 
@@ -648,33 +535,34 @@ function App() {
   useEffect(() => {
     if (dailyChallengeSet.isSetComplete && user?.id) {
       awardDailySetBonus(user.id).then((res) => {
-        if (res.awarded) {
-          loadAllDashboardData()
+        if (res?.bonusAwarded) {
+          getXPTransactions(user.id).then(setXpTransactions)
         }
       })
     }
   }, [dailyChallengeSet.isSetComplete, user?.id])
 
+  // Streak & Badge Engine
   const learningStreak = useMemo(() => {
-    return calculateLearningStreak({
+    return calculateLearningStreak(studySessions, quizAttempts)
+  }, [studySessions, quizAttempts])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const unlocked = evaluateAndAwardBadges({
+      userId: user.id,
+      streak: learningStreak.currentStreak,
+      xpSummary,
       studySessions,
       quizAttempts,
-      xpTransactions,
-      tasks: dashboardTasks,
-      profile,
     })
-  }, [studySessions, quizAttempts, xpTransactions, dashboardTasks, profile])
+    if (unlocked.length > 0) {
+      console.log(`[Badges] Student has ${unlocked.length} badges unlocked.`)
+    }
+  }, [user?.id, learningStreak.currentStreak, xpSummary.totalXP, studySessions.length, quizAttempts.length])
 
-  // Memoized computations for performance
-  const weakestSyllabusTopic = useMemo(() => {
-    return getWeakestSyllabusTopic(syllabusTopics, topicProgress)
-  }, [syllabusTopics, topicProgress])
-
-  const syllabusMastery = useMemo(() => {
-    return calculateSyllabusMastery(syllabusTopics, topicProgress)
-  }, [syllabusTopics, topicProgress])
-
-  const todayClasses = useMemo(() => {
+  // Schedule Math & Free Time
+  const todaySchedule = useMemo(() => {
     return getTodaySchedule(dashboardSchedule)
   }, [dashboardSchedule])
 
@@ -682,203 +570,160 @@ function App() {
     return getNextClass(dashboardSchedule)
   }, [dashboardSchedule])
 
-  const freeWindows = useMemo(() => {
-    return getMergedFreeWindows({
-      schedule: dashboardSchedule,
-      calendarEvents: [],
-      date: new Date(),
-      dayStart: "08:00",
-      dayEnd: "22:00",
-    })
-  }, [dashboardSchedule])
+  const freeTimeSlots = useMemo(() => {
+    return getMergedFreeWindows(todaySchedule)
+  }, [todaySchedule])
 
-  const recommendedStudyWindow = useMemo(() => {
-    return getBestStudyWindow(dashboardSchedule, 45, new Date(), [])
-  }, [dashboardSchedule])
+  const bestStudyWindow = useMemo(() => {
+    return getBestStudyWindow(freeTimeSlots)
+  }, [freeTimeSlots])
 
-  const dailyPlan = useMemo(() => {
-    return buildDailyPlan({
-      classes: todayClasses,
+  const closestExam = useMemo(() => {
+    return dashboardExams[0] || null
+  }, [dashboardExams])
+
+  const nextBestAction = useMemo(() => {
+    return runNextBestActionEngine({
       tasks: dashboardTasks,
       exams: dashboardExams,
-      studyWindows: freeWindows,
-      weakestTopic: weakestSyllabusTopic,
+      topics: dashboardTopics,
+      nextClass,
+      bestStudyWindow,
     })
-  }, [todayClasses, dashboardTasks, dashboardExams, freeWindows, weakestSyllabusTopic])
+  }, [dashboardTasks, dashboardExams, dashboardTopics, nextClass, bestStudyWindow])
 
-  const { bestAction, otherPriorities } = useMemo(() => {
-    return runNextBestActionEngine({
+  // Auto-fill recommended task from Next Best Action engine
+  useEffect(() => {
+    if (nextBestAction?.task_id) {
+      setRecommendedTaskId(nextBestAction.task_id)
+    }
+  }, [nextBestAction])
+
+  // Daily Study Plan
+  const dailyPlan = useMemo(() => {
+    return buildDailyPlan({
+      classes: todaySchedule,
+      tasks: dashboardTasks,
+      exams: dashboardExams,
+      topics: dashboardTopics,
+      freeSlots: freeTimeSlots,
+      recommendedTaskId,
+    })
+  }, [todaySchedule, dashboardTasks, dashboardExams, dashboardTopics, freeTimeSlots, recommendedTaskId])
+
+  // Next Best Action navigation handler
+  function handleExecuteNextAction(action) {
+    if (!action) return
+    if (action.action_type === "start_focus_session") {
+      setCurrentPage("Focus Session")
+    } else if (action.action_type === "navigate_to_study_material") {
+      setCurrentPage("Study Material")
+    } else if (action.action_type === "open_syllabus") {
+      setCurrentPage("Syllabus")
+    } else if (action.action_type === "open_tasks") {
+      setCurrentPage("Tasks")
+    } else if (action.action_type === "open_academics") {
+      setCurrentPage("My Academics")
+    }
+  }
+
+  // Smart Academic Proactive Notifications Engine
+  useEffect(() => {
+    if (!user || !profile) return
+
+    const generated = generateSmartNotifications({
+      user,
       profile,
       schedule: dashboardSchedule,
       tasks: dashboardTasks,
       exams: dashboardExams,
-      syllabusTopics,
-      topicProgress,
-      studyWindow: recommendedStudyWindow,
-    })
-  }, [profile, dashboardSchedule, dashboardTasks, dashboardExams, syllabusTopics, topicProgress, recommendedStudyWindow])
-
-  const closestExam = useMemo(() => {
-    return [...dashboardExams].sort(
-      (a, b) => new Date(a.exam_date) - new Date(b.exam_date)
-    )[0] || null
-  }, [dashboardExams])
-
-  const examReadiness = useMemo(() => {
-    if (!closestExam) return null
-
-    const matched = academicSubjects.find(
-      (s) =>
-        s.subject_name.toLowerCase().includes(closestExam.subject.toLowerCase()) ||
-        closestExam.subject.toLowerCase().includes(s.subject_name.toLowerCase()) ||
-        (s.subject_code && closestExam.subject.toLowerCase().includes(s.subject_code.toLowerCase()))
-    )
-
-    const topicsForExam = matched
-      ? syllabusTopics
-          .filter((t) => t.subject_id === matched.id)
-          .map((t) => ({
-            ...t,
-            mastery_score: topicProgress[t.id]?.mastery_score || 0,
-          }))
-      : dashboardTopics.filter((t) =>
-          t.subject?.toLowerCase().includes(closestExam.subject.toLowerCase())
-        )
-
-    const days = getDaysRemaining(closestExam.exam_date)
-
-    return calculateExamReadiness({
-      topics: topicsForExam,
-      daysRemaining: days,
-    })
-  }, [closestExam, academicSubjects, syllabusTopics, topicProgress, dashboardTopics])
-
-  useEffect(() => {
-    if (!user || dashboardLoading) return
-
-    const newNotifs = generateSmartNotifications({
-      tasks: dashboardTasks,
-      exams: dashboardExams,
-      syllabusTopics,
-      topicProgress,
-      studyWindows: freeWindows,
-      bestAction,
+      studySessions,
+      topicProgress: dashboardTopics,
+      flashcardCount: dueFlashcardsCount,
       preferences: notificationPreferences,
-      deliveredKeys,
-      now: new Date(),
     })
 
-    if (newNotifs.length > 0) {
-      setNotifications((prev) => {
-        const existingKeys = new Set(prev.map((n) => n.dedup_key || n.id))
-        const uniqueNew = newNotifs.filter((n) => !existingKeys.has(n.dedup_key) && !existingKeys.has(n.id))
-        if (uniqueNew.length === 0) return prev
-        // Cap notifications to a clean, non-spammy list of at most 4 items
-        return [...uniqueNew, ...prev].slice(0, 4)
-      })
+    setNotifications(generated)
 
-      setDeliveredKeys((prev) => {
-        const nextSet = new Set(prev)
-        newNotifs.forEach((n) => nextSet.add(n.dedup_key))
-        try {
-          const today = new Date().toISOString().slice(0, 10)
-          sessionStorage.setItem(`coursepilot_delivered_keys_${today}`, JSON.stringify([...nextSet]))
-        } catch {}
-        return nextSet
-      })
-
-      // Dispatch native browser notification for CRITICAL / HIGH
-      newNotifs.forEach((n) => {
-        if (n.priority === "CRITICAL" || n.priority === "HIGH") {
-          dispatchNativeBrowserNotification({
-            title: n.title,
-            message: n.message,
-            url: window.location.origin,
-            priority: n.priority,
-            preferences: notificationPreferences,
-          })
-        }
-      })
-    }
+    // Dispatch native browser notification for high-priority items
+    generated.forEach((notif) => {
+      if (notif.is_urgent && notif.delivery_key && !deliveredKeys.has(notif.delivery_key)) {
+        dispatchNativeBrowserNotification({
+          title: notif.title,
+          body: notif.body,
+          tag: notif.delivery_key,
+        })
+        setDeliveredKeys((prev) => {
+          const next = new Set(prev).add(notif.delivery_key)
+          try {
+            const today = new Date().toISOString().slice(0, 10)
+            sessionStorage.setItem(`coursepilot_delivered_keys_${today}`, JSON.stringify(Array.from(next)))
+          } catch {}
+          return next
+        })
+      }
+    })
   }, [
     user,
-    dashboardLoading,
+    profile,
+    dashboardSchedule,
     dashboardTasks,
     dashboardExams,
-    syllabusTopics,
-    topicProgress,
-    freeWindows,
-    bestAction,
+    studySessions,
+    dashboardTopics,
+    dueFlashcardsCount,
     notificationPreferences,
   ])
 
-  function handleActionNavigation(action) {
-    if (!action) return
+  function handleNotificationAction(notif) {
+    setNotificationModalOpen(false)
+    if (!notif?.action_type) return
 
-    if (action.page === "Focus Session") {
-      if (action.payload?.id) {
-        setRecommendedTaskId(action.payload.id)
+    if (notif.action_type === "open_flashcards") {
+      if (dueFlashcardsMaterialId) {
+        setSelectedMaterialIdForFlashcards(dueFlashcardsMaterialId)
+        setCurrentPage("Flashcards")
+      } else {
+        setCurrentPage("Study Material")
       }
-      setCurrentPage("Focus Session")
-    } else if (action.page === "Exam Mode") {
-      setCurrentPage("Exam Mode")
-    } else if (action.page === "Progress") {
-      setCurrentPage("Progress")
-    } else if (action.page === "My Academics") {
-      setCurrentPage("My Academics")
-    } else if (action.page === "Tasks") {
+    } else if (notif.action_type === "open_tasks") {
       setCurrentPage("Tasks")
-    } else {
-      setCurrentPage("Dashboard")
-    }
-  }
-
-  // Global Shortcut: Ctrl+K or Cmd+K for Academic Search
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault()
-        setSearchModalOpen((prev) => !prev)
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
-
-  const handleGlobalSearchNavigation = (type, metadata) => {
-    if (type === "syllabus") {
-      setCurrentPage("Syllabus")
-    } else if (type === "study_material") {
-      if (metadata?.material_id) {
-        setSelectedMaterialIdForReader(metadata.material_id)
-        setSelectedMaterialIdForAnalysis(null)
-        setSelectedMaterialIdForFlashcards(null)
-        setSelectedMaterialIdForStudyPack(null)
-      }
-      setCurrentPage("Study Material")
-    } else if (type === "previous_paper") {
-      if (metadata?.material_id) {
-        setSelectedMaterialIdForAnalysis(metadata.material_id)
-        setSelectedMaterialIdForReader(null)
-        setSelectedMaterialIdForFlashcards(null)
-        setSelectedMaterialIdForStudyPack(null)
-      }
-      setCurrentPage("Study Material")
-    } else if (type === "flashcard") {
-      if (metadata?.material_id) {
-        setSelectedMaterialIdForFlashcards(metadata.material_id)
-        setSelectedMaterialIdForReader(null)
-        setSelectedMaterialIdForAnalysis(null)
-        setSelectedMaterialIdForStudyPack(null)
-      }
-      setCurrentPage("Study Material")
-    } else if (type === "task") {
-      setCurrentPage("Tasks")
-    } else if (type === "exam") {
+    } else if (notif.action_type === "open_exams") {
       setCurrentPage("Exams")
+    } else if (notif.action_type === "open_academics") {
+      setCurrentPage("My Academics")
+    } else if (notif.action_type === "open_progress") {
+      setCurrentPage("Progress")
     }
   }
 
+  function handleNavigate(page, payload) {
+    if (payload?.materialId) {
+      if (payload.action === "study_pack") {
+        setSelectedMaterialIdForStudyPack(payload.materialId)
+        setCurrentPage("Study Pack")
+        return
+      }
+      if (payload.action === "flashcards") {
+        setSelectedMaterialIdForFlashcards(payload.materialId)
+        setCurrentPage("Flashcards")
+        return
+      }
+      if (payload.action === "analysis") {
+        setSelectedMaterialIdForAnalysis(payload.materialId)
+        setCurrentPage("Study Material")
+        return
+      }
+      setSelectedMaterialIdForReader(payload.materialId)
+      setCurrentPage("Study Material")
+      return
+    }
+    setCurrentPage(page)
+  }
+
+  // -------------------------------------------------------------
+  // 4. RENDER GUARDS (Skeletons & Fast App Shell)
+  // -------------------------------------------------------------
   if (authLoading || (user && profileLoading && !profile)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8fafc] p-6 text-slate-900">
@@ -893,7 +738,7 @@ function App() {
   if (!user) {
     if (authView === "login" || authView === "signup") {
       return (
-        <>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
           <PWAInstallBanner />
           <Auth
             initialMode={authView}
@@ -903,12 +748,12 @@ function App() {
             }}
             onBackToLanding={() => setAuthView(null)}
           />
-        </>
+        </Suspense>
       )
     }
 
     return (
-      <>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
         <PWAInstallBanner />
         <LandingPage
           user={user}
@@ -916,31 +761,28 @@ function App() {
           onSignIn={() => setAuthView("login")}
           onGoToDashboard={() => setCurrentPage("Dashboard")}
         />
-      </>
+      </Suspense>
     )
   }
 
   if (!profile) {
     return (
-      <>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
         <PWAInstallBanner />
         <ProfileSetup
           user={user}
-          onComplete={() => fetchProfile(user)}
+          onComplete={() => fetchProfile(user, true)}
         />
-      </>
+      </Suspense>
     )
   }
-
-  const closestExamDaysRemaining = closestExam
-    ? getDaysRemaining(closestExam.exam_date)
-    : 0
 
   const unreadNotifCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
       <PWAInstallBanner />
+
       {/* Sidebar Navigation */}
       <Sidebar
         currentPage={currentPage}
@@ -963,7 +805,7 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Global Academic Search Trigger (Header) */}
+            {/* Global Academic Search Trigger */}
             <button
               type="button"
               onClick={() => setSearchModalOpen(true)}
@@ -1026,9 +868,10 @@ function App() {
               </button>
             </div>
           )}
+
+          {/* 1. HOME / DASHBOARD (Rendered Instantly) */}
           {(currentPage === "Home" || currentPage === "Dashboard") && (
             <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 lg:py-6 space-y-6">
-              {/* 1. Student Mini-Profile Strip & Stats Header */}
               <HomeHeader
                 user={user}
                 profile={profile}
@@ -1042,14 +885,12 @@ function App() {
                 onOpenSearch={() => setSearchModalOpen(true)}
               />
 
-              {/* 2. Today's Timetable Strip (Top of Page) */}
               <TodayTimetableStrip
                 schedule={dashboardSchedule}
                 profile={profile}
                 onNavigateToAcademics={() => setCurrentPage("My Academics")}
               />
 
-              {/* 3. Daily 5-Question Challenge Progress & Bonus Card */}
               <DailyProgressCard
                 completedCount={dailyChallengeSet.completedCount}
                 totalCount={dailyChallengeSet.totalCount}
@@ -1059,7 +900,6 @@ function App() {
                 onToggleBonusMode={() => setIsBonusMode((prev) => !prev)}
               />
 
-              {/* 4. For You Social Learning Feed */}
               <SocialFeed
                 user={user}
                 profile={profile}
@@ -1073,16 +913,46 @@ function App() {
             </div>
           )}
 
-          {/* Subpages */}
-          {currentPage === "My Academics" && <MyAcademics profile={profile} />}
-          {currentPage === "Syllabus" && <Syllabus profile={profile} />}
-          {currentPage === "Progress" && <Progress user={user} profile={profile} />}
-          {currentPage === "Tasks" && <Tasks user={user} />}
-          {currentPage === "Exams" && <Exams user={user} />}
-          {currentPage === "Exam Mode" && <ExamMode user={user} profile={profile} />}
+          {/* 2. LAZY LOADED SUBPAGES */}
+          {currentPage === "My Academics" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <MyAcademics profile={profile} />
+            </Suspense>
+          )}
+
+          {currentPage === "Syllabus" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Syllabus profile={profile} />
+            </Suspense>
+          )}
+
+          {currentPage === "Progress" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Progress user={user} profile={profile} />
+            </Suspense>
+          )}
+
+          {currentPage === "Tasks" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Tasks user={user} />
+            </Suspense>
+          )}
+
+          {currentPage === "Exams" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Exams user={user} />
+            </Suspense>
+          )}
+
+          {currentPage === "Exam Mode" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <ExamMode user={user} profile={profile} />
+            </Suspense>
+          )}
+
           {currentPage === "Study Material" && (
             selectedMaterialIdForAnalysis ? (
-              <Suspense fallback={<div className="p-6 space-y-4"><SkeletonCard count={3} /></div>}>
+              <Suspense fallback={<PageSuspenseFallback />}>
                 <ExamPaperAnalysis
                   materialId={selectedMaterialIdForAnalysis}
                   user={user}
@@ -1099,190 +969,180 @@ function App() {
                   onOpenStudyPack={(id) => {
                     setSelectedMaterialIdForAnalysis(null)
                     setSelectedMaterialIdForStudyPack(id)
+                    setCurrentPage("Study Pack")
+                  }}
+                  onOpenFlashcards={(id) => {
+                    setSelectedMaterialIdForAnalysis(null)
+                    setSelectedMaterialIdForFlashcards(id)
+                    setCurrentPage("Flashcards")
                   }}
                 />
               </Suspense>
-            ) : selectedMaterialIdForFlashcards ? (
-              <Flashcards
-                materialId={selectedMaterialIdForFlashcards}
-                user={user}
-                profile={profile}
-                onBack={() => setSelectedMaterialIdForFlashcards(null)}
-                onOpenReader={(id) => {
-                  setSelectedMaterialIdForFlashcards(null)
-                  setSelectedMaterialIdForReader(id)
-                }}
-              />
-            ) : selectedMaterialIdForStudyPack ? (
-              <StudyPack
-                materialId={selectedMaterialIdForStudyPack}
-                user={user}
-                profile={profile}
-                onBack={() => setSelectedMaterialIdForStudyPack(null)}
-                onOpenReader={(id) => {
-                  setSelectedMaterialIdForStudyPack(null)
-                  setSelectedMaterialIdForReader(id)
-                }}
-                onOpenFlashcards={(id) => {
-                  setSelectedMaterialIdForStudyPack(null)
-                  setSelectedMaterialIdForFlashcards(id)
-                }}
-                onNavigateToSyllabus={() => {
-                  setSelectedMaterialIdForStudyPack(null)
-                  setCurrentPage("Syllabus")
-                }}
-              />
             ) : selectedMaterialIdForReader ? (
-              <Suspense fallback={<div className="p-6 space-y-4"><SkeletonCard count={3} /></div>}>
+              <Suspense fallback={<PageSuspenseFallback />}>
                 <StudyMaterialReader
                   materialId={selectedMaterialIdForReader}
                   user={user}
                   profile={profile}
                   onBack={() => setSelectedMaterialIdForReader(null)}
+                  onNavigateToSyllabus={() => setCurrentPage("Syllabus")}
                   onOpenStudyPack={(id) => {
-                    setSelectedMaterialIdForReader(null)
                     setSelectedMaterialIdForStudyPack(id)
+                    setCurrentPage("Study Pack")
                   }}
                   onOpenFlashcards={(id) => {
-                    setSelectedMaterialIdForReader(null)
                     setSelectedMaterialIdForFlashcards(id)
+                    setCurrentPage("Flashcards")
                   }}
                   onOpenExamAnalysis={(id) => {
-                    setSelectedMaterialIdForReader(null)
                     setSelectedMaterialIdForAnalysis(id)
-                  }}
-                  onNavigateToSyllabus={() => {
-                    setSelectedMaterialIdForReader(null)
-                    setCurrentPage("Syllabus")
                   }}
                 />
               </Suspense>
             ) : (
-              <StudyMaterial
-                user={user}
-                profile={profile}
-                onNavigateToSyllabus={() => setCurrentPage("Syllabus")}
-                onOpenReader={(id) => setSelectedMaterialIdForReader(id)}
-                onOpenStudyPack={(id) => setSelectedMaterialIdForStudyPack(id)}
-                onOpenFlashcards={(id) => setSelectedMaterialIdForFlashcards(id)}
-                onOpenExamAnalysis={(id) => setSelectedMaterialIdForAnalysis(id)}
-              />
+              <Suspense fallback={<PageSuspenseFallback />}>
+                <StudyMaterial
+                  user={user}
+                  profile={profile}
+                  onOpenReader={(id) => setSelectedMaterialIdForReader(id)}
+                  onOpenStudyPack={(id) => {
+                    setSelectedMaterialIdForStudyPack(id)
+                    setCurrentPage("Study Pack")
+                  }}
+                  onOpenFlashcards={(id) => {
+                    setSelectedMaterialIdForFlashcards(id)
+                    setCurrentPage("Flashcards")
+                  }}
+                  onOpenExamAnalysis={(id) => {
+                    setSelectedMaterialIdForAnalysis(id)
+                  }}
+                  onNavigateToSyllabus={() => setCurrentPage("Syllabus")}
+                />
+              </Suspense>
             )
           )}
+
+          {currentPage === "Study Pack" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <StudyPack
+                user={user}
+                profile={profile}
+                initialMaterialId={selectedMaterialIdForStudyPack}
+                onBack={() => {
+                  setSelectedMaterialIdForStudyPack(null)
+                  setCurrentPage("Study Material")
+                }}
+                onOpenReader={(id) => {
+                  setSelectedMaterialIdForReader(id)
+                  setCurrentPage("Study Material")
+                }}
+                onOpenFlashcards={(id) => {
+                  setSelectedMaterialIdForFlashcards(id)
+                  setCurrentPage("Flashcards")
+                }}
+              />
+            </Suspense>
+          )}
+
+          {currentPage === "Flashcards" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Flashcards
+                user={user}
+                profile={profile}
+                initialMaterialId={selectedMaterialIdForFlashcards}
+                onBack={() => {
+                  setSelectedMaterialIdForFlashcards(null)
+                  setCurrentPage("Study Material")
+                }}
+                onOpenReader={(id) => {
+                  setSelectedMaterialIdForReader(id)
+                  setCurrentPage("Study Material")
+                }}
+                onOpenStudyPack={(id) => {
+                  setSelectedMaterialIdForStudyPack(id)
+                  setCurrentPage("Study Pack")
+                }}
+              />
+            </Suspense>
+          )}
+
           {currentPage === "Focus Session" && (
-            <FocusSession
-              user={user}
-              recommendedTaskId={recommendedTaskId}
-              onReturnToDashboard={() => {
-                loadAllDashboardData()
-                setCurrentPage("Dashboard")
-              }}
-            />
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <FocusSession user={user} profile={profile} />
+            </Suspense>
           )}
-          {currentPage === "Profile" && (
-            <MyProfile
-              user={user}
-              profile={profile}
-              totalXP={xpSummary.totalXP}
-              thisWeekXP={xpSummary.thisWeekXP}
-              streak={learningStreak.currentStreak}
-              reputation={profile.reputation || 91}
-              topicProgress={dashboardTopics}
-              quizAttempts={quizAttempts}
-              xpTransactions={xpTransactions}
-              studySessions={studySessions}
-              onProfileUpdated={(updatedProfile) => {
-                setProfile(updatedProfile)
-                loadAllDashboardData()
-              }}
-              onNavigate={(page) => setCurrentPage(page)}
-            />
-          )}
+
           {currentPage === "Leaderboard" && (
-            <Leaderboard
-              user={user}
-              profile={profile}
-              totalXP={xpSummary.totalXP}
-              thisWeekXP={xpSummary.thisWeekXP}
-              streak={learningStreak.currentStreak}
-              reputation={profile.reputation || 91}
-              onNavigate={(page) => setCurrentPage(page)}
-            />
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Leaderboard user={user} profile={profile} />
+            </Suspense>
           )}
-          {(currentPage === "Saved" || currentPage === "Saved Challenges") && (
-            <SavedChallenges
-              user={user}
-              savedItemIds={savedItemIds}
-              completedKeys={xpSummary.completedKeys}
-              onSavedUpdated={loadAllDashboardData}
-              onNavigate={(page) => setCurrentPage(page)}
-            />
+
+          {currentPage === "Saved" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <SavedChallenges
+                user={user}
+                profile={profile}
+                onChallengeSolved={() => loadAllDashboardData()}
+              />
+            </Suspense>
+          )}
+
+          {currentPage === "Profile" && (
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <MyProfile
+                user={user}
+                profile={profile}
+                onUpdateProfile={(updated) => setProfile(updated)}
+              />
+            </Suspense>
           )}
         </main>
       </div>
 
-      {/* Smart Notification Center Modal */}
-      <NotificationCenter
-        isOpen={notificationModalOpen}
-        onClose={() => setNotificationModalOpen(false)}
-        notifications={notifications}
-        onMarkAsRead={handleMarkNotificationAsRead}
-        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
-        onClearAll={handleClearAllNotifications}
-        onDismiss={handleDismissNotification}
-        onNavigate={(page, entityId) => {
-          if (page === "Focus Session" && entityId) {
-            setRecommendedTaskId(entityId)
-          }
-          setCurrentPage(page)
-        }}
-        preferences={notificationPreferences}
-        onUpdatePreferences={updateNotificationPreferences}
-      />
+      {/* Global Academic Search Modal (Lazy Loaded) */}
+      {searchModalOpen && (
+        <Suspense fallback={null}>
+          <GlobalSearch
+            isOpen={searchModalOpen}
+            onClose={() => setSearchModalOpen(false)}
+            onNavigate={(page, payload) => {
+              handleNavigate(page, payload)
+              setSearchModalOpen(false)
+            }}
+            currentSemester={profile?.semester || 3}
+            currentSection={profile?.section || "B2"}
+            currentUserId={user?.id}
+          />
+        </Suspense>
+      )}
 
-      {/* Global Academic Search Modal */}
-      <GlobalSearch
-        isOpen={searchModalOpen}
-        onClose={() => setSearchModalOpen(false)}
-        user={user}
-        profile={profile}
-        onNavigate={handleGlobalSearchNavigation}
-      />
+      {/* Proactive Academic Notification Modal (Lazy Loaded) */}
+      {notificationModalOpen && (
+        <Suspense fallback={null}>
+          <NotificationCenter
+            isOpen={notificationModalOpen}
+            onClose={() => setNotificationModalOpen(false)}
+            notifications={notifications}
+            onMarkAsRead={handleMarkNotificationAsRead}
+            onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+            onDismiss={handleDismissNotification}
+            onClearAll={handleClearAllNotifications}
+            onNavigate={handleNotificationAction}
+            preferences={notificationPreferences}
+            onUpdatePreferences={updateNotificationPreferences}
+          />
+        </Suspense>
+      )}
 
-      {/* Mobile Bottom Taskbar Navigation (< 768px) */}
+      {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
-        user={user}
-        profile={profile}
-        onLogout={handleLogout}
-        onOpenNotifications={() => setNotificationModalOpen(true)}
         unreadCount={unreadNotifCount}
+        onOpenNotifications={() => setNotificationModalOpen(true)}
+        onOpenSearch={() => setSearchModalOpen(true)}
       />
-    </div>
-  )
-}
-
-function TaskItem({ time, title, subject, priority }) {
-  const priorityStyle = {
-    High: "bg-red-50 text-red-700 border-red-100",
-    Medium: "bg-amber-50 text-amber-700 border-amber-100",
-    Low: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  }
-
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition hover:bg-slate-100/70">
-      <div className="min-w-0 flex-1 pr-3">
-        <p className="text-[11px] font-medium text-slate-400 font-mono">{time}</p>
-        <h4 className="mt-0.5 font-bold text-xs sm:text-sm text-slate-900 truncate">{title}</h4>
-        <p className="text-[11px] text-slate-500 truncate">{subject}</p>
-      </div>
-
-      <span
-        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border shrink-0 ${priorityStyle[priority] || "bg-slate-100 text-slate-700"}`}
-      >
-        {priority}
-      </span>
     </div>
   )
 }

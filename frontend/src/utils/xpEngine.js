@@ -27,12 +27,18 @@ export const XP_REWARDS = {
 export async function getXPTransactions(userId) {
   if (!userId) return []
 
+  const cached = getCachedXPTransactions(userId)
+  if (cached && cached.length > 0) {
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from("xp_transactions")
-      .select("*")
+      .select("id, amount, reason, reference_key, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
+      .limit(50)
 
     if (!error && data && data.length > 0) {
       setCachedXPTransactions(userId, data)
@@ -40,7 +46,7 @@ export async function getXPTransactions(userId) {
     }
   } catch {}
 
-  // Fallback to cloud backend store
+  // Fallback to cloud backend store if not yet cached
   try {
     const cloudStats = await fetchUserStats(userId)
     if (cloudStats?.xp_transactions && cloudStats.xp_transactions.length > 0) {
@@ -49,7 +55,7 @@ export async function getXPTransactions(userId) {
     }
   } catch {}
 
-  return getCachedXPTransactions(userId)
+  return cached || []
 }
 
 /**
