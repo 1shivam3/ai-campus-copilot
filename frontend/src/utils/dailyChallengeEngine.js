@@ -127,8 +127,9 @@ export function getDailyChallengeSet({
   }
 
   // 2. Select challenges matching user's adaptive difficulty and diverse categories
+  const targetLevel = (adaptive?.currentLevel || adaptive?.difficultyLevel || "Medium").toLowerCase()
   const matched = unattempted.filter(
-    (c) => c.difficulty?.toLowerCase() === adaptive.difficultyLevel.toLowerCase()
+    (c) => (c.difficulty || "Medium").toLowerCase() === targetLevel
   )
   const pool = matched.length >= DAILY_SET_COUNT ? matched : unattempted
 
@@ -139,7 +140,7 @@ export function getDailyChallengeSet({
   const categories = ["dsa", "concept", "quick", "debug", "math"]
   categories.forEach((cat) => {
     const item = pool.find(
-      (c) => !usedIds.has(c.id) && c.category?.toLowerCase() === cat.toLowerCase()
+      (c) => !usedIds.has(c.id) && (c.category || "").toLowerCase() === (cat || "").toLowerCase()
     )
     if (item) {
       selected.push(item)
@@ -166,7 +167,7 @@ export function getDailyChallengeSet({
     completedCount: completedInSet,
     totalCount: selected.length,
     isSetComplete,
-    adaptiveLevel: adaptive.difficultyLevel,
+    adaptiveLevel: adaptive?.currentLevel || adaptive?.difficultyLevel || "Medium",
     isBonusMode,
   }
 }

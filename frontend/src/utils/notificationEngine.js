@@ -167,10 +167,12 @@ export function generateSmartNotifications({
     })
 
     for (const exam of upcomingSoonExams) {
+      const examSubj = (exam.subject || "").toLowerCase()
       const subjectTopics = syllabusTopics.filter(
-        (t) =>
-          t.academic_subjects?.subject_name?.toLowerCase().includes(exam.subject.toLowerCase()) ||
-          exam.subject.toLowerCase().includes(t.academic_subjects?.subject_name?.toLowerCase() || "")
+        (t) => {
+          const tSubj = (t.academic_subjects?.subject_name || "").toLowerCase()
+          return (tSubj && examSubj && tSubj.includes(examSubj)) || (examSubj && tSubj && examSubj.includes(tSubj))
+        }
       )
 
       if (subjectTopics.length > 0) {

@@ -219,13 +219,17 @@ export function generateCandidateActions(context) {
     const days = getDaysRemaining(exam.exam_date)
     const examImportance = Number(exam.importance || 8)
 
+    const examSubj = (exam.subject || "").toLowerCase()
     // Find weakest topics for this exam subject
-    const subjectTopics = context.topicsWithMastery.filter(
-      (t) =>
-        t.subject_name?.toLowerCase().includes(exam.subject.toLowerCase()) ||
-        exam.subject.toLowerCase().includes(t.subject_name?.toLowerCase()) ||
-        (t.subject_code && exam.subject.toLowerCase().includes(t.subject_code.toLowerCase()))
-    )
+    const subjectTopics = context.topicsWithMastery.filter((t) => {
+      const tSubj = (t.subject_name || "").toLowerCase()
+      const tCode = (t.subject_code || "").toLowerCase()
+      return (
+        (tSubj && examSubj && tSubj.includes(examSubj)) ||
+        (examSubj && tSubj && examSubj.includes(tSubj)) ||
+        (tCode && examSubj && examSubj.includes(tCode))
+      )
+    })
 
     const weakestExamTopic = subjectTopics.sort((a, b) => a.mastery_score - b.mastery_score)[0]
     const lowestMastery = weakestExamTopic ? Number(weakestExamTopic.mastery_score || 0) : 50

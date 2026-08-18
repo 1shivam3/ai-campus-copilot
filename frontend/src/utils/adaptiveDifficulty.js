@@ -47,6 +47,7 @@ export function calculateAdaptiveDifficulty(challengeHistory = []) {
 
   return {
     currentLevel,
+    difficultyLevel: currentLevel,
     successRate: overallSuccessRate,
     recentSuccessRate: recentRate,
     totalAttempted,
