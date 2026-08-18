@@ -650,18 +650,23 @@ function App() {
 
   const nextBestAction = useMemo(() => {
     return runNextBestActionEngine({
+      profile,
+      schedule: dashboardSchedule,
       tasks: dashboardTasks,
       exams: dashboardExams,
-      topics: dashboardTopics,
+      syllabusTopics: dashboardTopics,
+      studyWindow: bestStudyWindow,
       nextClass,
-      bestStudyWindow,
     })
-  }, [dashboardTasks, dashboardExams, dashboardTopics, nextClass, bestStudyWindow])
+  }, [profile, dashboardSchedule, dashboardTasks, dashboardExams, dashboardTopics, bestStudyWindow, nextClass])
 
   // Auto-fill recommended task from Next Best Action engine
   useEffect(() => {
-    if (nextBestAction?.task_id) {
-      setRecommendedTaskId(nextBestAction.task_id)
+    const act = nextBestAction?.bestAction || nextBestAction
+    if (act?.payload?.id && (act.action_type === "SUBMIT_ASSIGNMENT" || act.action_type === "COMPLETE_ASSIGNMENT")) {
+      setRecommendedTaskId(act.payload.id)
+    } else if (act?.task_id) {
+      setRecommendedTaskId(act.task_id)
     }
   }, [nextBestAction])
 
@@ -679,24 +684,43 @@ function App() {
 
   // Next Best Action navigation handler
   function handleExecuteNextAction(action) {
-    if (!action) return
-    if (action.action_type === "start_focus_session" || action.action_type === "open_tasks") {
+    const act = action?.bestAction || action
+    if (!act) return
+
+    if (act.action_type === "ATTEND_CLASS" || act.action_type === "open_academics") {
+      if (act.payload?.subject_id) {
+        handleNavigateToAcademics(act.payload.subject_id)
+      } else {
+        setCurrentPage("My Academics")
+      }
+    } else if (
+      act.action_type === "SUBMIT_ASSIGNMENT" ||
+      act.action_type === "COMPLETE_ASSIGNMENT" ||
+      act.action_type === "open_tasks" ||
+      act.action_type === "start_focus_session"
+    ) {
       setCurrentPage("Tasks")
-    } else if (action.action_type === "open_exam_mode" || action.action_type === "start_exam_quiz") {
+    } else if (
+      act.action_type === "PREPARE_FOR_EXAM" ||
+      act.action_type === "open_exam_mode" ||
+      act.action_type === "start_exam_quiz"
+    ) {
       setCurrentPage("Exam Mode")
-    } else if (action.action_type === "open_syllabus" || action.action_type === "navigate_to_study_material") {
-      setCurrentPage("Syllabus")
-    } else if (action.action_type === "open_academics") {
-      setCurrentPage("My Academics")
-    } else if (action.action_type === "open_exams") {
-      setCurrentPage("Exams")
-    } else if (action.page) {
-      if (action.page === "Focus Session") {
+    } else if (act.action_type === "STUDY_TOPIC") {
+      setCurrentPage("Progress")
+    } else if (
+      act.action_type === "REVIEW_SCHEDULE" ||
+      act.action_type === "open_syllabus" ||
+      act.action_type === "open_exams"
+    ) {
+      setCurrentPage(act.page || "Progress")
+    } else if (act.page) {
+      if (act.page === "Focus Session") {
         setCurrentPage("Tasks")
-      } else if (action.page === "Study Material") {
+      } else if (act.page === "Study Material") {
         setCurrentPage("Syllabus")
       } else {
-        setCurrentPage(action.page)
+        setCurrentPage(act.page)
       }
     }
   }

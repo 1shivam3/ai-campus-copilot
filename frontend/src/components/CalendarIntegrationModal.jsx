@@ -257,7 +257,7 @@ export function CalendarIntegrationModal({
           </div>
 
           {freeWindows.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-[#71717A] dark:text-[#a1a1aa]">
               No free windows $\ge 15$ mins available today.
             </p>
           ) : (
@@ -265,7 +265,7 @@ export function CalendarIntegrationModal({
               {freeWindows.map((win, idx) => (
                 <span
                   key={idx}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-700"
+                  className="rounded-lg border border-[#E4E4E7] bg-[#F7F7F2] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#18181B] dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                 >
                   {win.start} – {win.end} ({win.minutes}m)
                 </span>

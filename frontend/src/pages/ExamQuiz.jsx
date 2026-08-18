@@ -637,19 +637,19 @@ function ExamQuiz({
 
         {loadingQuestion ? (
           <div className="py-16 text-center space-y-3">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-blue-600 border-t-transparent" />
-            <p className="text-sm font-semibold text-slate-700">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#0F766E] border-t-transparent dark:border-[#2DD4BF]" />
+            <p className="text-sm font-semibold text-[#18181B] dark:text-[#f4f4f5]">
               Generating Question {questionNumber}...
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#71717A] dark:text-[#a1a1aa]">
               Drawing dynamically from {currentQuestion?.unit || selectedUnits[0]}
             </p>
           </div>
         ) : currentQuestion ? (
           <div className="space-y-6">
             {/* Question Text */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
-              <p className="font-bold text-sm sm:text-base text-slate-900 leading-relaxed">
+            <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-5 dark:border-[#27343a] dark:bg-[#182226]">
+              <p className="font-bold text-sm sm:text-base text-[#18181B] leading-relaxed dark:text-[#f4f4f5]">
                 {currentQuestion.question}
               </p>
             </div>
@@ -662,13 +662,13 @@ function ExamQuiz({
                   const isCorrect = isRevealed && idx === Number(currentQuestion.correct_answer)
                   const isWrongSelected = isRevealed && isSelected && !isCorrect
 
-                  let optionStyle = "border-slate-200 bg-white text-slate-800 hover:border-slate-300"
+                  let optionStyle = "border-[#E4E4E7] bg-white text-[#18181B] hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
                   if (isSelected && !isRevealed) {
-                    optionStyle = "border-slate-900 bg-slate-900 text-white shadow-xs"
+                    optionStyle = "border-[#0F766E] bg-[#ECFDF5] text-[#12312F] ring-1 ring-[#0F766E] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF] dark:text-[#2DD4BF]"
                   } else if (isCorrect) {
-                    optionStyle = "border-emerald-500 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20"
+                    optionStyle = "border-[#15803D] bg-emerald-50 text-[#15803D] ring-2 ring-emerald-500/20 dark:bg-[#182226] dark:border-[#15803D] dark:text-emerald-300"
                   } else if (isWrongSelected) {
-                    optionStyle = "border-red-400 bg-red-50 text-red-900 ring-2 ring-red-500/20"
+                    optionStyle = "border-[#DC2626] bg-rose-50 text-[#DC2626] ring-2 ring-rose-500/20 dark:bg-[#182226] dark:border-[#DC2626] dark:text-rose-300"
                   }
 
                   return (
@@ -681,12 +681,12 @@ function ExamQuiz({
                     >
                       <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
                         isSelected && !isRevealed
-                          ? "bg-white/20 text-white"
+                          ? "bg-[#0F766E] text-white"
                           : isCorrect
-                          ? "bg-emerald-600 text-white"
+                          ? "bg-[#15803D] text-white"
                           : isWrongSelected
-                          ? "bg-red-600 text-white"
-                          : "bg-slate-100 text-slate-700"
+                          ? "bg-[#DC2626] text-white"
+                          : "bg-[#F7F7F2] text-[#52525B] dark:bg-[#182226] dark:text-[#a1a1aa]"
                       }`}>
                         {String.fromCharCode(65 + idx)}
                       </span>
@@ -694,7 +694,7 @@ function ExamQuiz({
                         {opt}
                       </span>
                       {isCorrect && (
-                        <span className="text-emerald-600 font-bold text-xs shrink-0">
+                        <span className="text-[#15803D] font-bold text-xs shrink-0 dark:text-emerald-300">
                           Correct Answer
                         </span>
                       )}
@@ -707,7 +707,7 @@ function ExamQuiz({
             {/* Short / Long Answer Input */}
             {questionType !== "mcq" && (
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#52525B] dark:text-[#a1a1aa]">
                   Your Answer
                 </label>
                 <textarea
@@ -716,21 +716,21 @@ function ExamQuiz({
                   disabled={isRevealed}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   placeholder="Type your answer here..."
-                  className="w-full rounded-2xl border border-slate-300 p-4 text-xs sm:text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 transition disabled:bg-slate-50"
+                  className="w-full rounded-2xl border border-[#E4E4E7] bg-white p-4 text-xs sm:text-sm text-[#18181B] outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/10 transition disabled:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
                 />
               </div>
             )}
 
             {/* Revealed Answer & Explanation Box */}
             {isRevealed && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-3.5">
+              <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-5 space-y-3.5 dark:border-[#27343a] dark:bg-[#182226]">
                 {/* Result Badge */}
                 {questionType === "mcq" && (
                   <div className="flex items-center gap-2">
                     <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
                       selectedOption === Number(currentQuestion.correct_answer)
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-red-100 text-red-800"
+                        ? "bg-emerald-100 text-[#15803D]"
+                        : "bg-rose-100 text-[#DC2626]"
                     }`}>
                       {selectedOption === Number(currentQuestion.correct_answer) ? "✓ Correct" : "✗ Incorrect"}
                     </span>
@@ -740,10 +740,10 @@ function ExamQuiz({
                 {/* Expected Answer for Short/Long */}
                 {questionType !== "mcq" && currentQuestion.expected_answer && (
                   <div className="space-y-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#71717A] dark:text-[#a1a1aa]">
                       Model Expected Answer
                     </p>
-                    <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-[#18181B] leading-relaxed font-medium dark:text-[#f4f4f5]">
                       {currentQuestion.expected_answer}
                     </p>
                   </div>
@@ -752,10 +752,10 @@ function ExamQuiz({
                 {/* Key Points */}
                 {currentQuestion.key_points && currentQuestion.key_points.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#71717A] dark:text-[#a1a1aa]">
                       Key Grading Points
                     </p>
-                    <ul className="list-disc list-inside space-y-1 text-xs text-slate-700">
+                    <ul className="list-disc list-inside space-y-1 text-xs text-[#52525B] dark:text-[#a1a1aa]">
                       {currentQuestion.key_points.map((pt, pIdx) => (
                         <li key={pIdx}>{pt}</li>
                       ))}

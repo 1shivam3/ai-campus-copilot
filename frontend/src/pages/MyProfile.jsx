@@ -474,14 +474,14 @@ export default function MyProfile({
       <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
               🎖️ Verifiable Academic Badges
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-[#52525B] dark:text-[#a1a1aa] mt-0.5">
               Badges earned through active challenges, streak consistency, and quiz mastery.
             </p>
           </div>
-          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+          <span className="rounded-full bg-[#ECFDF5] px-2.5 py-0.5 text-xs font-bold text-[#0F766E] border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
             {unlockedBadges.length} / {BADGE_DEFINITIONS.length} Unlocked
           </span>
         </div>
@@ -801,7 +801,7 @@ export default function MyProfile({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-2xl bg-slate-900 px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-slate-800 transition active:scale-[0.98] disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2"
+                  className="rounded-2xl bg-[#0F766E] px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-[#115E59] transition active:scale-[0.98] disabled:opacity-50 flex items-center gap-2"
                 >
                   {saving ? (
                     <>

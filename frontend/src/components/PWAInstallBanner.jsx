@@ -81,28 +81,28 @@ export function PWAInstallBanner() {
 
       {/* Subtle Install Banner */}
       {canInstall && !dismissed && (
-        <div className="fixed bottom-4 right-4 z-40 max-w-sm rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xl transition-all duration-300">
+        <div className="fixed bottom-4 right-4 z-40 max-w-sm rounded-2xl border border-[#E4E4E7] bg-white p-3.5 shadow-xl transition-all duration-300 dark:border-[#27343a] dark:bg-[#141c1f]">
           <div className="flex items-start gap-3">
             <CoursePilotMark className="h-8 w-8 shrink-0 shadow-xs" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900">
+              <p className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">
                 Install CoursePilot App
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">
+              <p className="mt-0.5 text-[11px] text-[#52525B] leading-snug dark:text-[#a1a1aa]">
                 Add to your home screen for distraction-free full-screen access.
               </p>
               <div className="mt-2.5 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleInstallClick}
-                  className="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs hover:bg-slate-800 transition active:scale-[0.98]"
+                  className="rounded-xl bg-[#0F766E] px-3.5 py-1.5 text-[11px] font-bold text-white shadow-2xs hover:bg-[#115E59] transition active:scale-[0.98]"
                 >
                   Install
                 </button>
                 <button
                   type="button"
                   onClick={handleDismiss}
-                  className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition"
+                  className="rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-[#71717A] hover:text-[#18181B] transition dark:hover:text-white"
                 >
                   Dismiss
                 </button>

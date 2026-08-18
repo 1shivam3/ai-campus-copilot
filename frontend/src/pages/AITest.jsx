@@ -130,21 +130,21 @@ function AITest({ user, onStartSession, schedule, profile }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 dark:bg-[#0f1416]">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-            <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
+            <span className="h-2 w-2 rounded-full bg-[#0F766E] animate-pulse dark:bg-[#2DD4BF]" />
+            <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
               COURSEPILOT AI INTELLIGENCE
             </p>
           </div>
 
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
             Schedule-Aware Study Intelligence
           </h1>
 
-          <p className="mt-1.5 max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-500">
+          <p className="mt-1.5 max-w-2xl text-xs sm:text-sm leading-relaxed text-[#52525B] dark:text-[#a1a1aa]">
             Synthesizes your timetable, active deadlines, and topic risks into a time-blocked study strategy for your next free window.
           </p>
         </div>
@@ -162,18 +162,18 @@ function AITest({ user, onStartSession, schedule, profile }) {
           </div>
         ) : recommendation ? (
           <>
-            <div className="overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl md:p-8">
+            <div className="overflow-hidden rounded-3xl bg-[#12312F] p-6 text-white shadow-xl md:p-8 dark:bg-[#141c1f] dark:border dark:border-[#27343a]">
               <div className="mb-4 flex items-center justify-between">
                 <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 border border-emerald-400/20">
                   AI SCHEDULE-AWARE
                 </span>
 
-                <span className="text-xs text-slate-400 font-medium">
+                <span className="text-xs text-[#A1A1AA] font-medium">
                   {profile ? `Sem ${profile.semester} · Section ${profile.section}` : "Academic Context"}
                 </span>
               </div>
 
-              <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+              <p className="text-[11px] font-bold tracking-widest text-emerald-200/70 uppercase">
                 CURRENT PRIORITY
               </p>
 
@@ -183,7 +183,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
                   : recommendation.item.title}
               </h2>
 
-              <p className="mt-1 text-xs sm:text-sm text-slate-300">
+              <p className="mt-1 text-xs sm:text-sm text-emerald-100/80">
                 {recommendation.type === "exam"
                   ? "Highest urgency exam in your academic calendar."
                   : `Target task (${recommendation.item.estimated_minutes} mins) with priority score ${recommendation.score}/10.`}
@@ -191,7 +191,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
 
               {/* Current Weakness Card */}
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-4 sm:p-5">
-                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                <p className="text-[10px] font-bold tracking-widest text-emerald-200/60 uppercase">
                   CURRENT WEAKNESS
                 </p>
 
@@ -202,19 +202,19 @@ function AITest({ user, onStartSession, schedule, profile }) {
                         <p className="text-base font-bold text-white">
                           {topicRecommendation.topic.topic_name}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-400">
+                        <p className="mt-0.5 text-xs text-emerald-200/70">
                           {topicRecommendation.topic.subject}
                         </p>
                       </div>
 
-                      <p className="text-xl sm:text-2xl font-bold text-amber-400">
+                      <p className="text-xl sm:text-2xl font-bold text-[#C49A3A]">
                         {topicRecommendation.topic.mastery_score}%
                       </p>
                     </div>
 
                     <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                       <div
-                        className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                        className="h-full rounded-full bg-[#C49A3A] transition-all duration-500"
                         style={{
                           width: `${topicRecommendation.topic.mastery_score}%`,
                         }}
@@ -222,7 +222,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
                     </div>
                   </>
                 ) : (
-                  <p className="mt-2 text-xs text-slate-400">
+                  <p className="mt-2 text-xs text-emerald-200/70">
                     All topics on track or no weak topics recorded yet.
                   </p>
                 )}
@@ -231,7 +231,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
               <button
                 onClick={askAI}
                 disabled={aiLoading}
-                className="mt-6 w-full rounded-xl bg-white px-5 py-3.5 text-xs sm:text-sm font-bold text-slate-950 transition hover:bg-slate-100 disabled:opacity-50 shadow-md active:scale-[0.98]"
+                className="mt-6 w-full rounded-xl bg-white px-5 py-3.5 text-xs sm:text-sm font-bold text-[#12312F] transition hover:bg-[#ECFDF5] disabled:opacity-50 shadow-md active:scale-[0.98]"
               >
                 {aiLoading
                   ? "Aligning strategy with your timetable..."
@@ -241,12 +241,12 @@ function AITest({ user, onStartSession, schedule, profile }) {
 
             {/* AI Strategy Result */}
             {answer && (
-              <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-sm">
-                <div className="mb-4 border-b border-slate-100 pb-3">
-                  <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase">
+              <div className="mt-6 rounded-3xl border border-[#E4E4E7] bg-white p-5 sm:p-8 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
+                <div className="mb-4 border-b border-[#E4E4E7] pb-3 dark:border-[#27343a]">
+                  <p className="text-[10px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
                     COURSEPILOT STRATEGY
                   </p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-900">
+                  <h2 className="mt-1 text-xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
                     Your Personalized Action Plan
                   </h2>
                 </div>
