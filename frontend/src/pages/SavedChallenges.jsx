@@ -40,13 +40,13 @@ export default function SavedChallenges({
       {/* Page Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <span className="text-xs font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+          <span className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
             PERSONAL LEARNING LIBRARY
           </span>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
             Saved Challenges & Concepts
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa]">
             {savedItems.length} bookmarked {savedItems.length === 1 ? "item" : "items"} available for offline study and revision.
           </p>
         </div>
@@ -55,7 +55,7 @@ export default function SavedChallenges({
           <button
             type="button"
             onClick={() => onNavigate("Home")}
-            className="self-start sm:self-center flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 shadow-2xs"
+            className="self-start sm:self-center flex items-center gap-1.5 rounded-xl border border-[#E4E4E7] bg-white px-4 py-2 text-xs font-bold text-[#18181B] hover:bg-[#F7F7F2] transition dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5] dark:hover:bg-[#182226] shadow-2xs"
           >
             <span>← Back to Home</span>
           </button>
@@ -63,7 +63,7 @@ export default function SavedChallenges({
       </div>
 
       {/* Category Pills */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200/80 pb-4 dark:border-slate-800">
+      <div className="flex flex-wrap gap-2 border-b border-[#E4E4E7] pb-4 dark:border-[#27343a]">
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
@@ -71,8 +71,8 @@ export default function SavedChallenges({
             onClick={() => setActiveCategory(cat)}
             className={`rounded-2xl px-4 py-2 text-xs font-bold transition active:scale-[0.98] ${
               activeCategory === cat
-                ? "bg-slate-900 text-white shadow-xs dark:bg-blue-600"
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                ? "bg-[#18181B] text-white shadow-2xs dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                : "border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
             }`}
           >
             {cat}
@@ -82,12 +82,12 @@ export default function SavedChallenges({
 
       {/* Saved Items Grid */}
       {filteredItems.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center dark:border-slate-800">
+        <div className="rounded-3xl border border-dashed border-[#E4E4E7] p-12 text-center dark:border-[#27343a]">
           <span className="text-4xl">🔖</span>
-          <h3 className="mt-3 text-base font-bold text-slate-800 dark:text-slate-200">
+          <h3 className="mt-3 text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
             No saved items in this category
           </h3>
-          <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto dark:text-slate-400">
+          <p className="mt-1 text-xs text-[#52525B] max-w-sm mx-auto dark:text-[#a1a1aa]">
             Click the bookmark icon 🔖 on any challenge or concept in your Home feed to save it here for later.
           </p>
         </div>
@@ -101,31 +101,31 @@ export default function SavedChallenges({
             return (
               <div
                 key={item.id}
-                className="flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:shadow-sm dark:border-slate-800/80 dark:bg-slate-900"
+                className="flex flex-col justify-between rounded-3xl border border-[#E4E4E7] bg-white p-5 shadow-2xs transition hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f]"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                    <span className="rounded-full bg-[#ECFDF5] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0F766E] border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                       {item.subject}
                     </span>
                     {isSolved && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-[#15803D] border border-emerald-200/60 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300">
                         ✓ Solved
                       </span>
                     )}
                   </div>
 
-                  <h3 className="mt-2.5 text-sm font-bold text-slate-900 dark:text-white line-clamp-2">
+                  <h3 className="mt-2.5 text-sm font-bold text-[#18181B] dark:text-[#f4f4f5] line-clamp-2">
                     {item.title}
                   </h3>
 
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                  <p className="mt-1 text-xs text-[#52525B] dark:text-[#a1a1aa] line-clamp-2">
                     {item.content}
                   </p>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-                  <span className="text-xs font-black text-slate-900 dark:text-white">
+                <div className="mt-5 flex items-center justify-between border-t border-[#E4E4E7] pt-3 dark:border-[#27343a]">
+                  <span className="text-xs font-black text-[#0F766E] dark:text-[#2DD4BF]">
                     ⭐ +{item.xp_reward} XP
                   </span>
 
@@ -133,7 +133,7 @@ export default function SavedChallenges({
                     <button
                       type="button"
                       onClick={() => handleRemoveSave(item.id)}
-                      className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-rose-600 transition dark:border-slate-800 dark:hover:bg-slate-800"
+                      className="rounded-xl border border-[#E4E4E7] px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:bg-[#F7F7F2] hover:text-[#DC2626] transition dark:border-[#27343a] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
                     >
                       Remove
                     </button>
@@ -141,7 +141,7 @@ export default function SavedChallenges({
                       <button
                         type="button"
                         onClick={() => onOpenChallenge(item)}
-                        className="rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition dark:bg-blue-600 dark:hover:bg-blue-700"
+                        className="rounded-xl bg-[#0F766E] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#115E59] transition active:scale-[0.98]"
                       >
                         {isSolved ? "Review" : "Solve"}
                       </button>

@@ -186,27 +186,27 @@ export default function Leaderboard({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <span className="text-xs font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+          <span className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
             CAMPUS LEARNING STANDINGS
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+          <h1 className="text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5] mt-0.5">
             Leaderboard
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa]">
             Live cross-device learning rankings for you and your classmates.
           </p>
         </div>
 
         {/* Timeframe Selector */}
-        <div className="flex items-center rounded-2xl bg-slate-100 p-1 dark:bg-slate-800 self-start sm:self-auto">
+        <div className="flex items-center rounded-2xl bg-white border border-[#E4E4E7] p-1 dark:border-[#27343a] dark:bg-[#182226] self-start sm:self-auto">
           {TIMEFRAMES.map((tf) => (
             <button
               key={tf.id}
               onClick={() => setTimeframe(tf.id)}
               className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
                 timeframe === tf.id
-                  ? "bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  ? "bg-[#18181B] text-white shadow-2xs dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                  : "text-[#52525B] hover:text-[#18181B] dark:text-[#a1a1aa] dark:hover:text-white"
               }`}
             >
               {tf.label}
@@ -216,36 +216,36 @@ export default function Leaderboard({
       </div>
 
       {/* Authenticated Student Standing Pinned Card */}
-      <div className="rounded-3xl border border-blue-200 bg-linear-to-r from-blue-50 via-indigo-50/50 to-white p-4 sm:p-5 shadow-xs dark:border-blue-900/50 dark:bg-slate-900">
+      <div className="rounded-3xl border border-[#0F766E]/30 bg-[#ECFDF5]/50 p-4 sm:p-5 shadow-2xs dark:border-[#2DD4BF]/30 dark:bg-[#182226]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white shadow-sm shadow-blue-500/20">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0F766E] text-lg font-black text-white shadow-2xs">
               #{currentUserRankEntry.rank}
             </div>
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0F766E] dark:text-[#2DD4BF]">
                 YOUR STANDING
               </span>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                 {currentUserRankEntry.display_name}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-[#52525B] dark:text-[#a1a1aa]">
                 Semester {profile?.semester || 3} · Section {profile?.section || "B2"}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 self-start sm:self-auto">
-            <div className="rounded-2xl bg-white px-3.5 py-2 text-center border border-slate-200/60 dark:bg-slate-800 dark:border-slate-700">
-              <span className="block text-[10px] font-bold text-slate-400 uppercase">Total XP</span>
-              <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+            <div className="rounded-2xl bg-white px-3.5 py-2 text-center border border-[#E4E4E7] shadow-2xs dark:bg-[#141c1f] dark:border-[#27343a]">
+              <span className="block text-[10px] font-bold text-[#71717A] uppercase dark:text-[#a1a1aa]">Total XP</span>
+              <span className="text-sm font-black text-[#0F766E] dark:text-[#2DD4BF]">
                 ⭐ {currentUserRankEntry.xp?.toLocaleString()}
               </span>
             </div>
 
-            <div className="rounded-2xl bg-white px-3.5 py-2 text-center border border-slate-200/60 dark:bg-slate-800 dark:border-slate-700">
-              <span className="block text-[10px] font-bold text-slate-400 uppercase">Streak</span>
-              <span className="text-sm font-black text-orange-600 dark:text-orange-400">
+            <div className="rounded-2xl bg-white px-3.5 py-2 text-center border border-[#E4E4E7] shadow-2xs dark:bg-[#141c1f] dark:border-[#27343a]">
+              <span className="block text-[10px] font-bold text-[#71717A] uppercase dark:text-[#a1a1aa]">Streak</span>
+              <span className="text-sm font-black text-[#C49A3A]">
                 🔥 {currentUserRankEntry.streak}d
               </span>
             </div>
@@ -254,28 +254,28 @@ export default function Leaderboard({
       </div>
 
       {/* Leaderboard Table / Rankings */}
-      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <div className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+      <div className="overflow-hidden rounded-3xl border border-[#E4E4E7] bg-white shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
+        <div className="border-b border-[#E4E4E7] px-5 py-3.5 dark:border-[#27343a] flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[#18181B] dark:text-[#f4f4f5]">
             Campus Standings ({rankedList.length} Active {rankedList.length === 1 ? "Learner" : "Learners"})
           </h3>
-          <span className="text-[11px] font-medium text-slate-400">
+          <span className="text-[11px] font-medium text-[#71717A] dark:text-[#a1a1aa]">
             Real Student Data Only
           </span>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-xs text-slate-400">Loading campus standings...</div>
+          <div className="p-8 text-center text-xs text-[#71717A] dark:text-[#a1a1aa]">Loading campus standings...</div>
         ) : rankedList.length === 0 ? (
           <div className="p-8 text-center">
             <span className="text-3xl">🏆</span>
-            <h4 className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">No peers yet</h4>
-            <p className="text-xs text-slate-500 mt-1">
+            <h4 className="mt-2 text-sm font-bold text-[#18181B] dark:text-[#f4f4f5]">No peers yet</h4>
+            <p className="text-xs text-[#52525B] mt-1 dark:text-[#a1a1aa]">
               Solve daily challenges to earn XP and claim the #1 spot!
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-[#E4E4E7] dark:divide-[#27343a]">
             {rankedList.map((peer) => {
               const medal = peer.rank === 1 ? "🥇" : peer.rank === 2 ? "🥈" : peer.rank === 3 ? "🥉" : null
 
@@ -284,14 +284,14 @@ export default function Leaderboard({
                   key={peer.id}
                   className={`flex items-center justify-between p-4 sm:px-5 transition ${
                     peer.isCurrentUser
-                      ? "bg-blue-50/50 dark:bg-blue-950/30 font-semibold"
-                      : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                      ? "bg-[#ECFDF5]/50 dark:bg-[#182226] font-semibold"
+                      : "hover:bg-[#F7F7F2] dark:hover:bg-[#182226]"
                   }`}
                 >
                   {/* Left: Rank & Avatar & Name */}
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center text-sm font-bold">
-                      {medal || <span className="text-slate-400 text-xs">#{peer.rank}</span>}
+                      {medal || <span className="text-[#71717A] text-xs">#{peer.rank}</span>}
                     </div>
 
                     <div className="relative">
@@ -299,10 +299,10 @@ export default function Leaderboard({
                         <img
                           src={peer.avatar_url}
                           alt={peer.display_name}
-                          className="h-10 w-10 rounded-2xl object-cover ring-2 ring-blue-500/20"
+                          className="h-10 w-10 rounded-2xl object-cover ring-2 ring-[#0F766E]/20"
                         />
                       ) : (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-slate-700 to-slate-900 text-sm font-bold text-white">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#12312F] text-sm font-bold text-white shadow-2xs">
                           {(peer.display_name || "S").charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -310,16 +310,16 @@ export default function Leaderboard({
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                        <span className="truncate text-sm font-bold text-[#18181B] dark:text-[#f4f4f5]">
                           {peer.display_name}
                         </span>
                         {peer.isCurrentUser && (
-                          <span className="rounded-full bg-blue-100 px-2 py-0.2 text-[9px] font-extrabold uppercase text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                          <span className="rounded-full bg-[#ECFDF5] px-2 py-0.2 text-[9px] font-extrabold uppercase text-[#0F766E] border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                             YOU
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-[#71717A] dark:text-[#a1a1aa]">
                         Semester {peer.semester || 3} · Section {peer.section || "B2"}
                       </span>
                     </div>
@@ -328,11 +328,11 @@ export default function Leaderboard({
                   {/* Right: Stats */}
                   <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-right">
                     <div>
-                      <span className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                        ⭐ {peer.xp?.toLocaleString()} XP
+                      <span className="block text-xs sm:text-sm font-black text-[#0F766E] dark:text-[#2DD4BF]">
+                        {peer.xp?.toLocaleString()} XP
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        {peer.streak > 0 ? `🔥 ${peer.streak}d streak` : "0d streak"}
+                      <span className="text-[10px] text-[#71717A] dark:text-[#a1a1aa]">
+                        {peer.streak}d streak
                       </span>
                     </div>
                   </div>

@@ -145,17 +145,17 @@ function Tasks({ user }) {
     : filteredTasks
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 dark:bg-[#0f1416]">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase">
+            <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
               WORKLOAD & DELIVERABLES
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
               Academic Tasks & Assignments
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-normal">
+            <p className="mt-1 text-xs sm:text-sm text-[#52525B] font-normal dark:text-[#a1a1aa]">
               Track pending coursework and let the Next Best Action engine optimize your study schedule.
             </p>
           </div>
@@ -163,7 +163,7 @@ function Tasks({ user }) {
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => setShowForm(!showForm)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#0F766E] px-4 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#115E59] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:outline-none"
             >
               <span>{showForm ? "✕ Close" : "+ New Task"}</span>
             </button>
@@ -172,8 +172,8 @@ function Tasks({ user }) {
               onClick={() => setSortByPriority(!sortByPriority)}
               className={`rounded-xl border px-3.5 py-2.5 text-xs font-semibold transition active:scale-[0.98] ${
                 sortByPriority
-                  ? "bg-blue-50 text-blue-700 border-blue-200 shadow-2xs"
-                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 shadow-2xs"
+                  ? "bg-[#ECFDF5] text-[#0F766E] border-teal-200 shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]"
+                  : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F7F7F2] shadow-2xs dark:bg-[#141c1f] dark:border-[#27343a] dark:text-[#a1a1aa]"
               }`}
             >
               {sortByPriority ? "Priority Sorted ✓" : "Sort by Priority"}
@@ -182,7 +182,7 @@ function Tasks({ user }) {
         </div>
 
         {/* Filter Tabs */}
-        <div className="mb-5 flex items-center gap-1.5 border-b border-slate-200/80 pb-3">
+        <div className="mb-5 flex items-center gap-1.5 border-b border-[#E4E4E7] pb-3 dark:border-[#27343a]">
           {[
             { key: "all", label: `All (${tasks.length})` },
             { key: "pending", label: `Pending (${tasks.filter((t) => t.status !== "completed").length})` },
@@ -193,8 +193,8 @@ function Tasks({ user }) {
               onClick={() => setFilterTab(tab.key)}
               className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                 filterTab === tab.key
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-[#18181B] text-white shadow-2xs dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                  : "text-[#52525B] hover:bg-white hover:text-[#18181B] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
               }`}
             >
               {tab.label}
@@ -212,15 +212,15 @@ function Tasks({ user }) {
         {showForm && (
           <form
             onSubmit={addTask}
-            className="mb-8 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm transition-all"
+            className="mb-8 rounded-2xl border border-[#E4E4E7] bg-white p-5 sm:p-6 shadow-sm transition-all dark:border-[#27343a] dark:bg-[#141c1f]"
           >
-            <h2 className="text-base font-bold text-slate-900 mb-4">
+            <h2 className="text-base font-bold text-[#18181B] mb-4 dark:text-[#f4f4f5]">
               Add Academic Assignment / Task
             </h2>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Task Title *
                 </label>
                 <input
@@ -229,12 +229,12 @@ function Tasks({ user }) {
                   placeholder="e.g. Implement AVL Tree in C++"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Subject *
                 </label>
                 <input
@@ -243,12 +243,12 @@ function Tasks({ user }) {
                   placeholder="e.g. Data Structures"
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Deadline *
                 </label>
                 <input
@@ -256,13 +256,13 @@ function Tasks({ user }) {
                   required
                   value={form.deadline}
                   onChange={(e) => setForm({ ...form, deadline: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                  <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                     Est. Minutes
                   </label>
                   <input
@@ -273,12 +273,12 @@ function Tasks({ user }) {
                     onChange={(e) =>
                       setForm({ ...form, estimated_minutes: e.target.value })
                     }
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                  <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                     Importance (1-10)
                   </label>
                   <input
@@ -289,7 +289,7 @@ function Tasks({ user }) {
                     onChange={(e) =>
                       setForm({ ...form, importance: e.target.value })
                     }
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                   />
                 </div>
               </div>
@@ -298,14 +298,14 @@ function Tasks({ user }) {
             <div className="mt-5 flex gap-2.5">
               <button
                 type="submit"
-                className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98]"
+                className="rounded-xl bg-[#0F766E] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#115E59] active:scale-[0.98]"
               >
                 Save Task
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-2.5 text-xs font-semibold text-[#52525B] hover:bg-[#F7F7F2] transition dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
               >
                 Cancel
               </button>
@@ -346,9 +346,9 @@ function TaskRow({ task, toggleTaskStatus, deleteTask }) {
   const priority = getPriorityLabel(priorityScore)
 
   const priorityStyles = {
-    High: "bg-rose-50 text-rose-700 border-rose-200/60",
-    Medium: "bg-amber-50 text-amber-700 border-amber-200/60",
-    Low: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+    High: "bg-rose-50 text-[#DC2626] border-rose-200/60 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300",
+    Medium: "bg-amber-50 text-[#D97706] border-amber-200/60 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-300",
+    Low: "bg-[#ECFDF5] text-[#0F766E] border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]",
   }
 
   const deadlineFormatted = task.deadline
@@ -361,43 +361,43 @@ function TaskRow({ task, toggleTaskStatus, deleteTask }) {
     : "No deadline"
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-slate-300">
+    <div className="rounded-2xl border border-[#E4E4E7] bg-white p-4 sm:p-5 shadow-2xs transition hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3
-              className={`text-sm sm:text-base font-bold text-slate-900 ${
-                task.status === "completed" ? "line-through text-slate-400" : ""
+              className={`text-sm sm:text-base font-bold text-[#18181B] dark:text-[#f4f4f5] ${
+                task.status === "completed" ? "line-through text-[#A1A1AA] dark:text-[#71717a]" : ""
               }`}
             >
               {task.title}
             </h3>
 
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${priorityStyles[priority] || "bg-slate-100 text-slate-700"}`}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${priorityStyles[priority] || "bg-[#F7F7F2] text-[#52525B]"}`}
             >
               {priority} Priority
             </span>
           </div>
 
-          <p className="mt-0.5 text-xs text-slate-500 font-medium">{task.subject}</p>
+          <p className="mt-0.5 text-xs text-[#52525B] font-medium dark:text-[#a1a1aa]">{task.subject}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            <p className="text-[10px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
               Deadline
             </p>
-            <p className="mt-0.5 font-medium text-slate-800 font-mono text-xs">
+            <p className="mt-0.5 font-medium text-[#18181B] font-mono text-xs dark:text-[#f4f4f5]">
               {deadlineFormatted}
             </p>
           </div>
 
           <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            <p className="text-[10px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
               Est. Time
             </p>
-            <p className="mt-0.5 font-medium text-slate-800">
+            <p className="mt-0.5 font-medium text-[#18181B] dark:text-[#f4f4f5]">
               {task.estimated_minutes || 30}m
             </p>
           </div>
@@ -407,8 +407,8 @@ function TaskRow({ task, toggleTaskStatus, deleteTask }) {
               onClick={() => toggleTaskStatus(task)}
               className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-[0.98] ${
                 task.status === "completed"
-                  ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-2xs"
+                  ? "bg-[#F7F7F2] text-[#52525B] hover:bg-[#E4E4E7] dark:bg-[#182226] dark:text-[#a1a1aa]"
+                  : "bg-[#0F766E] text-white hover:bg-[#115E59] shadow-2xs"
               }`}
             >
               {task.status === "completed" ? "Reopen" : "Complete ✓"}
@@ -416,7 +416,7 @@ function TaskRow({ task, toggleTaskStatus, deleteTask }) {
 
             <button
               onClick={() => deleteTask(task.id)}
-              className="rounded-xl border border-slate-200 bg-white p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+              className="rounded-xl border border-[#E4E4E7] bg-white p-1.5 text-[#71717A] hover:text-[#DC2626] hover:bg-rose-50 transition dark:border-[#27343a] dark:bg-[#141c1f] dark:hover:bg-[#2c1515]"
               title="Delete task"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

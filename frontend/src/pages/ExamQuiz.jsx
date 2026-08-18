@@ -337,17 +337,17 @@ function ExamQuiz({
   // =========================================================================
   if (step === "config") {
     return (
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-sm max-w-3xl mx-auto space-y-6">
+      <div className="rounded-3xl border border-[#E4E4E7] bg-white p-5 sm:p-8 shadow-2xs max-w-3xl mx-auto space-y-6 dark:border-[#27343a] dark:bg-[#141c1f]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-center justify-between border-b border-[#E4E4E7] pb-4 dark:border-[#27343a]">
           <div>
-            <span className="text-xs font-bold tracking-widest uppercase text-blue-600">
+            <span className="text-[11px] font-bold tracking-widest uppercase text-[#0F766E] dark:text-[#2DD4BF]">
               Exam Simulator
             </span>
-            <h2 className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">
+            <h2 className="mt-1 text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
               Configure Your Practice Test
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-[#52525B] dark:text-[#a1a1aa]">
               Customize syllabus units, question formats, and difficulty. Questions are generated one-at-a-time.
             </p>
           </div>
@@ -389,11 +389,11 @@ function ExamQuiz({
         <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#18181B] dark:text-[#f4f4f5]">
                 {syllabusType === "lab" ? "Lab Practicals" : "Syllabus Units"}
               </label>
               <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                syllabusType === "lab" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
+                syllabusType === "lab" ? "bg-[#ECFDF5] text-[#0F766E] border border-teal-200/60" : "bg-zinc-100 text-[#52525B] border border-[#E4E4E7]"
               }`}>
                 {syllabusType === "lab" ? "LAB" : "THEORY"}
               </span>
@@ -403,15 +403,15 @@ function ExamQuiz({
               <button
                 type="button"
                 onClick={selectAllUnits}
-                className="text-[11px] font-bold text-blue-600 hover:underline"
+                className="text-[11px] font-bold text-[#0F766E] hover:underline dark:text-[#2DD4BF]"
               >
                 Select All
               </button>
-              <span className="text-slate-300">·</span>
+              <span className="text-[#E4E4E7] dark:text-[#27343a]">·</span>
               <button
                 type="button"
                 onClick={clearAllUnits}
-                className="text-[11px] font-bold text-slate-500 hover:underline"
+                className="text-[11px] font-bold text-[#71717A] hover:underline dark:text-[#a1a1aa]"
               >
                 Clear
               </button>
@@ -428,13 +428,13 @@ function ExamQuiz({
                   onClick={() => toggleUnit(u)}
                   className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition border text-left ${
                     isChecked
-                      ? "border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      ? "border-[#0F766E] bg-[#ECFDF5] text-[#0F766E] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF] dark:text-[#2DD4BF]"
+                      : "border-[#E4E4E7] bg-white text-[#52525B] hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
                   }`}
                 >
                   <span>{u}</span>
                   <span className={`h-4 w-4 rounded flex items-center justify-center text-[10px] font-bold ${
-                    isChecked ? "bg-blue-600 text-white" : "border border-slate-300"
+                    isChecked ? "bg-[#0F766E] text-white dark:bg-[#2DD4BF] dark:text-[#0f1416]" : "border border-[#E4E4E7] dark:border-[#27343a]"
                   }`}>
                     {isChecked ? "✓" : ""}
                   </span>
@@ -442,7 +442,7 @@ function ExamQuiz({
               )
             })}
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-[#71717A] dark:text-[#a1a1aa]">
             Selected scope: {selectedUnits.length} {syllabusType === "lab" ? "practicals" : "units"}. Questions will only be drawn from these.
           </p>
         </div>
@@ -529,7 +529,7 @@ function ExamQuiz({
 
         {/* 5. Answer Mode */}
         <div className="space-y-2">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#52525B] dark:text-[#a1a1aa]">
             Practice Mode
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -538,12 +538,12 @@ function ExamQuiz({
               onClick={() => setAnswerMode("question_only")}
               className={`rounded-2xl p-3.5 text-left border transition ${
                 answerMode === "question_only"
-                  ? "border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                  ? "border-[#0F766E] bg-[#ECFDF5] text-[#0F766E] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF] dark:text-[#2DD4BF]"
+                  : "border-[#E4E4E7] bg-white text-[#52525B] hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
               }`}
             >
-              <p className="font-bold text-xs sm:text-sm">Question Only</p>
-              <p className="mt-0.5 text-[11px] text-slate-500">
+              <p className="font-bold text-xs sm:text-sm text-[#18181B] dark:text-[#f4f4f5]">Question Only</p>
+              <p className="mt-0.5 text-[11px] text-[#52525B] dark:text-[#a1a1aa]">
                 Attempt before seeing expected answer & explanation
               </p>
             </button>
@@ -553,12 +553,12 @@ function ExamQuiz({
               onClick={() => setAnswerMode("question_and_answer")}
               className={`rounded-2xl p-3.5 text-left border transition ${
                 answerMode === "question_and_answer"
-                  ? "border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                  ? "border-[#0F766E] bg-[#ECFDF5] text-[#0F766E] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF] dark:text-[#2DD4BF]"
+                  : "border-[#E4E4E7] bg-white text-[#52525B] hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
               }`}
             >
-              <p className="font-bold text-xs sm:text-sm">Question + Answer</p>
-              <p className="mt-0.5 text-[11px] text-slate-500">
+              <p className="font-bold text-xs sm:text-sm text-[#18181B] dark:text-[#f4f4f5]">Question + Answer</p>
+              <p className="mt-0.5 text-[11px] text-[#52525B] dark:text-[#a1a1aa]">
                 Directly reveal expected answer & key points for quick revision
               </p>
             </button>
@@ -570,7 +570,7 @@ function ExamQuiz({
           type="button"
           onClick={startTest}
           disabled={!isOnline || selectedUnits.length === 0}
-          className="w-full rounded-2xl bg-red-600 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-red-700 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full rounded-2xl bg-[#0F766E] py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-[#115E59] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span>Start Practice Test</span>
           <span>→</span>
@@ -584,23 +584,23 @@ function ExamQuiz({
   // =========================================================================
   if (step === "question") {
     return (
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-sm max-w-3xl mx-auto space-y-6">
+      <div className="rounded-3xl border border-[#E4E4E7] bg-white p-5 sm:p-8 shadow-2xs max-w-3xl mx-auto space-y-6 dark:border-[#27343a] dark:bg-[#141c1f]">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#E4E4E7] pb-4 dark:border-[#27343a]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold tracking-wider uppercase text-slate-900">
+              <span className="text-xs font-bold tracking-wider uppercase text-[#18181B] dark:text-[#f4f4f5]">
                 {selectedSubjectName}
               </span>
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 uppercase">
+              <span className="rounded-md bg-[#F7F7F2] px-2 py-0.5 text-[10px] font-bold text-[#52525B] uppercase border border-[#E4E4E7] dark:bg-[#182226] dark:border-[#27343a] dark:text-[#a1a1aa]">
                 {currentQuestion?.unit || selectedUnits[0]}
               </span>
-              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 uppercase">
+              <span className="rounded-md bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#0F766E] uppercase border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                 {currentQuestion?.difficulty || difficulty}
               </span>
             </div>
 
-            <h2 className="mt-1 font-bold text-base sm:text-lg text-slate-800">
+            <h2 className="mt-1 font-bold text-base sm:text-lg text-[#18181B] dark:text-[#f4f4f5]">
               Question {questionNumber} of {totalQuestions}
             </h2>
           </div>
@@ -608,16 +608,16 @@ function ExamQuiz({
           <button
             type="button"
             onClick={() => setStep("config")}
-            className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 self-start sm:self-center transition"
+            className="rounded-xl border border-[#E4E4E7] px-3 py-1.5 text-xs font-semibold text-[#52525B] hover:bg-[#F7F7F2] self-start sm:self-center transition dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
           >
             Exit Test
           </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+        <div className="h-1.5 w-full rounded-full bg-[#E4E4E7] overflow-hidden dark:bg-[#27343a]">
           <div
-            className="h-full bg-blue-600 transition-all duration-300"
+            className="h-full bg-[#0F766E] transition-all duration-300"
             style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
           />
         </div>
@@ -765,11 +765,11 @@ function ExamQuiz({
 
                 {/* Explanation */}
                 {currentQuestion.explanation && (
-                  <div className="border-t border-slate-200/80 pt-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
+                  <div className="border-t border-[#E4E4E7] pt-3 dark:border-[#27343a]">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#0F766E] dark:text-[#2DD4BF]">
                       Explanation
                     </p>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                    <p className="mt-1 text-xs sm:text-sm text-[#52525B] leading-relaxed dark:text-[#a1a1aa]">
                       {currentQuestion.explanation}
                     </p>
                   </div>
@@ -785,7 +785,7 @@ function ExamQuiz({
                     type="button"
                     onClick={handleSubmitAnswer}
                     disabled={questionType === "mcq" ? selectedOption === null : !userAnswer.trim()}
-                    className="w-full rounded-2xl bg-slate-900 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+                    className="w-full rounded-2xl bg-[#0F766E] py-3.5 text-xs sm:text-sm font-bold text-white shadow-2xs transition hover:bg-[#115E59] disabled:opacity-50"
                   >
                     Submit Answer
                   </button>
@@ -793,7 +793,7 @@ function ExamQuiz({
                   <button
                     type="button"
                     onClick={handleRevealAnswer}
-                    className="w-full rounded-2xl bg-blue-600 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+                    className="w-full rounded-2xl bg-[#0F766E] py-3.5 text-xs sm:text-sm font-bold text-white shadow-2xs transition hover:bg-[#115E59]"
                   >
                     Reveal Answer & Explanation
                   </button>
@@ -802,7 +802,7 @@ function ExamQuiz({
                 <button
                   type="button"
                   onClick={handleNextQuestion}
-                  className="w-full rounded-2xl bg-slate-900 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 flex items-center justify-center gap-2"
+                  className="w-full rounded-2xl bg-[#12312F] py-3.5 text-xs sm:text-sm font-bold text-white shadow-2xs transition hover:bg-[#0F766E] flex items-center justify-center gap-2 dark:bg-[#2DD4BF] dark:text-[#0f1416]"
                 >
                   <span>{questionNumber < totalQuestions ? "Next Question" : "Finish Test & View Results"}</span>
                   <span>→</span>
@@ -823,16 +823,16 @@ function ExamQuiz({
   const subjectiveCount = sessionResults.filter((r) => r.questionType !== "mcq").length
 
   return (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-sm max-w-3xl mx-auto space-y-6">
+    <div className="rounded-3xl border border-[#E4E4E7] bg-white p-5 sm:p-8 shadow-2xs max-w-3xl mx-auto space-y-6 dark:border-[#27343a] dark:bg-[#141c1f]">
       {/* Header */}
-      <div className="text-center space-y-2 border-b border-slate-100 pb-5">
-        <span className="text-xs font-bold tracking-widest uppercase text-blue-600">
+      <div className="text-center space-y-2 border-b border-[#E4E4E7] pb-5 dark:border-[#27343a]">
+        <span className="text-[11px] font-bold tracking-widest uppercase text-[#0F766E] dark:text-[#2DD4BF]">
           Simulation Complete
         </span>
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
           Test Results & Mastery Breakdown
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500">
+        <p className="text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa]">
           {selectedSubjectName} · {sessionResults.length} Questions Attempted
         </p>
       </div>
@@ -840,35 +840,35 @@ function ExamQuiz({
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {mcqResults.length > 0 && (
-          <div className="rounded-2xl bg-slate-50 p-4 text-center border border-slate-100">
-            <p className="text-xs font-bold text-slate-500 uppercase">MCQ Score</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
+          <div className="rounded-2xl bg-[#F7F7F2] p-4 text-center border border-[#E4E4E7] dark:bg-[#182226] dark:border-[#27343a]">
+            <p className="text-xs font-bold text-[#71717A] uppercase dark:text-[#a1a1aa]">MCQ Score</p>
+            <p className="mt-1 text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
               {mcqScore} / {mcqResults.length}
             </p>
-            <p className="text-[11px] font-semibold text-blue-600">
+            <p className="text-[11px] font-semibold text-[#0F766E] dark:text-[#2DD4BF]">
               {Math.round((mcqScore / mcqResults.length) * 100)}% Accuracy
             </p>
           </div>
         )}
 
         {subjectiveCount > 0 && (
-          <div className="rounded-2xl bg-slate-50 p-4 text-center border border-slate-100">
-            <p className="text-xs font-bold text-slate-500 uppercase">Self-Reviewed</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
+          <div className="rounded-2xl bg-[#F7F7F2] p-4 text-center border border-[#E4E4E7] dark:bg-[#182226] dark:border-[#27343a]">
+            <p className="text-xs font-bold text-[#71717A] uppercase dark:text-[#a1a1aa]">Self-Reviewed</p>
+            <p className="mt-1 text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
               {subjectiveCount}
             </p>
-            <p className="text-[11px] font-semibold text-slate-600">
+            <p className="text-[11px] font-semibold text-[#52525B] dark:text-[#a1a1aa]">
               Written Responses
             </p>
           </div>
         )}
 
-        <div className="rounded-2xl bg-slate-50 p-4 text-center border border-slate-100">
-          <p className="text-xs font-bold text-slate-500 uppercase">Scope Covered</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
+        <div className="rounded-2xl bg-[#F7F7F2] p-4 text-center border border-[#E4E4E7] dark:bg-[#182226] dark:border-[#27343a]">
+          <p className="text-xs font-bold text-[#71717A] uppercase dark:text-[#a1a1aa]">Scope Covered</p>
+          <p className="mt-1 text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
             {selectedUnits.length}
           </p>
-          <p className="text-[11px] font-semibold text-slate-600">
+          <p className="text-[11px] font-semibold text-[#52525B] dark:text-[#a1a1aa]">
             {syllabusType === "lab" ? "Practicals" : "Units"}
           </p>
         </div>
@@ -876,7 +876,7 @@ function ExamQuiz({
 
       {/* Question by Question Review */}
       <div className="space-y-4 pt-2">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-[#18181B] dark:text-[#f4f4f5]">
           Detailed Question Review
         </h3>
 
@@ -884,51 +884,51 @@ function ExamQuiz({
           {sessionResults.map((res, rIdx) => (
             <div
               key={rIdx}
-              className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 sm:p-5 space-y-3"
+              className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 sm:p-5 space-y-3 dark:border-[#27343a] dark:bg-[#182226]"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-slate-700">
+                <span className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">
                   Q{res.questionNumber} · {res.unit}
                 </span>
 
                 {res.questionType === "mcq" ? (
                   <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
-                    res.isCorrect ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
+                    res.isCorrect ? "bg-emerald-50 text-[#15803D] border border-emerald-200/60" : "bg-rose-50 text-[#DC2626] border border-rose-200/60"
                   }`}>
                     {res.isCorrect ? "Correct" : "Incorrect"}
                   </span>
                 ) : (
-                  <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800 uppercase">
+                  <span className="rounded-md bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#0F766E] uppercase border border-teal-200/60 dark:bg-[#141c1f] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                     {res.questionType.replace("_", " ")}
                   </span>
                 )}
               </div>
 
-              <p className="font-bold text-xs sm:text-sm text-slate-900">
+              <p className="font-bold text-xs sm:text-sm text-[#18181B] dark:text-[#f4f4f5]">
                 {res.question}
               </p>
 
               {res.questionType === "mcq" && res.options && (
-                <div className="text-xs space-y-1 text-slate-600">
+                <div className="text-xs space-y-1 text-[#52525B] dark:text-[#a1a1aa]">
                   <p>
                     <strong>Your Choice:</strong>{" "}
                     {res.selectedOption !== null ? res.options[res.selectedOption] : "None"}
                   </p>
-                  <p className="text-emerald-700">
+                  <p className="text-[#15803D] dark:text-[#2DD4BF]">
                     <strong>Correct Choice:</strong> {res.options[res.correctAnswer]}
                   </p>
                 </div>
               )}
 
               {res.questionType !== "mcq" && (
-                <div className="text-xs space-y-1.5 text-slate-700">
+                <div className="text-xs space-y-1.5 text-[#52525B] dark:text-[#a1a1aa]">
                   {res.userAnswer && (
                     <p>
                       <strong>Your Response:</strong> {res.userAnswer}
                     </p>
                   )}
                   {res.expectedAnswer && (
-                    <p className="text-blue-900">
+                    <p className="text-[#18181B] dark:text-[#f4f4f5]">
                       <strong>Expected Answer:</strong> {res.expectedAnswer}
                     </p>
                   )}
@@ -936,7 +936,7 @@ function ExamQuiz({
               )}
 
               {res.explanation && (
-                <p className="text-[11px] text-slate-500 border-t border-slate-200/60 pt-2">
+                <p className="text-[11px] text-[#71717A] border-t border-[#E4E4E7] pt-2 dark:border-[#27343a] dark:text-[#a1a1aa]">
                   <strong>Explanation:</strong> {res.explanation}
                 </p>
               )}
@@ -946,11 +946,11 @@ function ExamQuiz({
       </div>
 
       {/* Footer Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
+      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#E4E4E7] dark:border-[#27343a]">
         <button
           type="button"
           onClick={() => setStep("config")}
-          className="flex-1 rounded-2xl bg-slate-900 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-slate-800 transition"
+          className="flex-1 rounded-2xl bg-[#0F766E] py-3.5 text-xs sm:text-sm font-bold text-white shadow-2xs hover:bg-[#115E59] transition"
         >
           Try Another Test
         </button>
@@ -958,7 +958,7 @@ function ExamQuiz({
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 rounded-2xl border border-slate-200 py-3.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+          className="flex-1 rounded-2xl border border-[#E4E4E7] bg-white py-3.5 text-xs sm:text-sm font-bold text-[#18181B] hover:bg-[#F7F7F2] transition dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
         >
           Exit Exam Simulator
         </button>

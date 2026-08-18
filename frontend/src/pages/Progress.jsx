@@ -237,16 +237,16 @@ function Progress({ profile, user }) {
   )
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 dark:bg-[#0f1416]">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6">
-          <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
+          <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
             SYLLABUS PROGRESSION
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
             Subject Mastery & Topic Status
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500">
+          <p className="mt-1 text-xs sm:text-sm text-[#52525B] font-normal dark:text-[#a1a1aa]">
             Self-assess unit topics or take AI tests to build a realistic academic mastery model.
           </p>
         </div>
@@ -266,8 +266,8 @@ function Progress({ profile, user }) {
           <>
             {/* Controls & Overall Gauge */}
             <div className="grid gap-5 lg:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm lg:col-span-2">
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <div className="rounded-2xl border border-[#E4E4E7] bg-white p-5 sm:p-6 shadow-2xs lg:col-span-2 dark:border-[#27343a] dark:bg-[#141c1f]">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Select Course
                 </label>
 
@@ -278,7 +278,7 @@ function Progress({ profile, user }) {
                     setSelectedSubject(val)
                     loadTopics(val)
                   }}
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+                  className="mt-2 w-full rounded-xl border border-[#E4E4E7] bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 >
                   {subjects.map((subject) => (
                     <option key={subject.id} value={subject.id}>
@@ -288,27 +288,27 @@ function Progress({ profile, user }) {
                 </select>
 
                 {selectedSubjectData && (
-                  <p className="mt-3 text-xs text-slate-500 font-medium">
+                  <p className="mt-3 text-xs text-[#52525B] font-medium dark:text-[#a1a1aa]">
                     Enrolled course for Semester {profile?.semester} ({profile?.section})
                   </p>
                 )}
               </div>
 
-              <div className="rounded-2xl bg-slate-950 p-6 text-white shadow-xl flex flex-col justify-between">
+              <div className="rounded-2xl bg-[#12312F] p-6 text-white shadow-xs flex flex-col justify-between dark:bg-[#141c1f] dark:border dark:border-[#27343a]">
                 <div>
-                  <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+                  <p className="text-[11px] font-bold tracking-widest text-[#A1A1AA] uppercase">
                     SUBJECT MASTERY
                   </p>
                   <p className="mt-2 text-4xl font-bold text-white">{overallMastery}%</p>
                   <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
                     <div
-                      className="h-full rounded-full bg-emerald-400 transition-all duration-500"
+                      className="h-full rounded-full bg-[#2DD4BF] transition-all duration-500"
                       style={{ width: `${overallMastery}%` }}
                     />
                   </div>
                 </div>
 
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-3 text-xs text-[#A1A1AA]">
                   Calculated from {topics.length} recorded topics
                 </p>
               </div>
@@ -329,19 +329,19 @@ function Progress({ profile, user }) {
                   {Object.entries(groupedTopics).map(([unit, unitTopics]) => (
                     <section
                       key={unit}
-                      className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm"
+                      className="rounded-2xl border border-[#E4E4E7] bg-white p-5 sm:p-6 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]"
                     >
-                      <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div className="mb-4 flex items-center justify-between border-b border-[#E4E4E7] pb-3 dark:border-[#27343a]">
                         <div>
-                          <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase">
+                          <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
                             UNIT {unit}
                           </p>
-                          <h2 className="text-lg font-bold text-slate-900">
+                          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#f4f4f5]">
                             Unit {unit} Curricula
                           </h2>
                         </div>
 
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                        <span className="rounded-full bg-[#F7F7F2] px-3 py-1 text-xs font-semibold text-[#52525B] border border-[#E4E4E7] dark:bg-[#182226] dark:border-[#27343a] dark:text-[#a1a1aa]">
                           {unitTopics.length} topics
                         </span>
                       </div>
@@ -357,33 +357,33 @@ function Progress({ profile, user }) {
                               key={topic.id}
                               className={`rounded-2xl border p-4 sm:p-5 transition ${
                                 status === "mastered"
-                                  ? "border-emerald-200 bg-emerald-50/40"
+                                  ? "border-emerald-200 bg-[#ECFDF5]/50 dark:bg-[#182226] dark:border-emerald-900/60"
                                   : status === "learning"
-                                    ? "border-amber-200 bg-amber-50/40"
-                                    : "border-slate-100 bg-slate-50/70"
+                                    ? "border-amber-200 bg-amber-50/40 dark:bg-[#182226] dark:border-amber-900/60"
+                                    : "border-[#E4E4E7] bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#182226]"
                               }`}
                             >
                               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="max-w-3xl flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="font-bold text-sm sm:text-base text-slate-900">
+                                    <h3 className="font-bold text-sm sm:text-base text-[#18181B] dark:text-[#f4f4f5]">
                                       {topic.topic_name}
                                     </h3>
 
                                     {status === "mastered" && (
-                                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                                      <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#15803D] border border-emerald-200 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                                         MASTERED
                                       </span>
                                     )}
 
                                     {status === "learning" && (
-                                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-[#D97706] border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-300">
                                         LEARNING
                                       </span>
                                     )}
 
                                     {current?.pending_sync && (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-[#D97706] border border-amber-200">
                                         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                                         Pending sync
                                       </span>
@@ -391,29 +391,29 @@ function Progress({ profile, user }) {
                                   </div>
 
                                   {topic.description && (
-                                    <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+                                    <p className="mt-1.5 text-xs leading-relaxed text-[#52525B] dark:text-[#a1a1aa]">
                                       {topic.description}
                                     </p>
                                   )}
 
                                   <div className="mt-3.5 max-w-md">
                                     <div className="mb-1 flex items-center justify-between text-xs">
-                                      <span className="font-medium text-slate-500">
+                                      <span className="font-medium text-[#71717A] dark:text-[#a1a1aa]">
                                         Mastery
                                       </span>
-                                      <span className="font-bold text-slate-900">
+                                      <span className="font-bold text-[#18181B] dark:text-[#f4f4f5]">
                                         {mastery}%
                                       </span>
                                     </div>
 
-                                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                                    <div className="h-1.5 overflow-hidden rounded-full bg-[#E4E4E7] dark:bg-[#27343a]">
                                       <div
                                         className={`h-full transition-all duration-500 ${
                                           status === "mastered"
-                                            ? "bg-emerald-500"
+                                            ? "bg-[#15803D]"
                                             : status === "learning"
-                                              ? "bg-amber-500"
-                                              : "bg-slate-400"
+                                              ? "bg-[#D97706]"
+                                              : "bg-[#0F766E]"
                                         }`}
                                         style={{ width: `${mastery}%` }}
                                       />
@@ -434,11 +434,11 @@ function Progress({ profile, user }) {
                                       className={`rounded-xl px-3 py-2 text-xs font-semibold transition active:scale-[0.98] ${
                                         status === value
                                           ? value === "mastered"
-                                            ? "bg-emerald-600 text-white shadow-sm"
+                                            ? "bg-[#15803D] text-white shadow-2xs"
                                             : value === "learning"
-                                              ? "bg-amber-600 text-white shadow-sm"
-                                              : "bg-slate-900 text-white shadow-sm"
-                                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                              ? "bg-[#D97706] text-white shadow-2xs"
+                                              : "bg-[#18181B] text-white shadow-2xs"
+                                          : "border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
                                       } disabled:opacity-50`}
                                     >
                                       {label}
@@ -447,7 +447,7 @@ function Progress({ profile, user }) {
 
                                   <button
                                     onClick={() => setQuizTopic(topic)}
-                                    className="rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition shadow-sm active:scale-[0.98]"
+                                    className="rounded-xl border border-teal-200 bg-[#ECFDF5] px-3.5 py-2 text-xs font-bold text-[#0F766E] hover:bg-teal-100 transition shadow-2xs active:scale-[0.98] dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]"
                                   >
                                     Test Yourself 🎯
                                   </button>

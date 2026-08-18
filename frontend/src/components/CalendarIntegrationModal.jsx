@@ -138,16 +138,16 @@ export function CalendarIntegrationModal({
       {/* Modal Card */}
       <div className="relative w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-2xl transition-all">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-center justify-between border-b border-[#E4E4E7] pb-4 dark:border-[#27343a]">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 text-base shadow-xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ECFDF5] text-[#0F766E] text-base shadow-2xs dark:bg-[#182226] dark:text-[#2DD4BF]">
               📅
             </span>
             <div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                 Google Calendar Integration
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[#52525B] dark:text-[#a1a1aa]">
                 Sync external events to discover real available study time.
               </p>
             </div>
@@ -156,64 +156,64 @@ export function CalendarIntegrationModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+            className="rounded-lg p-1.5 text-[#71717A] hover:bg-[#F7F7F2] hover:text-[#18181B] transition dark:hover:bg-[#182226] dark:hover:text-white"
           >
             ✕
           </button>
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs font-semibold text-amber-800 border border-amber-200">
+          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs font-semibold text-[#D97706] border border-amber-200">
             {error}
           </div>
         )}
 
         {successMsg && (
-          <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200">
+          <div className="mt-4 rounded-xl bg-[#ECFDF5] p-3 text-xs font-semibold text-[#15803D] border border-emerald-200">
             ✓ {successMsg}
           </div>
         )}
 
         {/* Connection Status Box */}
-        <div className="mt-5 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+        <div className="mt-5 rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 dark:border-[#27343a] dark:bg-[#182226]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span
                 className={`h-2.5 w-2.5 rounded-full ${
-                  status.connected ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+                  status.connected ? "bg-[#15803D] animate-pulse" : "bg-[#A1A1AA]"
                 }`}
               />
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">
                 {status.connected ? "Connected to Google Calendar" : "Not Connected"}
               </span>
             </div>
 
             {status.connected && (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+              <span className="rounded-full bg-[#ECFDF5] px-2.5 py-0.5 text-[10px] font-bold text-[#0F766E] border border-teal-200/60 dark:bg-[#141c1f] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                 Active Sync
               </span>
             )}
           </div>
 
           {status.connected ? (
-            <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+            <div className="mt-3 space-y-1.5 text-xs text-[#52525B] dark:text-[#a1a1aa]">
               <p>
-                <span className="text-slate-400">Account:</span>{" "}
-                <strong className="font-semibold text-slate-800">{status.email}</strong>
+                <span className="text-[#71717A]">Account:</span>{" "}
+                <strong className="font-semibold text-[#18181B] dark:text-[#f4f4f5]">{status.email}</strong>
               </p>
               <p>
-                <span className="text-slate-400">Last Synced:</span>{" "}
+                <span className="text-[#71717A]">Last Synced:</span>{" "}
                 <span className="font-mono text-[11px]">
                   {status.last_synced ? new Date(status.last_synced).toLocaleTimeString() : "Just now"}
                 </span>
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-slate-200/60">
+              <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-[#E4E4E7] dark:border-[#27343a]">
                 <button
                   type="button"
                   onClick={loadEvents}
                   disabled={syncing}
-                  className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition disabled:opacity-50 active:scale-[0.98]"
+                  className="rounded-xl bg-[#0F766E] px-4 py-2 text-xs font-bold text-white hover:bg-[#115E59] transition disabled:opacity-50 active:scale-[0.98] shadow-2xs"
                 >
                   {syncing ? "Syncing..." : "Sync Now ↻"}
                 </button>
@@ -221,7 +221,7 @@ export function CalendarIntegrationModal({
                   type="button"
                   onClick={handleDisconnect}
                   disabled={loading}
-                  className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+                  className="rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs font-semibold text-[#DC2626] hover:bg-rose-50 transition dark:border-[#27343a] dark:bg-[#141c1f]"
                 >
                   Disconnect
                 </button>
@@ -229,14 +229,14 @@ export function CalendarIntegrationModal({
             </div>
           ) : (
             <div className="mt-3">
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-[#52525B] leading-relaxed dark:text-[#a1a1aa]">
                 Connect your Google account with read-only calendar permissions. CoursePilot will merge your personal appointments with your university timetable to find open study slots.
               </p>
               <button
                 type="button"
                 onClick={handleConnect}
                 disabled={loading}
-                className="mt-3.5 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition shadow-sm active:scale-[0.98]"
+                className="mt-3.5 inline-flex items-center gap-2 rounded-xl bg-[#0F766E] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#115E59] transition shadow-2xs active:scale-[0.98]"
               >
                 <span>Connect Google Calendar</span>
                 <span>→</span>
@@ -246,12 +246,12 @@ export function CalendarIntegrationModal({
         </div>
 
         {/* Calculated Availability Summary */}
-        <div className="mt-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+        <div className="mt-4 rounded-2xl border border-[#E4E4E7] bg-white p-4 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+            <p className="text-[10px] font-bold tracking-widest text-[#71717A] uppercase dark:text-[#a1a1aa]">
               TODAY&apos;S CALCULATED FREE STUDY TIME
             </p>
-            <span className="text-xs font-bold text-blue-600">
+            <span className="text-xs font-bold text-[#0F766E] dark:text-[#2DD4BF]">
               {freeHours > 0 ? `${freeHours}h ` : ""}{freeMins}m Available
             </span>
           </div>

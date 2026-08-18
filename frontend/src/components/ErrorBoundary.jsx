@@ -66,17 +66,17 @@ export class ErrorBoundary extends React.Component {
       const isChunk = this.state.isChunkError
 
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8fafc] p-6 text-slate-900 selection:bg-slate-900 selection:text-white dark:bg-[#090d16] dark:text-slate-100">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl text-center dark:border-slate-800 dark:bg-slate-900">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-xs dark:bg-blue-950 dark:text-blue-400">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F7F2] p-6 text-[#18181B] selection:bg-[#0F766E] selection:text-white dark:bg-[#0f1416] dark:text-[#f4f4f5]">
+          <div className="w-full max-w-md rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-xl text-center dark:border-[#27343a] dark:bg-[#141c1f]">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#ECFDF5] text-[#0F766E] shadow-2xs dark:bg-[#182226] dark:text-[#2DD4BF]">
               <CoursePilotMark className="h-8 w-8" />
             </div>
 
-            <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
+            <h2 className="mt-4 text-lg font-bold text-[#18181B] dark:text-[#f4f4f5]">
               {isChunk ? "New Version Available" : "Something went wrong"}
             </h2>
 
-            <p className="mt-2 text-xs text-slate-600 leading-relaxed dark:text-slate-400">
+            <p className="mt-2 text-xs text-[#52525B] leading-relaxed dark:text-[#a1a1aa]">
               {isChunk
                 ? "A new version of CoursePilot is available. Click below to load the latest update."
                 : "An unexpected error occurred while rendering this page. You can try again or refresh the app."}
@@ -86,7 +86,7 @@ export class ErrorBoundary extends React.Component {
               <button
                 type="button"
                 onClick={this.handleRetry}
-                className="flex-1 rounded-2xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition active:scale-[0.98] dark:bg-blue-600 dark:hover:bg-blue-700"
+                className="flex-1 rounded-2xl bg-[#0F766E] px-4 py-2.5 text-xs font-bold text-white shadow-2xs hover:bg-[#115E59] transition active:scale-[0.98]"
               >
                 Try Again ↻
               </button>
@@ -94,11 +94,19 @@ export class ErrorBoundary extends React.Component {
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                className="flex-1 rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs font-semibold text-[#18181B] hover:bg-white transition active:scale-[0.98] dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
               >
                 Reload App
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={this.handleClearCacheAndReload}
+              className="mt-4 text-[11px] font-semibold text-[#71717A] hover:text-[#DC2626] transition underline dark:text-[#a1a1aa]"
+            >
+              Clear Cached Files & Hard Reload
+            </button>
           </div>
         </div>
       )

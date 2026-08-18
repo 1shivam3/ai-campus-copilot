@@ -107,24 +107,24 @@ function Exams({ user }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 dark:bg-[#0f1416]">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase">
+            <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
               EXAM SCHEDULE & READINESS
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
               Upcoming Examinations
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-normal">
+            <p className="mt-1 text-xs sm:text-sm text-[#52525B] font-normal dark:text-[#a1a1aa]">
               Your exam dates feed directly into the Next Best Action and Exam Mode engines.
             </p>
           </div>
 
           <button
             onClick={() => setShowForm(!showForm)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#0F766E] px-4 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#115E59] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:outline-none"
           >
             <span>{showForm ? "✕ Close" : "+ New Exam"}</span>
           </button>
@@ -140,15 +140,15 @@ function Exams({ user }) {
         {showForm && (
           <form
             onSubmit={addExam}
-            className="mb-8 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm transition-all"
+            className="mb-8 rounded-2xl border border-[#E4E4E7] bg-white p-5 sm:p-6 shadow-sm transition-all dark:border-[#27343a] dark:bg-[#141c1f]"
           >
-            <h2 className="text-base font-bold text-slate-900 mb-4">
+            <h2 className="text-base font-bold text-[#18181B] mb-4 dark:text-[#f4f4f5]">
               Schedule New Examination
             </h2>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Subject Name *
                 </label>
                 <input
@@ -157,12 +157,12 @@ function Exams({ user }) {
                   placeholder="e.g. Data Structures"
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Exam Date & Time *
                 </label>
                 <input
@@ -172,12 +172,12 @@ function Exams({ user }) {
                   onChange={(e) =>
                     setForm({ ...form, exam_date: e.target.value })
                   }
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   Importance (1-10)
                 </label>
                 <input
@@ -188,7 +188,7 @@ function Exams({ user }) {
                   onChange={(e) =>
                     setForm({ ...form, importance: e.target.value })
                   }
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
                 />
               </div>
             </div>
@@ -196,14 +196,14 @@ function Exams({ user }) {
             <div className="mt-5 flex gap-2.5">
               <button
                 type="submit"
-                className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98]"
+                className="rounded-xl bg-[#0F766E] px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#115E59] active:scale-[0.98]"
               >
                 Save Exam
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-2.5 text-xs font-semibold text-[#52525B] hover:bg-[#F7F7F2] transition dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
               >
                 Cancel
               </button>
@@ -231,14 +231,14 @@ function Exams({ user }) {
               return (
                 <div
                   key={exam.id}
-                  className="relative rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300"
+                  className="relative rounded-2xl border border-[#E4E4E7] bg-white p-5 shadow-2xs transition hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f]"
                 >
                   <div className="flex items-start justify-between">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                         isImminent
-                          ? "bg-rose-50 text-rose-700 border border-rose-200/60"
-                          : "bg-blue-50 text-blue-700 border border-blue-200/60"
+                          ? "bg-rose-50 text-[#DC2626] border border-rose-200/60 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300"
+                          : "bg-[#ECFDF5] text-[#0F766E] border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]"
                       }`}
                     >
                       {isImminent ? "Approaching" : "Upcoming"}
@@ -246,7 +246,7 @@ function Exams({ user }) {
 
                     <button
                       onClick={() => deleteExam(exam.id)}
-                      className="rounded-lg p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                      className="rounded-lg p-1 text-[#71717A] hover:text-[#DC2626] hover:bg-rose-50 transition dark:text-[#a1a1aa] dark:hover:bg-[#2c1515]"
                       title="Delete exam"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,30 +255,30 @@ function Exams({ user }) {
                     </button>
                   </div>
 
-                  <h3 className="mt-3 text-base font-bold text-slate-900 truncate">
+                  <h3 className="mt-3 text-base font-bold text-[#18181B] truncate dark:text-[#f4f4f5]">
                     {exam.subject}
                   </h3>
 
                   <div className="mt-2 flex items-baseline gap-1.5">
-                    <span className="font-mono text-3xl font-extrabold text-slate-900">
+                    <span className="font-mono text-3xl font-extrabold text-[#18181B] dark:text-[#f4f4f5]">
                       {days}
                     </span>
-                    <span className="text-xs font-semibold text-slate-500">
+                    <span className="text-xs font-semibold text-[#52525B] dark:text-[#a1a1aa]">
                       {days === 1 ? "day remaining" : "days remaining"}
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                  <div className="mt-4 space-y-2 border-t border-[#E4E4E7] pt-3 text-xs text-[#52525B] dark:border-[#27343a] dark:text-[#a1a1aa]">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Importance</span>
-                      <span className="font-bold text-slate-800">
+                      <span className="text-[#71717A] dark:text-[#a1a1aa]">Importance</span>
+                      <span className="font-bold text-[#18181B] dark:text-[#f4f4f5]">
                         {exam.importance || 5}/10
                       </span>
                     </div>
 
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Exam Date</span>
-                      <span className="font-semibold text-slate-800 font-mono text-xs">
+                      <span className="text-[#71717A] dark:text-[#a1a1aa]">Exam Date</span>
+                      <span className="font-semibold text-[#18181B] font-mono text-xs dark:text-[#f4f4f5]">
                         {new Date(exam.exam_date).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",

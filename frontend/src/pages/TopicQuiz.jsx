@@ -1,172 +1,153 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { generateTopicQuiz } from "../lib/api"
-import {
-  calculateWeightedMastery,
-  getMasteryStatus,
-} from "../utils/masteryModel"
+import { updateLocalTopicProgress } from "../lib/offlineDb"
 
 function TopicQuiz({ topic, user, onComplete, onClose }) {
   const [quiz, setQuiz] = useState(null)
   const [answers, setAnswers] = useState({})
+  const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState(null)
   const [error, setError] = useState("")
 
   useEffect(() => {
-    generateQuiz()
-  }, [topic])
+    if (topic?.id) {
+      generateQuiz()
+    }
+  }, [topic?.id])
 
   async function generateQuiz() {
-    if (!topic) return
     setLoading(true)
     setError("")
+    setQuiz(null)
+    setAnswers({})
+    setResult(null)
 
     try {
-      const raw = await generateTopicQuiz({
+      const data = await generateTopicQuiz({
         topic_name: topic.topic_name,
-        topic_description: topic.description,
+        description: topic.description || "",
       })
 
-      // Clean potential JSON markdown code block formatting
-      let cleaned = raw.trim()
-      if (cleaned.startsWith("```json")) {
-        cleaned = cleaned.replace(/^```json/, "")
+      if (data && data.questions && data.questions.length > 0) {
+        setQuiz(data)
+      } else {
+        throw new Error("Could not parse quiz questions.")
       }
-      if (cleaned.startsWith("```")) {
-        cleaned = cleaned.replace(/^```/, "")
-      }
-      if (cleaned.endsWith("```")) {
-        cleaned = cleaned.replace(/```$/, "")
-      }
-      cleaned = cleaned.trim()
-
-      const parsed = JSON.parse(cleaned)
-      setQuiz(parsed)
-    } catch (error) {
-      console.error("Quiz generation error:", error)
-      setError("Could not generate quiz. Please try again.")
+    } catch (err) {
+      console.error(err)
+      setError(
+        "Could not generate questions for this topic. Please ensure the backend AI server is running."
+      )
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   async function submitQuiz() {
-    if (!quiz || !user?.id) return
+    if (!quiz || !quiz.questions) return
 
     setSubmitting(true)
+    setError("")
 
-    let score = 0
-    quiz.questions.forEach((question, index) => {
-      if (
-        Number(answers[index]) ===
-        Number(question.correct_answer)
-      ) {
-        score++
+    let correct = 0
+    quiz.questions.forEach((q, index) => {
+      if (Number(answers[index]) === q.correct_index) {
+        correct++
       }
     })
 
     const total = quiz.questions.length
-    const percentage = Math.round((score / total) * 100)
+    const scorePercentage = Math.round((correct / total) * 100)
 
     try {
-      // 1. Save the quiz attempt record
-      const { error: attemptError } = await supabase
-        .from("topic_quiz_attempts")
-        .insert({
-          user_id: user.id,
-          syllabus_topic_id: topic.id,
-          score,
-          total_questions: total,
-          answers,
-        })
+      const { data: currentProgress } = await supabase
+        .from("student_topic_progress")
+        .select("mastery_score")
+        .eq("user_id", user.id)
+        .eq("syllabus_topic_id", topic.id)
+        .single()
 
-      if (attemptError) {
-        console.error("Attempt error:", attemptError)
-      }
+      const currentMastery = currentProgress?.mastery_score || 0
+      const newMastery = Math.min(
+        100,
+        Math.round(currentMastery * 0.4 + scorePercentage * 0.6)
+      )
 
-      // 2. Fetch previous mastery for weighted calculation
-      const { data: existingProgress, error: progressFetchError } =
+      let newStatus = "learning"
+      if (newMastery >= 75) newStatus = "mastered"
+      else if (newMastery === 0) newStatus = "not_started"
+
+      if (user?.id) {
         await supabase
           .from("student_topic_progress")
-          .select("mastery_score")
-          .eq("user_id", user.id)
-          .eq("syllabus_topic_id", topic.id)
-          .maybeSingle()
-
-      if (progressFetchError) {
-        console.warn("Could not load previous mastery:", progressFetchError)
-      }
-
-      const previousMastery = Number(existingProgress?.mastery_score || 0)
-      const newMastery = calculateWeightedMastery(previousMastery, percentage)
-      const newStatus = getMasteryStatus(newMastery)
-
-      // 3. Upsert the new weighted mastery score
-      const { error: progressError } = await supabase
-        .from("student_topic_progress")
-        .upsert(
-          {
+          .upsert({
             user_id: user.id,
             syllabus_topic_id: topic.id,
             status: newStatus,
             mastery_score: newMastery,
             updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id,syllabus_topic_id",
-          }
-        )
+          }, { onConflict: "user_id,syllabus_topic_id" })
 
-      if (progressError) {
-        console.error("Progress update error:", progressError)
+        try {
+          await updateLocalTopicProgress(user.id, topic.id, newStatus, newMastery, false)
+        } catch (e) {
+          console.warn("Could not save to local offlineDb:", e)
+        }
       }
 
       setResult({
-        score,
+        score: correct,
         total,
-        percentage,
-        previousMastery,
+        percentage: scorePercentage,
+        previousMastery: currentMastery,
         newMastery,
       })
 
       if (onComplete) {
-        onComplete(newMastery, newStatus)
+        onComplete(newMastery)
       }
     } catch (err) {
-      console.error("Submission error:", err)
-      setError("Failed to save quiz results.")
+      console.error(err)
+      setError("Could not record test score. Please try again.")
+    } finally {
+      setSubmitting(false)
     }
-
-    setSubmitting(false)
   }
 
   if (loading) {
     return (
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-lg">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600 mb-4" />
-        <h3 className="text-lg font-bold text-slate-900">AI is crafting your topic quiz...</h3>
-        <p className="mt-1 text-sm text-slate-500">Generating conceptual multiple-choice questions tailored to {topic.topic_name}.</p>
+      <div className="rounded-3xl border border-[#E4E4E7] bg-white p-8 sm:p-12 text-center shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-3 border-[#0F766E] border-t-transparent" />
+        <h3 className="text-base sm:text-lg font-bold text-[#18181B] dark:text-[#f4f4f5]">
+          Synthesizing Assessment Questions
+        </h3>
+        <p className="mt-1 text-xs sm:text-sm text-[#52525B] max-w-sm mx-auto dark:text-[#a1a1aa]">
+          Analyzing topic &ldquo;{topic?.topic_name}&rdquo; and extracting high-yield questions...
+        </p>
       </div>
     )
   }
 
-  if (error) {
+  if (error && !quiz) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-lg">
-        <p className="font-semibold text-red-800">{error}</p>
-        <div className="mt-4 flex gap-3">
+      <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-center shadow-2xs">
+        <h3 className="text-sm sm:text-base font-bold text-[#DC2626]">
+          Quiz Generation Failed
+        </h3>
+        <p className="mt-1 text-xs text-[#DC2626]/80">{error}</p>
+        <div className="mt-4 flex justify-center gap-2">
           <button
             onClick={generateQuiz}
-            className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition"
+            className="rounded-xl bg-[#0F766E] px-4 py-2 text-xs font-bold text-white hover:bg-[#115E59] shadow-2xs transition"
           >
             Try Again
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              className="rounded-xl border border-red-300 bg-white px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 transition"
+              className="rounded-xl border border-rose-300 bg-white px-4 py-2 text-xs font-semibold text-[#DC2626] hover:bg-rose-50 transition"
             >
               Cancel
             </button>
@@ -178,52 +159,52 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
 
   if (result) {
     return (
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-lg">
-        <p className="text-xs font-bold tracking-widest text-blue-600">
+      <div className="rounded-3xl border border-[#E4E4E7] bg-white p-8 text-center shadow-lg dark:border-[#27343a] dark:bg-[#141c1f]">
+        <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
           QUIZ COMPLETE
         </p>
 
-        <h2 className="mt-3 text-3xl font-bold text-slate-900">
+        <h2 className="mt-3 text-3xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
           {result.score}/{result.total}
         </h2>
 
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-[#52525B] dark:text-[#a1a1aa]">
           Quiz score: {result.percentage}%
         </p>
 
-        <div className="mx-auto mt-6 max-w-sm rounded-2xl bg-slate-50 border border-slate-100 p-5">
-          <p className="text-xs font-bold tracking-widest text-slate-500">
+        <div className="mx-auto mt-6 max-w-sm rounded-2xl bg-[#F7F7F2] border border-[#E4E4E7] p-5 dark:border-[#27343a] dark:bg-[#182226]">
+          <p className="text-[11px] font-bold tracking-widest text-[#71717A] uppercase dark:text-[#a1a1aa]">
             WEIGHTED MASTERY UPDATE
           </p>
 
           <div className="mt-3 flex items-center justify-center gap-4">
             <div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#71717A] dark:text-[#a1a1aa]">
                 Before
               </p>
 
-              <p className="text-2xl font-bold text-slate-700">
+              <p className="text-2xl font-bold text-[#52525B] dark:text-[#d4d4d8]">
                 {result.previousMastery}%
               </p>
             </div>
 
-            <span className="text-slate-400 font-bold">
+            <span className="text-[#71717A] font-bold dark:text-[#a1a1aa]">
               →
             </span>
 
             <div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#71717A] dark:text-[#a1a1aa]">
                 Now
               </p>
 
-              <p className="text-2xl font-bold text-emerald-600">
+              <p className="text-2xl font-bold text-[#15803D] dark:text-[#2DD4BF]">
                 {result.newMastery}%
               </p>
             </div>
           </div>
         </div>
 
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-4 text-sm text-[#52525B] dark:text-[#a1a1aa]">
           CoursePilot will use this updated mastery when recommending what to study next.
         </p>
 
@@ -231,7 +212,7 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
           {onClose && (
             <button
               onClick={onClose}
-              className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
+              className="rounded-xl bg-[#0F766E] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#115E59] transition shadow-2xs"
             >
               Done & Return
             </button>
@@ -242,19 +223,19 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl lg:p-8">
-      <div className="mb-6 flex flex-col justify-between gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-center">
+    <div className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-xl lg:p-8 dark:border-[#27343a] dark:bg-[#141c1f]">
+      <div className="mb-6 flex flex-col justify-between gap-3 border-b border-[#E4E4E7] pb-5 sm:flex-row sm:items-center dark:border-[#27343a]">
         <div>
-          <p className="text-xs font-bold tracking-widest text-blue-600">
+          <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
             AI TOPIC MASTERY QUIZ
           </p>
 
-          <h2 className="mt-1 text-2xl font-bold text-slate-900">
+          <h2 className="mt-1 text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
             {topic.topic_name}
           </h2>
 
           {topic.description && (
-            <p className="mt-1 text-xs text-slate-500 max-w-xl">
+            <p className="mt-1 text-xs text-[#52525B] max-w-xl dark:text-[#a1a1aa]">
               {topic.description}
             </p>
           )}
@@ -263,7 +244,7 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
         {onClose && (
           <button
             onClick={onClose}
-            className="self-start rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+            className="self-start rounded-xl border border-[#E4E4E7] bg-[#F7F7F2] px-3 py-1.5 text-xs font-semibold text-[#52525B] hover:bg-[#E4E4E7] transition dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
           >
             ✕ Close
           </button>
@@ -274,10 +255,10 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
         {quiz?.questions?.map((question, index) => (
           <div
             key={index}
-            className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5"
+            className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-5 dark:border-[#27343a] dark:bg-[#182226]"
           >
-            <p className="font-semibold text-slate-900 text-sm leading-relaxed">
-              <span className="text-blue-600 font-bold mr-1">{index + 1}.</span> {question.question}
+            <p className="font-semibold text-[#18181B] text-sm leading-relaxed dark:text-[#f4f4f5]">
+              <span className="text-[#0F766E] font-bold mr-1 dark:text-[#2DD4BF]">{index + 1}.</span> {question.question}
             </p>
 
             <div className="mt-4 space-y-2">
@@ -286,8 +267,8 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
                   key={optionIndex}
                   className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${
                     Number(answers[index]) === optionIndex
-                      ? "border-slate-900 bg-white shadow-sm ring-1 ring-slate-900"
-                      : "border-slate-200 bg-white hover:border-slate-300"
+                      ? "border-[#0F766E] bg-[#ECFDF5] shadow-2xs ring-1 ring-[#0F766E] dark:bg-[#141c1f] dark:border-[#2DD4BF] dark:ring-[#2DD4BF]"
+                      : "border-[#E4E4E7] bg-white hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f]"
                   }`}
                 >
                   <input
@@ -301,10 +282,10 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
                         [index]: optionIndex,
                       })
                     }
-                    className="accent-slate-900"
+                    className="accent-[#0F766E]"
                   />
 
-                  <span className="text-slate-800 font-medium">{option}</span>
+                  <span className="text-[#18181B] font-medium dark:text-[#f4f4f5]">{option}</span>
                 </label>
               ))}
             </div>
@@ -312,8 +293,8 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
         ))}
       </div>
 
-      <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-5">
-        <p className="text-xs font-semibold text-slate-500">
+      <div className="mt-8 flex items-center justify-between border-t border-[#E4E4E7] pt-5 dark:border-[#27343a]">
+        <p className="text-xs font-semibold text-[#52525B] dark:text-[#a1a1aa]">
           Answered: {Object.keys(answers).length} / {quiz?.questions?.length || 0}
         </p>
 
@@ -323,7 +304,7 @@ function TopicQuiz({ topic, user, onComplete, onClose }) {
             submitting ||
             Object.keys(answers).length !== (quiz?.questions?.length || 0)
           }
-          className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 shadow-sm"
+          className="rounded-xl bg-[#0F766E] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#115E59] disabled:opacity-40 shadow-2xs active:scale-[0.98]"
         >
           {submitting ? "Scoring & Updating Mastery..." : "Submit Quiz"}
         </button>

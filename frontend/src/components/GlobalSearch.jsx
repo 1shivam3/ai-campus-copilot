@@ -161,89 +161,103 @@ function GlobalSearch({
   }
 
   // ---------------------------------------------------------
-  // 4. KEYBOARD NAVIGATION & SELECTION
+  // 4. KEYBOARD NAVIGATION (UP/DOWN/ENTER/ESC)
   // ---------------------------------------------------------
-  const handleItemClick = (item) => {
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (!isOpen) return
+
+      if (e.key === "Escape") {
+        onClose()
+        return
+      }
+
+      if (results.length === 0) return
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0))
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1))
+      } else if (e.key === "Enter") {
+        e.preventDefault()
+        if (results[selectedIndex]) {
+          handleItemClick(results[selectedIndex])
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen, results, selectedIndex])
+
+  // ---------------------------------------------------------
+  // 5. ITEM CLICK & NAVIGATION DISPATCH
+  // ---------------------------------------------------------
+  function handleItemClick(item) {
+    if (!item) return
     saveRecentSearch(query || item.title)
-    if (onNavigate) {
-      let targetPage = "Home"
-      if (item.type === "syllabus") targetPage = "Syllabus"
-      else if (item.type === "task") targetPage = "Tasks"
-      else if (item.type === "exam") targetPage = "Exams"
-      else if (item.type === "timetable" || item.type === "academics") targetPage = "My Academics"
-      else if (item.type === "progress") targetPage = "Progress"
 
-      onNavigate(targetPage, item.metadata || item)
+    if (item.type === "task") {
+      onNavigate("Tasks", { taskId: item.id })
+    } else if (item.type === "exam") {
+      onNavigate("Exams", { examId: item.id })
+    } else if (item.type === "syllabus") {
+      onNavigate("Syllabus", { subjectId: item.payload?.subject_id })
+    } else if (item.type === "timetable" || item.type === "academics") {
+      onNavigate("My Academics", { subjectId: item.payload?.subject_id })
+    } else {
+      onNavigate(item.targetPage || "Home", item.payload)
     }
+
     onClose()
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Escape") {
-      onClose()
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault()
-      if (results.length > 0) {
-        setSelectedIndex((prev) => (prev + 1) % results.length)
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      if (results.length > 0) {
-        setSelectedIndex((prev) => (prev - 1 + results.length) % results.length)
-      }
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      if (results.length > 0 && results[selectedIndex]) {
-        handleItemClick(results[selectedIndex])
-      }
-    }
   }
 
   if (!isOpen) return null
 
-  // ---------------------------------------------------------
-  // 5. GROUP RESULTS BY CATEGORY
-  // ---------------------------------------------------------
-  const groupedResults = {
-    syllabus: results.filter((r) => r.type === "syllabus"),
-    timetable: results.filter((r) => r.type === "timetable" || r.type === "academics"),
-    task: results.filter((r) => r.type === "task"),
-    exam: results.filter((r) => r.type === "exam"),
+  // Categorize results for structured sectioning
+  const categoryMeta = {
+    timetable: { label: "Class Timetable", icon: "🗓️", color: "text-[#0F766E]" },
+    syllabus: { label: "Syllabus Topics", icon: "📖", color: "text-[#0F766E]" },
+    exam: { label: "Upcoming Examinations", icon: "📅", color: "text-[#DC2626]" },
+    task: { label: "Tasks & Assignments", icon: "✅", color: "text-[#D97706]" },
+    academics: { label: "Academic Courses", icon: "🎓", color: "text-[#0F766E]" },
   }
 
-  const categoryMeta = {
-    syllabus: { label: "Syllabus & Subjects", icon: "📘", color: "text-blue-600" },
-    timetable: { label: "Class Timetable", icon: "🗓️", color: "text-emerald-600" },
-    task: { label: "Tasks & Assignments", icon: "✅", color: "text-amber-600" },
-    exam: { label: "Exams & Tests", icon: "📅", color: "text-rose-600" },
-  }
+  const groupedResults = results.reduce((acc, item) => {
+    const cat = item.type || "other"
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(item)
+    return acc
+  }, {})
 
   let flatIndexTracker = -1
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/60 backdrop-blur-xs p-4 sm:p-6 md:p-12 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 bg-[#18181B]/60 backdrop-blur-xs transition-opacity duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl transform overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl transition-all"
+        className="w-full max-w-2xl overflow-hidden rounded-3xl border border-[#E4E4E7] bg-white shadow-2xl transition-all duration-200 mt-6 sm:mt-12 dark:border-[#27343a] dark:bg-[#141c1f]"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={handleKeyDown}
       >
-        {/* Search Input Bar */}
-        <div className="relative flex items-center border-b border-slate-100 px-4 sm:px-6 py-4">
-          <span className="text-lg mr-3 text-slate-400">🔍</span>
+        {/* Search Bar Input */}
+        <div className="flex items-center border-b border-[#E4E4E7] px-4 py-3 sm:px-6 dark:border-[#27343a]">
+          <span className="text-base text-[#71717A] mr-3 dark:text-[#a1a1aa]">🔍</span>
+
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search subjects, syllabus topics, tasks, exams, schedule... (Esc to exit)"
             value={query}
             onChange={handleQueryChange}
-            className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-slate-900 placeholder:text-slate-400 outline-none"
+            placeholder="Search timetable, syllabus topics, tasks, exams, courses..."
+            className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-[#18181B] placeholder:text-[#71717A] outline-none dark:text-[#f4f4f5] dark:placeholder:text-[#71717a]"
           />
 
           {loading && (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mr-2" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#0F766E] border-t-transparent mr-2" />
           )}
 
           {query && (
@@ -253,14 +267,14 @@ function GlobalSearch({
                 setQuery("")
                 setResults([])
               }}
-              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition text-xs"
+              className="rounded-lg p-1 text-[#71717A] hover:bg-[#F7F7F2] hover:text-[#18181B] transition text-xs dark:hover:bg-[#182226] dark:hover:text-white"
             >
               ✕
             </button>
           )}
 
           <div className="ml-2 hidden sm:flex items-center gap-1">
-            <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500 shadow-2xs">
+            <kbd className="rounded-md border border-[#E4E4E7] bg-[#F7F7F2] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#71717A] shadow-2xs dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]">
               Esc
             </kbd>
           </div>
@@ -274,13 +288,13 @@ function GlobalSearch({
               {recentSearches.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#71717A] dark:text-[#a1a1aa]">
                       RECENT SEARCHES
                     </span>
                     <button
                       type="button"
                       onClick={clearRecentSearches}
-                      className="text-[11px] font-semibold text-slate-400 hover:text-slate-600"
+                      className="text-[11px] font-semibold text-[#71717A] hover:text-[#18181B] dark:hover:text-white"
                     >
                       Clear
                     </button>
@@ -294,7 +308,7 @@ function GlobalSearch({
                           setQuery(term)
                           executeSearch(term)
                         }}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-700 transition"
+                        className="rounded-xl border border-[#E4E4E7] bg-[#F7F7F2] px-3 py-1.5 text-xs font-medium text-[#52525B] hover:border-[#0F766E]/40 hover:bg-[#ECFDF5]/50 hover:text-[#0F766E] transition dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
                       >
                         🕒 {term}
                       </button>
@@ -304,7 +318,7 @@ function GlobalSearch({
               )}
 
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#71717A] mb-2 dark:text-[#a1a1aa]">
                   TRY SEARCHING FOR
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -316,7 +330,7 @@ function GlobalSearch({
                         setQuery(sug)
                         executeSearch(sug)
                       }}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-700 transition shadow-2xs"
+                      className="rounded-xl border border-[#E4E4E7] bg-white px-3 py-1.5 text-xs font-medium text-[#52525B] hover:border-[#0F766E]/40 hover:bg-[#ECFDF5]/50 hover:text-[#0F766E] transition shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
                     >
                       ✦ {sug}
                     </button>
@@ -328,7 +342,7 @@ function GlobalSearch({
 
           {/* Error Message */}
           {error && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-[#DC2626]">
               ⚠️ {error}
             </div>
           )}
@@ -338,14 +352,14 @@ function GlobalSearch({
             <div className="space-y-5">
               {Object.entries(groupedResults).map(([catKey, items]) => {
                 if (!items || items.length === 0) return null
-                const meta = categoryMeta[catKey] || { label: catKey, icon: "📁", color: "text-slate-600" }
+                const meta = categoryMeta[catKey] || { label: catKey, icon: "📁", color: "text-[#52525B]" }
 
                 return (
                   <div key={catKey} className="space-y-2">
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#71717A] dark:text-[#a1a1aa]">
                       <span>{meta.icon}</span>
                       <span>{meta.label}</span>
-                      <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.2 font-mono text-[10px] text-slate-600">
+                      <span className="ml-1 rounded-full bg-[#F7F7F2] px-1.5 py-0.2 font-mono text-[10px] text-[#52525B] dark:bg-[#182226] dark:text-[#a1a1aa]">
                         {items.length}
                       </span>
                     </div>
@@ -361,20 +375,20 @@ function GlobalSearch({
                             onClick={() => handleItemClick(item)}
                             className={`flex cursor-pointer items-start justify-between gap-3 rounded-2xl border p-3.5 transition ${
                               isSelected
-                                ? "border-blue-500 bg-blue-50/60 shadow-xs"
-                                : "border-slate-100 bg-slate-50/70 hover:border-slate-200 hover:bg-slate-50"
+                                ? "border-[#0F766E] bg-[#ECFDF5] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF]"
+                                : "border-[#E4E4E7] bg-[#F7F7F2] hover:border-[#0F766E]/40 hover:bg-white dark:border-[#27343a] dark:bg-[#182226] dark:hover:bg-[#1e2c31]"
                             }`}
                           >
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                              <h4 className="font-bold text-xs sm:text-sm text-[#18181B] truncate dark:text-[#f4f4f5]">
                                 {item.title}
                               </h4>
-                              <p className="text-xs text-slate-500 mt-0.5 truncate leading-relaxed">
+                              <p className="text-xs text-[#52525B] mt-0.5 truncate leading-relaxed dark:text-[#a1a1aa]">
                                 {item.subtitle}
                               </p>
                             </div>
 
-                            <span className="text-xs font-bold text-blue-600 shrink-0">
+                            <span className="text-xs font-bold text-[#0F766E] shrink-0 dark:text-[#2DD4BF]">
                               Open ↗
                             </span>
                           </div>
@@ -391,10 +405,10 @@ function GlobalSearch({
           {query.trim().length >= 2 && !loading && results.length === 0 && (
             <div className="py-8 text-center space-y-2">
               <span className="text-3xl">🔍</span>
-              <h4 className="font-bold text-slate-900 text-sm">
+              <h4 className="font-bold text-[#18181B] text-sm dark:text-[#f4f4f5]">
                 No results found for &ldquo;{query}&rdquo;
               </h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-[#52525B] max-w-sm mx-auto leading-relaxed dark:text-[#a1a1aa]">
                 Try searching for a subject name, syllabus topic, scheduled class, assignment, or upcoming examination.
               </p>
             </div>
@@ -402,7 +416,7 @@ function GlobalSearch({
         </div>
 
         {/* Modal Footer */}
-        <div className="border-t border-slate-100 bg-slate-50/70 px-4 sm:px-6 py-3 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+        <div className="border-t border-[#E4E4E7] bg-[#F7F7F2] px-4 sm:px-6 py-3 flex items-center justify-between text-[11px] text-[#71717A] font-medium dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]">
           <div className="flex items-center gap-3">
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>

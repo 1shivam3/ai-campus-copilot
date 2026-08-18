@@ -97,7 +97,7 @@ function MobileBottomNav({
       label: "Syllabus",
       desc: "Course curriculum & topic breakdown",
       icon: (
-        <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[#0F766E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -112,7 +112,7 @@ function MobileBottomNav({
       label: "Exams",
       desc: "Datesheet & weightage tracking",
       icon: (
-        <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[#DC2626]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -127,7 +127,7 @@ function MobileBottomNav({
       label: "Exam Mode",
       desc: "High-yield revision & quizzes",
       icon: (
-        <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[#0F766E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -142,7 +142,7 @@ function MobileBottomNav({
       label: "Campus Leaderboard",
       desc: "Global rank, streaks & verified XP",
       icon: (
-        <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[#C49A3A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
@@ -152,17 +152,17 @@ function MobileBottomNav({
       label: "Saved Challenges",
       desc: "Bookmarked questions & concepts",
       icon: (
-        <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[#0F766E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
         </svg>
       ),
     },
     {
       id: "Profile",
-      label: "My Profile & Theme",
+      label: "My Profile & Settings",
       desc: "Edit personal info, cohort & dark mode",
       icon: (
-        <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[#18181B] dark:text-[#f4f4f5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -181,22 +181,22 @@ function MobileBottomNav({
       {/* EXPANDABLE "MORE" BOTTOM SHEET OVERLAY */}
       {moreOpen && (
         <div
-          className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/60 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-[#18181B]/60 backdrop-blur-xs lg:hidden"
           onClick={() => setMoreOpen(false)}
         >
           <div
-            className="w-full max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-slate-200 bg-white p-5 shadow-2xl transition-all"
+            className="w-full max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-[#E4E4E7] bg-white p-5 shadow-2xl transition-all dark:border-[#27343a] dark:bg-[#141c1f]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sheet Drag Handle & Header */}
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-200 mb-4" />
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-[#E4E4E7] mb-4 dark:bg-[#27343a]" />
 
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-[#E4E4E7] pb-3 mb-4 dark:border-[#27343a]">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                   Academic Features & Tools
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#52525B] dark:text-[#a1a1aa]">
                   Semester {profile?.semester || "3"} · Section {profile?.section || ""}
                 </p>
               </div>
@@ -204,7 +204,7 @@ function MobileBottomNav({
               <button
                 type="button"
                 onClick={() => setMoreOpen(false)}
-                className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 text-xs font-bold"
+                className="rounded-full bg-[#F7F7F2] p-1.5 text-[#52525B] hover:bg-[#E4E4E7] text-xs font-bold dark:bg-[#182226] dark:text-[#a1a1aa]"
               >
                 ✕
               </button>
@@ -224,23 +224,23 @@ function MobileBottomNav({
                     }}
                     className={`flex items-start gap-3 rounded-2xl border p-3 text-left transition ${
                       isActive
-                        ? "border-blue-500 bg-blue-50/70 shadow-xs"
-                        : "border-slate-100 bg-slate-50/60 hover:bg-slate-100/70"
+                        ? "border-[#0F766E] bg-[#ECFDF5] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF]"
+                        : "border-[#E4E4E7] bg-[#F7F7F2] hover:bg-white dark:border-[#27343a] dark:bg-[#182226] dark:hover:bg-[#1e2c31]"
                     }`}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs border border-slate-100">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs border border-[#E4E4E7] dark:bg-[#141c1f] dark:border-[#27343a]">
                       {item.icon}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900 truncate">
+                        <h4 className="text-xs font-bold text-[#18181B] truncate dark:text-[#f4f4f5]">
                           {item.label}
                         </h4>
                         {isActive && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                      <p className="text-[11px] text-[#52525B] line-clamp-1 mt-0.5 dark:text-[#a1a1aa]">
                         {item.desc}
                       </p>
                     </div>
@@ -250,14 +250,14 @@ function MobileBottomNav({
             </div>
 
             {/* Quick Actions Row in Bottom Sheet */}
-            <div className="border-t border-slate-100 pt-3 space-y-2">
+            <div className="border-t border-[#E4E4E7] pt-3 space-y-2 dark:border-[#27343a]">
               <button
                 type="button"
                 onClick={() => {
                   if (onOpenNotifications) onOpenNotifications()
                   setMoreOpen(false)
                 }}
-                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-[#E4E4E7] bg-[#F7F7F2] py-2.5 text-xs font-bold text-[#18181B] hover:bg-white transition dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
               >
                 <span>🔔</span>
                 <span>Notifications & Alerts {unreadCount > 0 ? `(${unreadCount})` : ""}</span>
@@ -267,7 +267,7 @@ function MobileBottomNav({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="w-full rounded-xl border border-rose-200 bg-rose-50/60 py-2 text-center text-xs font-bold text-rose-700 hover:bg-rose-100 transition"
+                  className="w-full rounded-xl border border-rose-200 bg-rose-50/60 py-2 text-center text-xs font-bold text-[#DC2626] hover:bg-rose-100 transition dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
                 >
                   Sign Out
                 </button>
@@ -279,7 +279,7 @@ function MobileBottomNav({
 
       {/* FIXED MOBILE BOTTOM TASKBAR */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200/90 bg-white/95 px-2 backdrop-blur-md shadow-lg pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-[#E4E4E7] bg-white/95 px-2 backdrop-blur-md shadow-lg pb-[env(safe-area-inset-bottom)] lg:hidden dark:border-[#27343a] dark:bg-[#0f1416]/95"
         aria-label="Mobile Bottom Navigation"
       >
         {primaryTabs.map((tab) => {
@@ -294,14 +294,14 @@ function MobileBottomNav({
               aria-current={isActive ? "page" : undefined}
               className={`flex flex-1 flex-col items-center justify-center py-1 transition-all active:scale-95 ${
                 isActive
-                  ? "text-blue-600 font-bold"
-                  : "text-slate-500 hover:text-slate-800 font-medium"
+                  ? "text-[#0F766E] font-bold dark:text-[#2DD4BF]"
+                  : "text-[#52525B] hover:text-[#18181B] font-medium dark:text-[#a1a1aa] dark:hover:text-white"
               }`}
             >
               <span className={`relative transition-transform ${isActive ? "scale-110" : ""}`}>
                 {tab.icon}
                 {isActive && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-600" />
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />
                 )}
               </span>
               <span className="text-[10px] tracking-tight mt-0.5">{tab.label}</span>
@@ -315,8 +315,8 @@ function MobileBottomNav({
           onClick={() => setMoreOpen((prev) => !prev)}
           className={`flex flex-1 flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             isMoreActive || moreOpen
-              ? "text-blue-600 font-bold"
-              : "text-slate-500 hover:text-slate-800 font-medium"
+              ? "text-[#0F766E] font-bold dark:text-[#2DD4BF]"
+              : "text-[#52525B] hover:text-[#18181B] font-medium dark:text-[#a1a1aa] dark:hover:text-white"
           }`}
         >
           <span className={`relative transition-transform ${isMoreActive || moreOpen ? "scale-110" : ""}`}>
@@ -329,7 +329,7 @@ function MobileBottomNav({
               />
             </svg>
             {isMoreActive && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-600" />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />
             )}
           </span>
           <span className="text-[10px] tracking-tight mt-0.5">More</span>

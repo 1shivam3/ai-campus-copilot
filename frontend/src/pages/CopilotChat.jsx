@@ -12,7 +12,7 @@ const STARTER_PROMPTS = [
   "Explain my weakest syllabus topic.",
   "I have 45 minutes free. What should I do?",
   "What did I miss yesterday? Give me a recovery plan.",
-  "Explain binary tree traversal from my uploaded notes.",
+  "Explain binary tree traversal from my course concepts.",
 ]
 
 function CopilotChat({
@@ -124,7 +124,7 @@ function CopilotChat({
     const optimisticUserMsg = {
       id: `temp-${Date.now()}`,
       role: "user",
-      content: text,
+      content: textToSend,
       created_at: new Date().toISOString(),
     }
     setMessages((prev) => [...prev, optimisticUserMsg])
@@ -132,7 +132,7 @@ function CopilotChat({
 
     try {
       const res = await sendCopilotMessage({
-        message: text,
+        message: textToSend,
         userId: user.id,
         conversationId: activeConversationId,
       })
@@ -154,131 +154,102 @@ function CopilotChat({
           setActiveConversationId(res.conversation_id)
           const newConvItem = {
             id: res.conversation_id,
-            title: text.slice(0, 32) + (text.length > 32 ? "..." : ""),
+            title: textToSend.slice(0, 32) + (textToSend.length > 32 ? "..." : ""),
             updated_at: new Date().toISOString(),
           }
           setConversations((prev) => [newConvItem, ...prev.filter((c) => c.id !== res.conversation_id)])
         }
       }
     } catch (err) {
-      console.error("Copilot message error:", err)
-      setError(err.message || "Failed to reach AI Copilot. Please try again.")
+      console.error(err)
+      setError("Copilot encountered an error. Please retry.")
     } finally {
       setSending(false)
     }
   }
 
   // ---------------------------------------------------------
-  // 4. NEW CONVERSATION & DELETE CONVERSATION
+  // 4. ACTION HANDLERS
   // ---------------------------------------------------------
-  function handleNewChat() {
+  function handleExecuteAction(action) {
+    if (!action) return
+
+    if (action.type === "start_session") {
+      if (onStartSession) {
+        onStartSession(action.payload?.topic_name, action.payload?.duration_minutes)
+      } else if (onNavigate) {
+        onNavigate("Exam Mode")
+      }
+    } else if (action.type === "open_exam_mode" || action.type === "open_quiz") {
+      if (onOpenExamMode) {
+        onOpenExamMode(action.payload?.exam_id)
+      } else if (onNavigate) {
+        onNavigate("Exam Mode")
+      }
+    } else if (action.type === "navigate" && onNavigate) {
+      onNavigate(action.payload?.page || "Home")
+    }
+  }
+
+  async function handleNewChat() {
     setActiveConversationId(null)
     setMessages([])
-    setError("")
     setSidebarOpen(false)
-    textareaRef.current?.focus()
   }
 
   async function handleDeleteConversation(convId, e) {
     e.stopPropagation()
-    if (!user?.id || !convId) return
+    if (!window.confirm("Delete this conversation history?")) return
 
     try {
-      await supabase.from("copilot_conversations").delete().eq("id", convId).eq("user_id", user.id)
-
-      const updated = conversations.filter((c) => c.id !== convId)
-      setConversations(updated)
-
+      setConversations((prev) => prev.filter((c) => c.id !== convId))
       if (activeConversationId === convId) {
-        if (updated.length > 0) {
-          setActiveConversationId(updated[0].id)
-        } else {
-          handleNewChat()
-        }
+        setActiveConversationId(null)
+        setMessages([])
       }
+
+      await supabase.from("copilot_conversations").delete().eq("id", convId).eq("user_id", user.id)
     } catch (err) {
-      console.warn("Delete conversation error:", err)
-    }
-  }
-
-  // ---------------------------------------------------------
-  // 5. ACTION BUTTON HANDLER
-  // ---------------------------------------------------------
-  function handleExecuteAction(action) {
-    if (!action?.type) return
-
-    switch (action.type) {
-      case "start_focus":
-      case "open_task":
-        if (onNavigate) onNavigate("Tasks")
-        break
-      case "open_exam_mode":
-        if (onOpenExamMode) {
-          onOpenExamMode()
-        } else if (onNavigate) {
-          onNavigate("Exam Mode")
-        }
-        break
-      case "open_timetable":
-        if (onNavigate) onNavigate("My Academics")
-        break
-      case "open_progress":
-      case "open_syllabus":
-      case "open_study_material":
-        if (onNavigate) onNavigate("Syllabus")
-        break
-      case "open_attendance":
-        if (onNavigate) onNavigate("My Academics")
-        break
-      case "open_exams":
-        if (onNavigate) onNavigate("Exams")
-        break
-      default:
-        if (onNavigate) onNavigate("Home")
-        break
+      console.error(err)
     }
   }
 
   const studentFirstName = profile?.full_name?.split(" ")[0] || "Student"
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row bg-[#f8fafc] overflow-hidden">
-      {/* MOBILE CONVERSATION DRAWER BACKDROP */}
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-[#F7F7F2] dark:bg-[#0f1416]">
+      {/* MOBILE SIDEBAR BACKDROP */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-[#18181B]/50 backdrop-blur-xs lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* CONVERSATION HISTORY SIDEBAR */}
+      {/* CONVERSATIONS SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-[#E4E4E7] bg-white transition-transform duration-200 lg:static lg:block dark:border-[#27343a] dark:bg-[#141c1f] ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-slate-100 p-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs">
-              🤖
-            </span>
-            <span className="text-sm font-bold text-slate-900">Copilot Chats</span>
-          </div>
-
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between border-b border-[#E4E4E7] p-4 dark:border-[#27343a]">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#18181B] dark:text-[#f4f4f5]">
+            Chat History
+          </h2>
           <button
             type="button"
             onClick={handleNewChat}
-            className="flex items-center gap-1 rounded-xl bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 hover:bg-blue-100 transition shadow-2xs"
-            title="Start new conversation"
+            className="rounded-xl bg-[#0F766E] px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-[#115E59] transition"
           >
-            <span>+ New</span>
+            + New
           </button>
         </div>
 
-        {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {conversations.length === 0 ? (
-            <p className="p-4 text-center text-xs text-slate-400">
+            <p className="p-4 text-center text-xs text-[#71717A] dark:text-[#a1a1aa]">
               No conversations yet. Start a new chat below!
             </p>
           ) : (
@@ -293,8 +264,8 @@ function CopilotChat({
                   }}
                   className={`group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
                     isActive
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "text-slate-700 hover:bg-slate-100"
+                      ? "bg-[#ECFDF5] text-[#12312F] border-l-2 border-[#0F766E] shadow-2xs dark:bg-[#182226] dark:text-[#2DD4BF] dark:border-[#2DD4BF]"
+                      : "text-[#52525B] hover:bg-[#F7F7F2] hover:text-[#18181B] dark:text-[#a1a1aa] dark:hover:bg-[#182226] dark:hover:text-white"
                   }`}
                 >
                   <span className="truncate flex-1 pr-2">
@@ -305,7 +276,7 @@ function CopilotChat({
                     type="button"
                     onClick={(e) => handleDeleteConversation(conv.id, e)}
                     className={`rounded-md p-1 opacity-0 group-hover:opacity-100 hover:bg-white/20 transition ${
-                      isActive ? "text-slate-300 hover:text-white" : "text-slate-400 hover:text-red-600"
+                      isActive ? "text-[#52525B] hover:text-[#18181B] dark:text-[#a1a1aa]" : "text-[#71717A] hover:text-[#DC2626]"
                     }`}
                     title="Delete conversation"
                   >
@@ -318,10 +289,10 @@ function CopilotChat({
         </div>
 
         {/* Sidebar Footer Context Indicator */}
-        <div className="border-t border-slate-100 p-3 bg-slate-50/70 text-[11px] text-slate-500 font-medium">
+        <div className="border-t border-[#E4E4E7] p-3 bg-[#F7F7F2] text-[11px] text-[#52525B] font-medium dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]">
           <div className="flex items-center justify-between">
             <span>Context: Sem {profile?.semester || "3"} {profile?.section || ""}</span>
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-block h-2 w-2 rounded-full bg-[#15803D] animate-pulse" />
           </div>
         </div>
       </aside>
@@ -329,12 +300,12 @@ function CopilotChat({
       {/* MAIN CHAT AREA */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Chat Header */}
-        <header className="flex items-center justify-between border-b border-slate-200/90 bg-white px-4 sm:px-6 py-3 shadow-xs">
+        <header className="flex items-center justify-between border-b border-[#E4E4E7] bg-white px-4 sm:px-6 py-3 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="rounded-xl border border-slate-200 p-1.5 text-slate-700 hover:bg-slate-100 lg:hidden"
+              className="rounded-xl border border-[#E4E4E7] p-1.5 text-[#52525B] hover:bg-[#F7F7F2] lg:hidden dark:border-[#27343a] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
               aria-label="Open conversation menu"
             >
               💬
@@ -342,14 +313,14 @@ function CopilotChat({
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-bold text-slate-900">
+                <h1 className="text-sm sm:text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                   AI Study Copilot
                 </h1>
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 uppercase">
+                <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#0F766E] uppercase border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
                   Connected to Academic Data
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 hidden sm:block">
+              <p className="text-[11px] text-[#52525B] hidden sm:block dark:text-[#a1a1aa]">
                 Grounded in your timetable, syllabus mastery, exams, tasks, and next best action.
               </p>
             </div>
@@ -359,7 +330,7 @@ function CopilotChat({
             <button
               type="button"
               onClick={handleNewChat}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+              className="rounded-xl border border-[#E4E4E7] bg-white px-3 py-1.5 text-xs font-bold text-[#18181B] hover:bg-[#F7F7F2] transition shadow-2xs dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
             >
               + New Chat
             </button>
@@ -372,23 +343,23 @@ function CopilotChat({
           {messages.length === 0 && (
             <div className="mx-auto max-w-2xl py-6 sm:py-10 text-center space-y-6">
               <div className="flex justify-center">
-                <span className="flex h-14 w-14 items-center justify-center rounded-3xl bg-linear-to-br from-blue-600 to-indigo-600 text-white font-bold text-2xl shadow-md">
-                  ✨
+                <span className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[#12312F] text-white font-bold text-2xl shadow-md border border-[#0F766E]/40">
+                  ✦
                 </span>
               </div>
 
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#18181B] dark:text-[#f4f4f5]">
                   How can I help you today, {studentFirstName}?
                 </h2>
-                <p className="mt-1.5 text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                  I have live access to your semester schedule, weak syllabus topics, upcoming exams, and uploaded study notes.
+                <p className="mt-1.5 text-xs sm:text-sm text-[#52525B] max-w-md mx-auto leading-relaxed dark:text-[#a1a1aa]">
+                  I have live access to your semester schedule, weak syllabus topics, upcoming exams, and coursework priorities.
                 </p>
               </div>
 
               {/* Starter Suggestions Chips */}
               <div className="space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#71717A] dark:text-[#a1a1aa]">
                   TRY ASKING
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2 text-left">
@@ -397,7 +368,7 @@ function CopilotChat({
                       key={i}
                       type="button"
                       onClick={() => handleSendMessage(promptText)}
-                      className="rounded-2xl border border-slate-200/90 bg-white p-3 text-xs font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-700 transition shadow-2xs"
+                      className="rounded-2xl border border-[#E4E4E7] bg-white p-3 text-xs font-semibold text-[#18181B] hover:border-[#0F766E] hover:bg-[#ECFDF5]/50 hover:text-[#0F766E] transition shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5] dark:hover:bg-[#182226] dark:hover:text-[#2DD4BF]"
                     >
                       ✦ {promptText}
                     </button>
@@ -417,16 +388,16 @@ function CopilotChat({
                 className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}
               >
                 {!isUser && (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white text-xs font-bold shadow-xs">
-                    🤖
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[#0F766E] text-white text-xs font-bold shadow-2xs">
+                    ✦
                   </span>
                 )}
 
                 <div
-                  className={`max-w-[85%] sm:max-w-xl rounded-3xl p-4 sm:p-5 shadow-xs ${
+                  className={`max-w-[85%] sm:max-w-xl rounded-3xl p-4 sm:p-5 shadow-2xs ${
                     isUser
-                      ? "bg-blue-600 text-white rounded-br-xs"
-                      : "bg-white border border-slate-200/90 text-slate-900 rounded-bl-xs"
+                      ? "bg-[#0F766E] text-white rounded-br-xs"
+                      : "bg-white border border-[#E4E4E7] text-[#18181B] rounded-bl-xs dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
                   }`}
                 >
                   {/* Message Content */}
@@ -436,13 +407,13 @@ function CopilotChat({
 
                   {/* Sources Attribution */}
                   {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 border-t border-slate-100 pt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-3 border-t border-[#E4E4E7] pt-2 flex flex-wrap gap-1.5 dark:border-[#27343a]">
                       {msg.sources.map((src, sIdx) => (
                         <button
                           key={sIdx}
                           type="button"
                           onClick={() => src.material_id && onOpenReader && onOpenReader(src.material_id)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-bold text-indigo-700 hover:bg-indigo-100 transition"
+                          className="inline-flex items-center gap-1 rounded-lg bg-[#ECFDF5] border border-teal-200 px-2 py-0.5 text-[10px] font-bold text-[#0F766E] hover:bg-teal-100 transition dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]"
                         >
                           <span>📄</span>
                           <span>{src.title} · Pg {src.page_number} ↗</span>
@@ -453,13 +424,13 @@ function CopilotChat({
 
                   {/* Structured Action Buttons */}
                   {msg.actions && msg.actions.length > 0 && (
-                    <div className="mt-3 border-t border-slate-100 pt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 border-t border-[#E4E4E7] pt-3 flex flex-wrap gap-2 dark:border-[#27343a]">
                       {msg.actions.map((act, aIdx) => (
                         <button
                           key={aIdx}
                           type="button"
                           onClick={() => handleExecuteAction(act)}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition active:scale-[0.98]"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#12312F] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#0F766E] transition active:scale-[0.98] dark:bg-[#2DD4BF] dark:text-[#0f1416]"
                         >
                           <span>{act.label || "Take Action →"}</span>
                         </button>
@@ -469,7 +440,7 @@ function CopilotChat({
                 </div>
 
                 {isUser && (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-slate-200 font-bold text-xs text-slate-700">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[#12312F] font-bold text-xs text-white">
                     {studentFirstName[0]}
                   </span>
                 )}
@@ -480,13 +451,13 @@ function CopilotChat({
           {/* Assistant Typing Indicator */}
           {sending && (
             <div className="flex gap-3 justify-start">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white text-xs font-bold shadow-xs">
-                🤖
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[#0F766E] text-white text-xs font-bold shadow-2xs">
+                ✦
               </span>
-              <div className="rounded-3xl border border-slate-200/90 bg-white p-4 text-xs font-medium text-slate-500 shadow-xs flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-blue-600 animate-bounce" />
-                <span className="h-2 w-2 rounded-full bg-blue-600 animate-bounce delay-100" />
-                <span className="h-2 w-2 rounded-full bg-blue-600 animate-bounce delay-200" />
+              <div className="rounded-3xl border border-[#E4E4E7] bg-white p-4 text-xs font-medium text-[#52525B] shadow-2xs flex items-center gap-2 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]">
+                <span className="h-2 w-2 rounded-full bg-[#0F766E] animate-bounce" />
+                <span className="h-2 w-2 rounded-full bg-[#0F766E] animate-bounce delay-100" />
+                <span className="h-2 w-2 rounded-full bg-[#0F766E] animate-bounce delay-200" />
                 <span>Checking your academic context...</span>
               </div>
             </div>
@@ -494,7 +465,7 @@ function CopilotChat({
 
           {/* Error Banner */}
           {error && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-[#DC2626]">
               ⚠️ {error}
             </div>
           )}
@@ -503,13 +474,13 @@ function CopilotChat({
         </div>
 
         {/* Fixed Input Bar */}
-        <div className="border-t border-slate-200 bg-white p-3 sm:p-4">
+        <div className="border-t border-[#E4E4E7] bg-white p-3 sm:p-4 dark:border-[#27343a] dark:bg-[#141c1f]">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               handleSendMessage()
             }}
-            className="mx-auto max-w-4xl flex items-end gap-2 rounded-2xl border border-slate-300 bg-slate-50/80 p-1.5 focus-within:border-blue-500 focus-within:bg-white transition shadow-2xs"
+            className="mx-auto max-w-4xl flex items-end gap-2 rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-1.5 focus-within:border-[#0F766E] focus-within:bg-white transition shadow-2xs dark:border-[#27343a] dark:bg-[#182226] dark:focus-within:bg-[#141c1f]"
           >
             <textarea
               ref={textareaRef}
@@ -532,13 +503,13 @@ function CopilotChat({
                   ? "AI Copilot requires an internet connection (You're currently offline)"
                   : "Ask your Copilot anything about your academics... (Enter to send)"
               }
-              className="flex-1 resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none max-h-28 disabled:opacity-60"
+              className="flex-1 resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-[#18181B] placeholder:text-[#71717A] outline-none max-h-28 disabled:opacity-60 dark:text-[#f4f4f5] dark:placeholder:text-[#71717a]"
             />
 
             <button
               type="submit"
               disabled={sending || !inputMessage.trim() || isOffline}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white font-bold transition hover:bg-blue-700 disabled:opacity-30 disabled:hover:bg-blue-600 shadow-xs active:scale-95"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0F766E] text-white font-bold transition hover:bg-[#115E59] disabled:opacity-30 disabled:hover:bg-[#0F766E] shadow-2xs active:scale-95"
               aria-label="Send message"
             >
               {sending ? (
@@ -549,8 +520,8 @@ function CopilotChat({
             </button>
           </form>
 
-          <p className="mt-1 text-center text-[10px] text-slate-400 font-medium">
-            AI Study Copilot answers strictly using your verified schedule, mastery scores, and uploaded materials.
+          <p className="mt-1 text-center text-[10px] text-[#71717A] font-medium dark:text-[#71717a]">
+            AI Study Copilot answers strictly using your verified schedule, mastery scores, and course records.
           </p>
         </div>
       </div>

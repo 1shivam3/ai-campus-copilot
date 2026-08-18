@@ -1,16 +1,48 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand: #0F766E;
+  --color-brand-hover: #115E59;
+  --color-brand-soft: #ECFDF5;
+  --color-brand-dark: #12312F;
+  --color-gold: #C49A3A;
+  --color-canvas: #F7F7F2;
+  --color-surface: #FFFFFF;
+  --color-border-subtle: #E4E4E7;
+  --color-text-primary: #18181B;
+  --color-text-secondary: #52525B;
+  --color-text-muted: #71717A;
+  --color-text-disabled: #A1A1AA;
+}
+
 @layer base {
   :root {
     --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    /* Theme Tokens */
+    --canvas: #F7F7F2;
+    --surface: #FFFFFF;
+    --border: #E4E4E7;
+    --text-primary: #18181B;
+    --text-secondary: #52525B;
+    --text-muted: #71717A;
+    --text-disabled: #A1A1AA;
+    --primary-brand: #0F766E;
+    --primary-hover: #115E59;
+    --primary-soft: #ECFDF5;
+    --logo-dark: #12312F;
+    --accent-gold: #C49A3A;
+    --status-success: #15803D;
+    --status-warning: #D97706;
+    --status-critical: #DC2626;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: var(--canvas);
+    color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -19,6 +51,7 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+    color: var(--text-primary);
   }
 
   /* Custom subtle scrollbar */
@@ -32,22 +65,22 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #d4d4d8;
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #a1a1aa;
   }
 
   :root.dark ::-webkit-scrollbar-thumb,
   html.dark ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: #3f3f46;
   }
 
   :root.dark ::-webkit-scrollbar-thumb:hover,
   html.dark ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: #52525b;
   }
 }
 
@@ -63,14 +96,15 @@ html.dark {
 :root.dark body,
 html.dark body,
 body.dark {
-  background-color: #090d16 !important;
-  color: #f1f5f9 !important;
+  background-color: #0f1416 !important;
+  color: #f4f4f5 !important;
 }
 
 /* Layout containers */
 html.dark .min-h-screen,
+html.dark .bg-\[\#F7F7F2\],
 html.dark .bg-\[\#f8fafc\] {
-  background-color: #090d16 !important;
+  background-color: #0f1416 !important;
 }
 
 /* Surface containers, cards & panels */
@@ -78,8 +112,8 @@ html.dark .bg-white,
 html.dark .bg-white\/95,
 html.dark .bg-white\/90,
 html.dark .bg-white\/80 {
-  background-color: #111827 !important;
-  color: #f1f5f9;
+  background-color: #141c1f !important;
+  color: #f4f4f5;
 }
 
 html.dark .bg-slate-50,
@@ -90,34 +124,34 @@ html.dark .bg-slate-50\/70,
 html.dark .bg-slate-50\/80,
 html.dark .bg-slate-50\/90,
 html.dark .bg-slate-100 {
-  background-color: #0d1322 !important;
+  background-color: #182226 !important;
 }
 
 html.dark .bg-slate-900 {
-  background-color: #1e293b !important;
+  background-color: #1a272c !important;
 }
 
 html.dark .bg-slate-950 {
-  background-color: #0c1220 !important;
+  background-color: #0b1012 !important;
 }
 
 /* Typography in dark mode */
 html.dark .text-slate-900,
 html.dark .text-slate-800 {
-  color: #f8fafc !important;
+  color: #f4f4f5 !important;
 }
 
 html.dark .text-slate-700,
 html.dark .text-slate-600 {
-  color: #cbd5e1 !important;
+  color: #d4d4d8 !important;
 }
 
 html.dark .text-slate-500 {
-  color: #94a3b8 !important;
+  color: #a1a1aa !important;
 }
 
 html.dark .text-slate-400 {
-  color: #64748b !important;
+  color: #71717a !important;
 }
 
 /* Borders in dark mode */
@@ -126,29 +160,31 @@ html.dark .border-slate-200\/80,
 html.dark .border-slate-200\/90,
 html.dark .border-slate-100,
 html.dark .border-slate-100\/80 {
-  border-color: #1e293b !important;
+  border-color: #27343a !important;
 }
 
 /* Forms, inputs, dropdowns & textareas */
 html.dark input[type="text"],
 html.dark input[type="email"],
 html.dark input[type="password"],
+html.dark input[type="datetime-local"],
+html.dark input[type="number"],
 html.dark input[type="search"],
 html.dark select,
 html.dark textarea {
-  background-color: #151e32 !important;
-  color: #f8fafc !important;
-  border-color: #334155 !important;
+  background-color: #182226 !important;
+  color: #f4f4f5 !important;
+  border-color: #27343a !important;
 }
 
 html.dark select option {
-  background-color: #111827 !important;
-  color: #f8fafc !important;
+  background-color: #141c1f !important;
+  color: #f4f4f5 !important;
 }
 
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-  color: #64748b !important;
+  color: #71717a !important;
 }
 
 /* Interactive elements & hovers */
@@ -156,36 +192,36 @@ html.dark .hover\:bg-slate-50:hover,
 html.dark .hover\:bg-slate-100:hover,
 html.dark .hover\:bg-slate-100\/70:hover,
 html.dark .hover\:bg-slate-200\/60:hover {
-  background-color: #1a233a !important;
+  background-color: #1e2c31 !important;
 }
 
 html.dark .hover\:bg-white:hover {
-  background-color: #1e293b !important;
+  background-color: #1a272c !important;
 }
 
 /* Sidebar navigation */
 html.dark aside,
 html.dark .sticky.top-0.h-screen {
-  background-color: #0b0f19 !important;
-  border-color: #1e293b !important;
+  background-color: #0f1416 !important;
+  border-color: #27343a !important;
 }
 
 /* Headers */
 html.dark header {
-  background-color: rgba(11, 15, 25, 0.95) !important;
-  border-color: #1e293b !important;
+  background-color: rgba(15, 20, 22, 0.95) !important;
+  border-color: #27343a !important;
 }
 
 /* Mobile bottom navigation */
 html.dark .fixed.bottom-0 {
-  background-color: rgba(11, 15, 25, 0.95) !important;
-  border-color: #1e293b !important;
+  background-color: rgba(15, 20, 22, 0.95) !important;
+  border-color: #27343a !important;
 }
 
 /* Modals & Dropdowns */
 html.dark .fixed .bg-white {
-  background-color: #111827 !important;
-  border-color: #1e293b !important;
+  background-color: #141c1f !important;
+  border-color: #27343a !important;
 }
 
 /* Reduced motion preference */

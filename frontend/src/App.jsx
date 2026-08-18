@@ -801,7 +801,7 @@ function App() {
   if (!user) {
     if (authView === "login" || authView === "signup") {
       return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F7F7F2] p-6 dark:bg-[#0f1416]"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
           <PWAInstallBanner />
           <Auth
             initialMode={authView}
@@ -816,7 +816,7 @@ function App() {
     }
 
     return (
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F7F7F2] p-6 dark:bg-[#0f1416]"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
         <PWAInstallBanner />
         <LandingPage
           user={user}
@@ -830,7 +830,7 @@ function App() {
 
   if (!profile) {
     return (
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F7F7F2] p-6 dark:bg-[#0f1416]"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
         <PWAInstallBanner />
         <ProfileSetup
           user={user}
@@ -843,7 +843,7 @@ function App() {
   const unreadNotifCount = notifications.filter((n) => !n.is_read).length
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#F7F7F2] text-[#18181B] dark:bg-[#0f1416] dark:text-[#f4f4f5]">
       <PWAInstallBanner />
 
       {/* Sidebar Navigation */}
@@ -861,10 +861,10 @@ function App() {
 
       <div className="min-w-0 flex-1 flex flex-col">
         {/* Mobile Top Header */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#E4E4E7] bg-white/95 px-4 backdrop-blur-md lg:hidden dark:border-[#27343a] dark:bg-[#0f1416]/95">
           <div className="flex items-center gap-2">
             <CoursePilotMark className="h-6 w-6" />
-            <span className="text-sm font-bold text-slate-900">{currentPage}</span>
+            <span className="text-sm font-bold text-[#18181B] dark:text-[#f4f4f5]">{currentPage}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -872,7 +872,7 @@ function App() {
             <button
               type="button"
               onClick={() => setSearchModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/90 px-3 py-1 text-xs text-slate-500 hover:border-slate-300 hover:bg-white transition shadow-2xs group"
+              className="flex items-center gap-1.5 rounded-full border border-[#E4E4E7] bg-[#F7F7F2] px-3 py-1 text-xs text-[#52525B] hover:border-[#0F766E]/40 hover:bg-white transition shadow-2xs group dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
               title="Search your academics (Ctrl+K)"
             >
               <span>🔍</span>
@@ -882,12 +882,12 @@ function App() {
             <button
               type="button"
               onClick={() => setNotificationModalOpen(true)}
-              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition shadow-xs"
+              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] hover:text-[#18181B] transition shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
               aria-label="Notifications"
             >
               <span className="text-xs">🔔</span>
               {unreadNotifCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white shadow-xs">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#0F766E] text-[9px] font-bold text-white shadow-2xs">
                   {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
                 </span>
               )}
@@ -895,17 +895,17 @@ function App() {
 
             {/* Offline / Sync Badge */}
             {!isOnline ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-[#D97706]">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                 Offline
               </span>
             ) : pendingSyncCount > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-blue-300 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-spin"></span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-teal-300 bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#0F766E] dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0F766E] animate-spin"></span>
                 ↻ {pendingSyncCount}
               </span>
             ) : (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
+              <span className="rounded-full bg-[#F7F7F2] px-2.5 py-1 text-[11px] font-bold text-[#52525B] border border-[#E4E4E7] dark:bg-[#182226] dark:border-[#27343a] dark:text-[#a1a1aa]">
                 Sem {profile.semester}
               </span>
             )}

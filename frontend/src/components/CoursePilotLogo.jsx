@@ -10,50 +10,49 @@ export function CoursePilotMark({ className = "h-8 w-8", ...props }) {
       {...props}
     >
       <defs>
-        {/* Cap Top Gradient */}
+        {/* Cap Top Gradient - Deep Academic Forest/Teal */}
         <linearGradient id="logoCapTop" x1="15%" y1="10%" x2="85%" y2="90%">
-          <stop offset="0%" stopColor="#1E40AF" />
-          <stop offset="50%" stopColor="#1D4ED8" />
-          <stop offset="100%" stopColor="#0F2870" />
+          <stop offset="0%" stopColor="#115E59" />
+          <stop offset="50%" stopColor="#0F766E" />
+          <stop offset="100%" stopColor="#12312F" />
         </linearGradient>
 
-        {/* Cap Highlight Edge */}
+        {/* Cap Highlight Edge - Emerald Light */}
         <linearGradient id="logoCapHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#38BDF8" />
-          <stop offset="100%" stopColor="#2563EB" />
+          <stop offset="0%" stopColor="#2DD4BF" />
+          <stop offset="100%" stopColor="#0F766E" />
         </linearGradient>
 
-        {/* C-Ribbon Main Outer Arc Gradient */}
+        {/* C-Ribbon Main Outer Arc Gradient - Emerald brand */}
         <linearGradient id="logoCRibbonMain" x1="20%" y1="15%" x2="80%" y2="85%">
-          <stop offset="0%" stopColor="#00D4FF" />
-          <stop offset="30%" stopColor="#0077E6" />
-          <stop offset="65%" stopColor="#2563EB" />
-          <stop offset="100%" stopColor="#7C3AED" />
+          <stop offset="0%" stopColor="#14B8A6" />
+          <stop offset="40%" stopColor="#0F766E" />
+          <stop offset="85%" stopColor="#115E59" />
+          <stop offset="100%" stopColor="#12312F" />
         </linearGradient>
 
         {/* C-Ribbon Top Fold / Under-Cap */}
         <linearGradient id="logoCFoldTop" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#38BDF8" />
-          <stop offset="100%" stopColor="#1D4ED8" />
+          <stop offset="0%" stopColor="#2DD4BF" />
+          <stop offset="100%" stopColor="#0F766E" />
         </linearGradient>
 
         {/* C-Ribbon Bottom Return / Wing */}
         <linearGradient id="logoCFoldBottom" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7C3AED" />
-          <stop offset="50%" stopColor="#6366F1" />
-          <stop offset="100%" stopColor="#3B82F6" />
+          <stop offset="0%" stopColor="#0F766E" />
+          <stop offset="100%" stopColor="#12312F" />
         </linearGradient>
 
-        {/* Pilot Navigation Arrow (Bright Cyan) */}
+        {/* Pilot Navigation Arrow - Restrained Gold Accent #C49A3A */}
         <linearGradient id="logoArrowLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#E0F2FE" />
-          <stop offset="40%" stopColor="#38BDF8" />
-          <stop offset="100%" stopColor="#0284C7" />
+          <stop offset="0%" stopColor="#FDE68A" />
+          <stop offset="40%" stopColor="#EAB308" />
+          <stop offset="100%" stopColor="#C49A3A" />
         </linearGradient>
         
         <linearGradient id="logoArrowRight" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#0284C7" />
-          <stop offset="100%" stopColor="#0369A1" />
+          <stop offset="0%" stopColor="#C49A3A" />
+          <stop offset="100%" stopColor="#92400E" />
         </linearGradient>
       </defs>
 
@@ -86,47 +85,47 @@ export function CoursePilotMark({ className = "h-8 w-8", ...props }) {
           fill="url(#logoCapTop)"
         />
 
-        {/* Cap Top Bevel Highlight (Cyan edge) */}
+        {/* Cap Top Bevel Highlight */}
         <path
           d="M 50 8 L 83 23 L 79 24.5 L 50 11.5 L 21 24.5 L 17 23 Z"
           fill="url(#logoCapHighlight)"
-          opacity="0.9"
+          opacity="0.8"
         />
 
-        {/* Cap Skull Base (Under-rim) */}
+        {/* Cap Skull Base */}
         <path
           d="M 28 28 C 28 28, 38 37, 50 37 C 62 37, 72 28, 72 28 L 72 32 C 72 32, 62 41, 50 41 C 38 41, 28 32, 28 32 Z"
-          fill="#0F2870"
+          fill="#12312F"
         />
 
         {/* Tassel String */}
         <path
           d="M 50 23 Q 70 24 74 34 L 75 44"
-          stroke="#1E40AF"
+          stroke="#C49A3A"
           strokeWidth="1.8"
           strokeLinecap="round"
           fill="none"
         />
         {/* Tassel Button on Cap Center */}
-        <circle cx="50" cy="23" r="2.2" fill="#38BDF8" />
+        <circle cx="50" cy="23" r="2.2" fill="#C49A3A" />
         
         {/* Tassel Bell / Drop Shape */}
         <path
           d="M 73.5 43 L 76.5 43 L 78 52 C 78 53.5, 72 53.5, 72 52 Z"
-          fill="#1D4ED8"
+          fill="#C49A3A"
         />
-        <circle cx="75" cy="43.5" r="1.5" fill="#38BDF8" />
+        <circle cx="75" cy="43.5" r="1.5" fill="#FDE68A" />
       </g>
 
-      {/* 3. Pilot Compass Navigation Arrow */}
+      {/* 3. Pilot Compass Navigation Arrow (Restrained Gold Accent) */}
       <g>
-        {/* Left Facet (Light Bright Cyan) */}
+        {/* Left Facet */}
         <path
           d="M 58 39 L 42 58 L 49 55 Z"
           fill="url(#logoArrowLeft)"
         />
 
-        {/* Right Facet (Deep Azure Cyan Shadow) */}
+        {/* Right Facet */}
         <path
           d="M 58 39 L 49 55 L 52 68 Z"
           fill="url(#logoArrowRight)"
@@ -159,15 +158,15 @@ export function CoursePilotLogo({
       <CoursePilotMark className={`${iconSizes[size] || iconSizes.md} shrink-0`} />
       <div>
         <div className="flex items-center tracking-tight font-black leading-none">
-          <span className={`${textSizes[size] || textSizes.md} text-slate-900 dark:text-white`}>
+          <span className={`${textSizes[size] || textSizes.md} text-[#12312F] dark:text-[#ECFDF5]`}>
             Course
           </span>
-          <span className={`${textSizes[size] || textSizes.md} text-blue-600 dark:text-blue-400`}>
+          <span className={`${textSizes[size] || textSizes.md} text-[#0F766E] dark:text-[#2DD4BF]`}>
             Pilot
           </span>
         </div>
         {showTagline && (
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium leading-snug">
+          <p className="mt-1 text-xs text-[#52525B] dark:text-[#A1A1AA] font-medium leading-snug">
             {tagline}
           </p>
         )}

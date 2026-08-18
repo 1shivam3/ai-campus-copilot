@@ -108,7 +108,7 @@ function Sidebar({
   ]
 
   const navContent = (
-    <div className="flex h-full flex-col justify-between p-4 sm:p-5 overflow-hidden">
+    <div className="flex h-full flex-col justify-between p-4 sm:p-5 overflow-hidden bg-white dark:bg-[#0f1416]">
       {/* Brand Logo Wordmark */}
       <div className="mb-4 shrink-0 flex items-center justify-between">
         <CoursePilotLogo size="sm" showTagline={false} />
@@ -117,7 +117,7 @@ function Sidebar({
         <button
           type="button"
           onClick={() => setMobileOpen(false)}
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+          className="rounded-lg p-1.5 text-[#52525B] hover:bg-[#F7F7F2] lg:hidden"
           aria-label="Close menu"
         >
           ✕
@@ -130,7 +130,7 @@ function Sidebar({
           {navSections.map((section, sIdx) => (
             <div key={sIdx} className="space-y-1">
               {section.label && (
-                <p className="px-3 pt-1 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                <p className="px-3 pt-1 pb-1 text-[10px] font-bold tracking-wider text-[#71717A] uppercase">
                   {section.label}
                 </p>
               )}
@@ -151,20 +151,22 @@ function Sidebar({
                     aria-current={isActive ? "page" : undefined}
                     className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-150 active:scale-[0.98] ${
                       isActive
-                        ? "bg-slate-900 text-white shadow-xs"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        ? "bg-[#ECFDF5] text-[#12312F] font-bold border-l-2 border-[#0F766E] shadow-2xs dark:bg-[#182226] dark:text-[#2DD4BF] dark:border-[#2DD4BF]"
+                        : "text-[#52525B] hover:bg-[#F7F7F2] hover:text-[#18181B] dark:text-[#a1a1aa] dark:hover:bg-[#182226] dark:hover:text-[#f4f4f5]"
                     }`}
                   >
                     <span
                       className={`transition-colors ${
-                        isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"
+                        isActive
+                          ? "text-[#0F766E] dark:text-[#2DD4BF]"
+                          : "text-[#71717A] group-hover:text-[#18181B] dark:text-[#71717a] dark:group-hover:text-[#f4f4f5]"
                       }`}
                     >
                       {item.icon}
                     </span>
                     <span className="truncate">{item.name}</span>
                     {isActive && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />
                     )}
                   </button>
                 )
@@ -175,28 +177,28 @@ function Sidebar({
       </div>
 
       {/* Student Profile & Notifications Card */}
-      <div className="shrink-0 pt-3 mt-2 border-t border-slate-200/80">
-        <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-3 shadow-xs">
+      <div className="shrink-0 pt-3 mt-2 border-t border-[#E4E4E7] dark:border-[#27343a]">
+        <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-3 shadow-2xs dark:border-[#27343a] dark:bg-[#182226]">
           <button
             type="button"
             onClick={() => {
               if (onOpenNotifications) onOpenNotifications()
               if (setMobileOpen) setMobileOpen(false)
             }}
-            className="mb-2 flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition active:scale-[0.98]"
+            className="mb-2 flex w-full items-center justify-between rounded-xl border border-[#E4E4E7] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#18181B] hover:bg-[#F7F7F2] transition active:scale-[0.98] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5] dark:hover:bg-[#1e2c31]"
           >
             <div className="flex items-center gap-2">
-              <svg className="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3.5 w-3.5 text-[#52525B] dark:text-[#a1a1aa]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
               <span>Notifications</span>
             </div>
             {unreadCount > 0 ? (
-              <span className="rounded-full bg-blue-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-[#0F766E] px-1.5 py-0.2 text-[10px] font-bold text-white">
                 {unreadCount} new
               </span>
             ) : (
-              <span className="text-[10px] text-slate-400 font-semibold">Feed →</span>
+              <span className="text-[10px] text-[#71717A] font-semibold">Feed →</span>
             )}
           </button>
 
@@ -206,25 +208,25 @@ function Sidebar({
               setCurrentPage("Profile")
               if (setMobileOpen) setMobileOpen(false)
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition hover:bg-slate-200/60 active:scale-[0.98]"
+            className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition hover:bg-[#E4E4E7]/60 active:scale-[0.98] dark:hover:bg-[#27343a]"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white shadow-xs">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#12312F] text-xs font-bold text-white shadow-2xs">
               {(profile?.full_name || user?.email || "S").charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p
-                className="truncate text-xs font-bold text-slate-900"
+                className="truncate text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]"
                 title={profile?.full_name || user?.email}
               >
                 {profile?.full_name || user?.email?.split("@")[0] || "Student"}
               </p>
               {profile && (
-                <p className="truncate mt-0.5 text-[11px] font-medium text-slate-500">
+                <p className="truncate mt-0.5 text-[11px] font-medium text-[#71717A] dark:text-[#a1a1aa]">
                   Sem {profile.semester} · Sec {profile.section}
                 </p>
               )}
             </div>
-            <svg className="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-4 w-4 text-[#71717A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -232,7 +234,7 @@ function Sidebar({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-100 active:scale-[0.98]"
+            className="mt-2 w-full rounded-xl border border-[#E4E4E7] bg-white py-1.5 text-xs font-semibold text-[#DC2626] transition hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98] dark:border-[#27343a] dark:bg-[#141c1f] dark:hover:bg-[#2c1515]"
           >
             Log out
           </button>
@@ -244,7 +246,7 @@ function Sidebar({
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200/80 bg-white lg:block">
+      <aside className="hidden w-64 shrink-0 border-r border-[#E4E4E7] bg-white lg:block dark:border-[#27343a] dark:bg-[#0f1416]">
         <div className="sticky top-0 h-screen overflow-hidden">{navContent}</div>
       </aside>
 
@@ -252,10 +254,10 @@ function Sidebar({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs transition-opacity duration-200"
+            className="fixed inset-0 bg-[#18181B]/50 backdrop-blur-xs transition-opacity duration-200"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-white shadow-2xl transition-transform duration-200">
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-white shadow-2xl transition-transform duration-200 dark:bg-[#0f1416]">
             {navContent}
           </div>
         </div>

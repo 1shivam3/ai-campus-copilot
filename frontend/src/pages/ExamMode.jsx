@@ -168,7 +168,7 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+      <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6 dark:bg-[#0f1416]">
         <SkeletonBanner />
         <SkeletonCard />
       </div>
@@ -177,7 +177,7 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto dark:bg-[#0f1416]">
         <ErrorState message={error} onRetry={loadExamData} />
       </div>
     )
@@ -185,7 +185,7 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
 
   if (!exam) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto dark:bg-[#0f1416]">
         <EmptyState
           icon="🎯"
           title="No upcoming exam found"
@@ -196,25 +196,25 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F7F7F2] p-4 sm:p-6 lg:p-8 dark:bg-[#0f1416]">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase">
+          <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
             EXAM PREPARATION ENGINE
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
             Prepare for {exam.subject}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 font-normal">
+          <p className="mt-1 text-xs sm:text-sm text-[#52525B] font-normal dark:text-[#a1a1aa]">
             Target high-yield revision and adaptive practice tailored dynamically to your lowest syllabus scores.
           </p>
         </div>
 
         {/* Exam Context Banner */}
-        <div className="rounded-2xl bg-slate-900 p-5 sm:p-6 text-white shadow-xs">
+        <div className="rounded-2xl bg-[#12312F] p-5 sm:p-6 text-white shadow-xs dark:bg-[#141c1f] dark:border dark:border-[#27343a]">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA]">
                 EXAM DATE
               </p>
               <p className="mt-1 font-bold text-base sm:text-lg font-mono">
@@ -227,20 +227,20 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
             </div>
 
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA]">
                 IMPORTANCE
               </p>
-              <p className="mt-1 font-bold text-base sm:text-lg text-blue-400">
+              <p className="mt-1 font-bold text-base sm:text-lg text-[#2DD4BF]">
                 {exam.importance || 8}/10
               </p>
             </div>
 
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA]">
                 HIGHEST-RISK TOPIC
               </p>
               <p
-                className="mt-1 font-bold text-base sm:text-lg text-amber-400 truncate"
+                className="mt-1 font-bold text-base sm:text-lg text-[#FDE68A] truncate"
                 title={weakestTopic?.topic_name}
               >
                 {weakestTopic
@@ -253,17 +253,17 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
 
         {/* Highest-Risk Topics */}
         {topRisks.length > 0 && !showQuiz && (
-          <div className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="mt-6 rounded-2xl border border-[#E4E4E7] bg-white p-5 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
+            <div className="flex items-center justify-between border-b border-[#E4E4E7] pb-3 dark:border-[#27343a]">
               <div>
-                <p className="text-[11px] font-bold tracking-widest text-slate-500 uppercase">
+                <p className="text-[11px] font-bold tracking-widest text-[#71717A] uppercase dark:text-[#a1a1aa]">
                   HIGH-YIELD FOCUS AREAS
                 </p>
-                <h2 className="mt-0.5 text-base font-bold text-slate-900">
+                <h2 className="mt-0.5 text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                   Focus on Weakest Topics First
                 </h2>
               </div>
-              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-200/60">
+              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-[#DC2626] border border-rose-200/60 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300">
                 {topRisks.length} Priority Areas
               </span>
             </div>
@@ -272,17 +272,17 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
               {topRisks.map((topic) => (
                 <div
                   key={topic.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3"
+                  className="flex items-center justify-between rounded-xl border border-[#E4E4E7] bg-[#F7F7F2] p-3 dark:border-[#27343a] dark:bg-[#182226]"
                 >
                   <div className="flex-1 pr-3 min-w-0">
-                    <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                    <p className="font-bold text-[#18181B] text-xs sm:text-sm truncate dark:text-[#f4f4f5]">
                       {topic.topic_name}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-slate-500 font-medium">
+                    <p className="mt-0.5 text-[11px] text-[#52525B] font-medium dark:text-[#a1a1aa]">
                       Mastery:{" "}
                       <strong
                         className={
-                          topic.mastery_score >= 60 ? "text-blue-600" : "text-amber-600"
+                          topic.mastery_score >= 60 ? "text-[#0F766E] dark:text-[#2DD4BF]" : "text-[#D97706]"
                         }
                       >
                         {topic.mastery_score}%
@@ -293,8 +293,8 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0 ${
                       topic.mastery_score <= 40
-                        ? "bg-rose-50 text-rose-700 border border-rose-200/60"
-                        : "bg-amber-50 text-amber-800 border border-amber-200/60"
+                        ? "bg-rose-50 text-[#DC2626] border border-rose-200/60 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300"
+                        : "bg-amber-50 text-[#D97706] border border-amber-200/60 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-300"
                     }`}
                   >
                     {topic.mastery_score <= 40 ? "Critical" : "Moderate"} Risk
@@ -316,16 +316,16 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
               onClose={() => setShowQuiz(false)}
             />
           ) : (
-            <div className="rounded-2xl border border-blue-200/80 bg-blue-50/40 p-5 sm:p-6 shadow-xs">
+            <div className="rounded-2xl border border-[#0F766E]/30 bg-[#ECFDF5]/50 p-5 sm:p-6 shadow-2xs dark:border-[#2DD4BF]/30 dark:bg-[#182226]">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase">
+                  <p className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
                     ADAPTIVE SIMULATION
                   </p>
-                  <h3 className="mt-0.5 text-base font-bold text-slate-900">
+                  <h3 className="mt-0.5 text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                     Practice Exam Questions
                   </h3>
-                  <p className="mt-1 text-xs text-slate-600 max-w-xl font-normal">
+                  <p className="mt-1 text-xs text-[#52525B] max-w-xl font-normal dark:text-[#a1a1aa]">
                     Launch a customizable practice test tailored to your syllabus units, question formats, and difficulty.
                   </p>
                 </div>
@@ -333,7 +333,7 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
                 <button
                   type="button"
                   onClick={() => setShowQuiz(true)}
-                  className="self-start sm:self-center shrink-0 rounded-xl bg-blue-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700 shadow-xs active:scale-[0.98] flex items-center gap-2"
+                  className="self-start sm:self-center shrink-0 rounded-xl bg-[#0F766E] px-4 py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-[#115E59] shadow-2xs active:scale-[0.98] flex items-center gap-2"
                 >
                   <span>Configure & Start Test →</span>
                 </button>
@@ -344,12 +344,12 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
 
         {/* AI Revision Strategy Plan */}
         {!showQuiz && (
-          <div className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <h2 className="text-base font-bold text-slate-900">
+          <div className="mt-6 rounded-2xl border border-[#E4E4E7] bg-white p-5 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
+            <h2 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
               How much revision time do you have right now?
             </h2>
 
-            <p className="mt-1 text-xs text-slate-500 font-normal">
+            <p className="mt-1 text-xs text-[#52525B] font-normal dark:text-[#a1a1aa]">
               Formulate a time-blocked study strategy tailored to this exact session focusing on your highest-risk topics.
             </p>
 
@@ -361,8 +361,8 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
                   onClick={() => setMinutes(val)}
                   className={`rounded-xl px-3.5 py-2 text-xs font-bold transition active:scale-[0.98] ${
                     minutes === val
-                      ? "bg-slate-900 text-white shadow-2xs"
-                      : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      ? "bg-[#12312F] text-white shadow-2xs dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                      : "border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
                   }`}
                 >
                   {val} min
@@ -374,7 +374,7 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
               type="button"
               onClick={generatePlan}
               disabled={generating}
-              className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-xs active:scale-[0.98]"
+              className="mt-4 w-full rounded-xl bg-[#0F766E] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#115E59] disabled:opacity-50 transition shadow-2xs active:scale-[0.98]"
             >
               {generating
                 ? "Building your high-yield exam plan..."
@@ -384,8 +384,8 @@ Create a high-yield, structured study breakdown divided into precise minute bloc
         )}
 
         {plan && !showQuiz && (
-          <div className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs leading-relaxed text-xs sm:text-sm text-slate-800 font-sans">
-            <h2 className="mb-3 text-base font-bold text-slate-900 border-b border-slate-100 pb-2.5">
+          <div className="mt-6 whitespace-pre-wrap rounded-2xl border border-[#E4E4E7] bg-white p-5 sm:p-6 shadow-2xs leading-relaxed text-xs sm:text-sm text-[#18181B] font-sans dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]">
+            <h2 className="mb-3 text-base font-bold text-[#18181B] border-b border-[#E4E4E7] pb-2.5 dark:text-[#f4f4f5] dark:border-[#27343a]">
               Your Exam Strategy ({minutes} mins)
             </h2>
             {plan}

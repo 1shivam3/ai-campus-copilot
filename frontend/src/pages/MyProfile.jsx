@@ -343,14 +343,14 @@ export default function MyProfile({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
+            <span className="text-[11px] font-bold tracking-widest text-[#0F766E] uppercase dark:text-[#2DD4BF]">
               STUDENT PROFILE & IDENTITY
             </span>
           </div>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
             My Profile & Reputation
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa]">
             Showcase your academic credentials, learning streaks, badges, and skill mastery.
           </p>
         </div>
@@ -359,7 +359,7 @@ export default function MyProfile({
           <button
             type="button"
             onClick={() => onNavigate("Home")}
-            className="self-start sm:self-center flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 shadow-2xs"
+            className="self-start sm:self-center flex items-center gap-1.5 rounded-xl border border-[#E4E4E7] bg-white px-4 py-2 text-xs font-bold text-[#18181B] hover:bg-[#F7F7F2] transition dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5] shadow-2xs"
           >
             <span>← Back to Home</span>
           </button>
@@ -543,12 +543,12 @@ export default function MyProfile({
             {skillsProfile.map((skill) => (
               <div key={skill.name}>
                 <div className="flex justify-between text-xs font-bold mb-1">
-                  <span className="text-slate-800 dark:text-slate-200">{skill.name}</span>
-                  <span className="text-blue-600 dark:text-blue-400">{skill.percentage}%</span>
+                  <span className="text-[#18181B] dark:text-[#f4f4f5]">{skill.name}</span>
+                  <span className="text-[#0F766E] dark:text-[#2DD4BF]">{skill.percentage}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[#E4E4E7] dark:bg-[#27343a]">
                   <div
-                    className="h-full rounded-full bg-linear-to-r from-blue-500 to-indigo-600 transition-all duration-300"
+                    className="h-full rounded-full bg-linear-to-r from-[#0F766E] to-[#2DD4BF] transition-all duration-300"
                     style={{ width: `${skill.percentage}%` }}
                   />
                 </div>
@@ -731,12 +731,12 @@ export default function MyProfile({
                     <button
                       type="button"
                       onClick={() => setIsCustomSection(!isCustomSection)}
-                      className="text-[11px] font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                      className="text-[11px] font-semibold text-[#0F766E] hover:underline dark:text-[#2DD4BF]"
                     >
                       {isCustomSection ? "← Choose standard section" : "+ Enter custom section"}
                     </button>
                     {sectionsLoading && (
-                      <span className="text-[10px] text-slate-400">Loading...</span>
+                      <span className="text-[10px] text-[#71717A] dark:text-[#a1a1aa]">Loading...</span>
                     )}
                   </div>
                 </div>
@@ -840,20 +840,20 @@ export default function MyProfile({
                 onClick={() => handleThemeChange("light")}
                 className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition ${
                   currentTheme === "light"
-                    ? "border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/30"
-                    : "border-slate-200 bg-slate-50/50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-800"
+                    ? "border-[#0F766E] bg-[#ECFDF5] ring-2 ring-[#0F766E]/20 dark:border-[#2DD4BF] dark:bg-[#182226]"
+                    : "border-[#E4E4E7] bg-white hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:hover:bg-[#182226]"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600 text-lg dark:bg-amber-950/80 dark:text-amber-300">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-[#C49A3A] text-lg border border-amber-200/60 dark:bg-amber-950/80 dark:text-amber-300">
                     ☀️
                   </span>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Light Mode</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">High-contrast day theme</p>
+                    <h4 className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">Light Mode</h4>
+                    <p className="text-[11px] text-[#52525B] dark:text-[#a1a1aa]">Warm ivory & charcoal day theme</p>
                   </div>
                 </div>
-                {currentTheme === "light" && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                {currentTheme === "light" && <span className="h-2 w-2 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />}
               </button>
 
               <button
@@ -861,20 +861,20 @@ export default function MyProfile({
                 onClick={() => handleThemeChange("dark")}
                 className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition ${
                   currentTheme === "dark"
-                    ? "border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/30"
-                    : "border-slate-200 bg-slate-50/50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-800"
+                    ? "border-[#0F766E] bg-[#ECFDF5] ring-2 ring-[#0F766E]/20 dark:border-[#2DD4BF] dark:bg-[#182226]"
+                    : "border-[#E4E4E7] bg-white hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:hover:bg-[#182226]"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-slate-200 text-lg dark:bg-slate-700">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#12312F] text-[#2DD4BF] text-lg shadow-2xs">
                     🌙
                   </span>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Dark Mode</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Obsidian night study</p>
+                    <h4 className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">Dark Mode</h4>
+                    <p className="text-[11px] text-[#52525B] dark:text-[#a1a1aa]">Obsidian night study</p>
                   </div>
                 </div>
-                {currentTheme === "dark" && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                {currentTheme === "dark" && <span className="h-2 w-2 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />}
               </button>
 
               <button
@@ -882,20 +882,20 @@ export default function MyProfile({
                 onClick={() => handleThemeChange("system")}
                 className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition ${
                   currentTheme === "system"
-                    ? "border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/30"
-                    : "border-slate-200 bg-slate-50/50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-800"
+                    ? "border-[#0F766E] bg-[#ECFDF5] ring-2 ring-[#0F766E]/20 dark:border-[#2DD4BF] dark:bg-[#182226]"
+                    : "border-[#E4E4E7] bg-white hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:hover:bg-[#182226]"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 text-slate-700 text-lg dark:bg-slate-800 dark:text-slate-300">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F7F2] text-[#52525B] text-lg border border-[#E4E4E7] dark:bg-[#182226] dark:text-[#a1a1aa]">
                     💻
                   </span>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">System Sync</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Matches OS settings</p>
+                    <h4 className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">System Sync</h4>
+                    <p className="text-[11px] text-[#52525B] dark:text-[#a1a1aa]">Matches OS settings</p>
                   </div>
                 </div>
-                {currentTheme === "system" && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                {currentTheme === "system" && <span className="h-2 w-2 rounded-full bg-[#0F766E] dark:bg-[#2DD4BF]" />}
               </button>
             </div>
           </section>
