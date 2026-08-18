@@ -15,6 +15,11 @@ import {
 const memorySubjectsCache = new Map()
 const memoryScheduleCache = new Map()
 
+export function clearAcademicMemoryCache() {
+  memorySubjectsCache.clear()
+  memoryScheduleCache.clear()
+}
+
 export async function getAcademicData(semester, section) {
   const cacheKey = `${semester}_${section}`
   if (memorySubjectsCache.has(cacheKey)) {

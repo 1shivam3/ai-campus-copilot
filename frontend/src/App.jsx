@@ -36,7 +36,6 @@ const NotificationCenter = lazy(() => import("./components/NotificationCenter"))
 const StudyMaterialReader = lazy(() => import("./pages/StudyMaterialReader"))
 const ExamPaperAnalysis = lazy(() => import("./pages/ExamPaperAnalysis"))
 
-import { getClassSchedule } from "./lib/academicData"
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
 import { buildDailyPlan } from "./utils/dailyPlan"
@@ -46,16 +45,21 @@ import { runNextBestActionEngine, getDaysRemaining } from "./utils/nextBestActio
 import { generateSmartNotifications, DEFAULT_NOTIFICATION_PREFERENCES } from "./utils/notificationEngine"
 import { dispatchNativeBrowserNotification } from "./lib/notifications"
 import { initTheme } from "./utils/theme"
-import { getXPTransactions, calculateXPSummary } from "./utils/xpEngine"
+import { getXPTransactions, calculateXPSummary, clearUserXPCache } from "./utils/xpEngine"
 import { calculateLearningStreak } from "./utils/streakEngine"
 import { evaluateAndAwardBadges } from "./utils/badgeEngine"
 import {
   getUserChallengeHistory,
   getDailyChallengeSet,
   awardDailySetBonus,
+  clearUserChallengeHistory,
 } from "./utils/dailyChallengeEngine"
-import { getUserSavedItems } from "./utils/socialInteractions"
-import { fetchUserStats, syncUserLearningStats } from "./lib/api"
+import { getUserSavedItems, clearUserSocialCache } from "./utils/socialInteractions"
+import { fetchUserStats, syncUserLearningStats, clearApiMemoryCache } from "./lib/api"
+import {
+  getClassSchedule,
+  clearAcademicMemoryCache,
+} from "./lib/academicData"
 import {
   saveUserProfile,
   getCachedUserProfile,
@@ -216,16 +220,47 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user || null
-      setUser(currentUser)
 
-      if (currentUser) {
-        getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
-        fetchProfile(currentUser, false)
-      } else {
+      if (event === "SIGNED_OUT" || !currentUser) {
+        setUser(null)
         setProfile(null)
+        setDashboardTasks([])
+        setDashboardExams([])
+        setDashboardTopics([])
+        setStudySessions([])
+        setQuizAttempts([])
+        setXpTransactions([])
+        setChallengeHistory([])
+        setSavedItemIds(new Set())
+        setNotifications([])
+        setDashboardSchedule([])
+        clearAcademicMemoryCache()
+        clearApiMemoryCache()
+        return
       }
+
+      // If switching accounts (User A -> User B)
+      if (user?.id && user.id !== currentUser.id) {
+        clearAcademicMemoryCache()
+        clearApiMemoryCache()
+        setProfile(null)
+        setDashboardTasks([])
+        setDashboardExams([])
+        setDashboardTopics([])
+        setStudySessions([])
+        setQuizAttempts([])
+        setXpTransactions([])
+        setChallengeHistory([])
+        setSavedItemIds(new Set())
+        setNotifications([])
+        setDashboardSchedule([])
+      }
+
+      setUser(currentUser)
+      getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
+      fetchProfile(currentUser, false)
     })
 
     return () => {
@@ -243,10 +278,10 @@ function App() {
     if (!currentUser?.id) return
     if (isBlocking) setProfileLoading(true)
 
-    // 0. Instant Cache Fallback
+    // 0. Instant Cache Fallback (Strictly user-scoped)
     try {
       const cachedProfile = await getCachedUserProfile(currentUser.id)
-      if (cachedProfile) {
+      if (cachedProfile && cachedProfile.user_id === currentUser.id) {
         setProfile((prev) => prev || cachedProfile)
         if (isBlocking) {
           setAuthLoading(false)
@@ -290,6 +325,12 @@ function App() {
 
       // 2. Non-blocking background cross-device stats synchronization
       setTimeout(async () => {
+        // Race condition guard: verify session user is still currentUser
+        const { data: activeSession } = await supabase.auth.getSession()
+        if (activeSession?.session?.user?.id !== currentUser.id) {
+          return // User switched or logged out; abort stale background sync
+        }
+
         try {
           const cloudStats = await fetchUserStats(currentUser.id)
           const localAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`)
@@ -317,7 +358,7 @@ function App() {
 
           let localHist = []
           try {
-            const rawH = localStorage.getItem("coursepilot_challenge_history")
+            const rawH = localStorage.getItem(`coursepilot_challenge_history_${currentUser.id}`)
             if (rawH) localHist = JSON.parse(rawH)
           } catch {}
           const cloudHist = Array.isArray(cloudStats?.challenge_history) ? cloudStats.challenge_history : []
@@ -328,7 +369,7 @@ function App() {
 
           if (mergedHist.length > 0) {
             setChallengeHistory(mergedHist)
-            try { localStorage.setItem("coursepilot_challenge_history", JSON.stringify(mergedHist)) } catch {}
+            try { localStorage.setItem(`coursepilot_challenge_history_${currentUser.id}`, JSON.stringify(mergedHist)) } catch {}
           }
 
           await syncUserLearningStats({
@@ -361,8 +402,14 @@ function App() {
   }
 
   async function handleLogout() {
-    if (user?.id) {
-      await clearUserScopedCache(user.id)
+    const currentId = user?.id
+    if (currentId) {
+      await clearUserScopedCache(currentId)
+      clearUserXPCache(currentId)
+      clearUserChallengeHistory(currentId)
+      clearUserSocialCache(currentId)
+      clearAcademicMemoryCache()
+      clearApiMemoryCache()
     }
     try {
       await supabase.auth.signOut()
@@ -382,6 +429,9 @@ function App() {
     setNotifications([])
     setDashboardSchedule([])
     setSelectedMaterialIdForReader(null)
+    setSelectedMaterialIdForStudyPack(null)
+    setSelectedMaterialIdForFlashcards(null)
+    setSelectedMaterialIdForAnalysis(null)
     setRecommendedTaskId(null)
     setCurrentPage("Home")
   }

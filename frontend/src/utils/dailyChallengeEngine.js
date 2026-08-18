@@ -20,9 +20,9 @@ const DAILY_BONUS_XP_CAP = 100
  * Fetch all attempted/completed challenge records for the student across all devices.
  */
 export async function getUserChallengeHistory(userId) {
-  if (!userId) return getCachedChallengeHistory()
+  if (!userId) return []
 
-  const cached = getCachedChallengeHistory()
+  const cached = getCachedChallengeHistory(userId)
   if (cached && cached.length > 0) {
     return cached
   }
@@ -35,7 +35,7 @@ export async function getUserChallengeHistory(userId) {
       .limit(100)
 
     if (!error && data && data.length > 0) {
-      setCachedChallengeHistory(data)
+      setCachedChallengeHistory(userId, data)
       return data
     }
   } catch {}
@@ -44,7 +44,7 @@ export async function getUserChallengeHistory(userId) {
   try {
     const cloudStats = await fetchUserStats(userId)
     if (cloudStats?.challenge_history && cloudStats.challenge_history.length > 0) {
-      setCachedChallengeHistory(cloudStats.challenge_history)
+      setCachedChallengeHistory(userId, cloudStats.challenge_history)
       return cloudStats.challenge_history
     }
   } catch {}
@@ -64,7 +64,7 @@ export async function recordChallengeAttempt({
 }) {
   if (!userId || !challengeId) return { success: false }
 
-  const history = getCachedChallengeHistory()
+  const history = getCachedChallengeHistory(userId)
   const existingIdx = history.findIndex((h) => h.challenge_id === challengeId)
   const record = {
     user_id: userId,
@@ -82,7 +82,7 @@ export async function recordChallengeAttempt({
   } else {
     history.push(record)
   }
-  setCachedChallengeHistory(history)
+  setCachedChallengeHistory(userId, history)
 
   try {
     await supabase.from("user_challenge_history").upsert(record, {
@@ -118,75 +118,72 @@ export function getDailyChallengeSet({
   // 1. Filter out all already attempted challenges (Strict Non-Repetition)
   // For daily set, if student attempted everything, allow unpassed items or fallback
   let unattempted = FEED_CATALOG.filter((c) => !attemptedIds.has(c.id))
-
   if (unattempted.length < DAILY_SET_COUNT) {
-    // If pool exhausted, fallback to items not yet solved
+    // If user attempted all catalog items, fall back to unsolved items
     unattempted = FEED_CATALOG.filter((c) => !solvedIds.has(c.id))
-  }
-  if (unattempted.length === 0) {
-    unattempted = [...FEED_CATALOG]
+    if (unattempted.length < DAILY_SET_COUNT) {
+      unattempted = FEED_CATALOG
+    }
   }
 
-  // 2. Sort by difficulty fit & interaction type diversity
-  const prioritized = [...unattempted].sort((a, b) => {
-    // Exact difficulty match preferred
-    const aDiffMatch = a.difficulty === adaptive.currentLevel ? 1 : 0
-    const bDiffMatch = b.difficulty === adaptive.currentLevel ? 1 : 0
-    return bDiffMatch - aDiffMatch
+  // 2. Select challenges matching user's adaptive difficulty and diverse categories
+  const matched = unattempted.filter(
+    (c) => c.difficulty?.toLowerCase() === adaptive.difficultyLevel.toLowerCase()
+  )
+  const pool = matched.length >= DAILY_SET_COUNT ? matched : unattempted
+
+  // Ensure category diversity: 1 DSA, 1 Concept, 1 Quick, 1 Debug, 1 Project/Other
+  const selected = []
+  const usedIds = new Set()
+
+  const categories = ["dsa", "concept", "quick", "debug", "math"]
+  categories.forEach((cat) => {
+    const item = pool.find(
+      (c) => !usedIds.has(c.id) && c.category?.toLowerCase() === cat.toLowerCase()
+    )
+    if (item) {
+      selected.push(item)
+      usedIds.add(item.id)
+    }
   })
 
-  // 3. Pick diverse set across categories
-  const picked = []
-  const usedTypes = new Set()
-
-  for (const item of prioritized) {
-    if (picked.length >= (isBonusMode ? BONUS_SET_COUNT : DAILY_SET_COUNT)) break
-    if (!usedTypes.has(item.type) || picked.length >= 4) {
-      picked.push({
-        ...item,
-        isCompleted: solvedIds.has(item.id),
-      })
-      usedTypes.add(item.type)
+  // Fill remaining slots up to DAILY_SET_COUNT (or BONUS_SET_COUNT if bonus mode)
+  const targetCount = isBonusMode ? DAILY_SET_COUNT + BONUS_SET_COUNT : DAILY_SET_COUNT
+  for (const item of pool) {
+    if (selected.length >= targetCount) break
+    if (!usedIds.has(item.id)) {
+      selected.push(item)
+      usedIds.add(item.id)
     }
   }
 
-  // Backfill if needed
-  for (const item of prioritized) {
-    if (picked.length >= (isBonusMode ? BONUS_SET_COUNT : DAILY_SET_COUNT)) break
-    if (!picked.some((p) => p.id === item.id)) {
-      picked.push({
-        ...item,
-        isCompleted: solvedIds.has(item.id),
-      })
-    }
-  }
-
-  const completedCount = picked.filter((p) => p.isCompleted).length
-  const isSetComplete = completedCount === picked.length && picked.length > 0
+  // Count how many from current set are completed
+  const completedInSet = selected.filter((c) => solvedIds.has(c.id)).length
+  const isSetComplete = completedInSet >= DAILY_SET_COUNT
 
   return {
-    challenges: picked,
-    totalCount: picked.length,
-    completedCount,
+    challenges: selected,
+    completedCount: completedInSet,
+    totalCount: selected.length,
     isSetComplete,
-    adaptiveLevel: adaptive.currentLevel,
-    successRate: adaptive.successRate,
+    adaptiveLevel: adaptive.difficultyLevel,
+    isBonusMode,
   }
 }
 
 /**
- * Check and award Daily Set Completion Bonus (+50 XP) idempotently.
+ * Award Daily Set Completion Bonus (+50 XP) once per UTC calendar day.
  */
 export async function awardDailySetBonus(userId) {
-  if (!userId) return { awarded: false }
+  if (!userId) return { awarded: false, amount: 0 }
 
-  const todayStr = new Date().toISOString().slice(0, 10) // "YYYY-MM-DD"
-  const bonusRefKey = `daily_set_bonus:${todayStr}`
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const bonusKey = `daily_set_bonus_${todayStr}`
 
   const result = await awardXP({
     userId,
     amount: DAILY_BONUS_XP,
-    reason: `Completed Today's 5 Daily Challenges (${todayStr})`,
+    reason: `Daily Challenge Set Completion (${todayStr})`,
     referenceType: "daily_completion_bonus",
     referenceId: todayStr,
   })
@@ -198,18 +195,27 @@ export async function awardDailySetBonus(userId) {
   }
 }
 
-// Local Storage Cache Helpers
-function getCachedChallengeHistory() {
+// Local Storage Cache Helpers (User-Scoped)
+export function getCachedChallengeHistory(userId) {
+  if (!userId) return []
   try {
-    const raw = localStorage.getItem(LOCAL_CHALLENGE_HISTORY_KEY)
+    const raw = localStorage.getItem(`${LOCAL_CHALLENGE_HISTORY_KEY}_${userId}`)
     return raw ? JSON.parse(raw) : []
   } catch {
     return []
   }
 }
 
-function setCachedChallengeHistory(history) {
+export function setCachedChallengeHistory(userId, history) {
+  if (!userId) return
   try {
-    localStorage.setItem(LOCAL_CHALLENGE_HISTORY_KEY, JSON.stringify(history))
+    localStorage.setItem(`${LOCAL_CHALLENGE_HISTORY_KEY}_${userId}`, JSON.stringify(history))
+  } catch {}
+}
+
+export function clearUserChallengeHistory(userId) {
+  if (!userId) return
+  try {
+    localStorage.removeItem(`${LOCAL_CHALLENGE_HISTORY_KEY}_${userId}`)
   } catch {}
 }

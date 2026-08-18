@@ -207,3 +207,10 @@ function setCachedXPTransactions(userId, transactions) {
     )
   } catch {}
 }
+
+export function clearUserXPCache(userId) {
+  if (!userId) return
+  try {
+    localStorage.removeItem(`${LOCAL_XP_CACHE_KEY}_${userId}`)
+  } catch {}
+}

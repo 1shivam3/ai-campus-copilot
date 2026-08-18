@@ -781,6 +781,10 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
 
 const inFlightUserStats = new Map()
 
+export function clearApiMemoryCache() {
+  inFlightUserStats.clear()
+}
+
 export async function fetchUserStats(userId) {
   if (!userId) return null
   if (inFlightUserStats.has(userId)) {

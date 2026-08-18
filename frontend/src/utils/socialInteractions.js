@@ -12,8 +12,9 @@ const LOCAL_SAVES_KEY = "coursepilot_saved_items"
  * Get the set of feed item IDs liked/marked helpful by the user.
  */
 export async function getUserLikes(userId) {
-  if (!userId) return new Set(getCachedSet(LOCAL_LIKES_KEY))
+  if (!userId) return new Set()
 
+  const key = `${LOCAL_LIKES_KEY}_${userId}`
   try {
     const { data, error } = await supabase
       .from("feed_item_likes")
@@ -22,12 +23,12 @@ export async function getUserLikes(userId) {
 
     if (!error && data) {
       const set = new Set(data.map((d) => d.feed_item_id))
-      setCachedSet(LOCAL_LIKES_KEY, Array.from(set))
+      setCachedSet(key, Array.from(set))
       return set
     }
   } catch {}
 
-  return new Set(getCachedSet(LOCAL_LIKES_KEY))
+  return new Set(getCachedSet(key))
 }
 
 /**
@@ -36,7 +37,8 @@ export async function getUserLikes(userId) {
 export async function toggleFeedItemLike(userId, feedItemId) {
   if (!userId || !feedItemId) return { isLiked: false, error: "Missing user or item" }
 
-  const cached = new Set(getCachedSet(LOCAL_LIKES_KEY))
+  const key = `${LOCAL_LIKES_KEY}_${userId}`
+  const cached = new Set(getCachedSet(key))
   const currentlyLiked = cached.has(feedItemId)
   const newLiked = !currentlyLiked
 
@@ -45,7 +47,7 @@ export async function toggleFeedItemLike(userId, feedItemId) {
   } else {
     cached.delete(feedItemId)
   }
-  setCachedSet(LOCAL_LIKES_KEY, Array.from(cached))
+  setCachedSet(key, Array.from(cached))
 
   try {
     if (newLiked) {
@@ -62,8 +64,9 @@ export async function toggleFeedItemLike(userId, feedItemId) {
  * Get the set of saved feed item IDs for the user.
  */
 export async function getUserSavedItems(userId) {
-  if (!userId) return new Set(getCachedSet(LOCAL_SAVES_KEY))
+  if (!userId) return new Set()
 
+  const key = `${LOCAL_SAVES_KEY}_${userId}`
   try {
     const { data, error } = await supabase
       .from("saved_feed_items")
@@ -72,12 +75,12 @@ export async function getUserSavedItems(userId) {
 
     if (!error && data) {
       const set = new Set(data.map((d) => d.feed_item_id))
-      setCachedSet(LOCAL_SAVES_KEY, Array.from(set))
+      setCachedSet(key, Array.from(set))
       return set
     }
   } catch {}
 
-  return new Set(getCachedSet(LOCAL_SAVES_KEY))
+  return new Set(getCachedSet(key))
 }
 
 /**
@@ -86,7 +89,8 @@ export async function getUserSavedItems(userId) {
 export async function toggleSavedItem(userId, feedItemId) {
   if (!userId || !feedItemId) return { isSaved: false, error: "Missing user or item" }
 
-  const cached = new Set(getCachedSet(LOCAL_SAVES_KEY))
+  const key = `${LOCAL_SAVES_KEY}_${userId}`
+  const cached = new Set(getCachedSet(key))
   const currentlySaved = cached.has(feedItemId)
   const newSaved = !currentlySaved
 
@@ -95,7 +99,7 @@ export async function toggleSavedItem(userId, feedItemId) {
   } else {
     cached.delete(feedItemId)
   }
-  setCachedSet(LOCAL_SAVES_KEY, Array.from(cached))
+  setCachedSet(key, Array.from(cached))
 
   try {
     if (newSaved) {
@@ -137,7 +141,7 @@ export async function shareChallenge(challenge) {
   }
 }
 
-// Local Storage Caching Helpers
+// Local Storage Caching Helpers (User-Scoped)
 function getCachedSet(key) {
   try {
     const raw = localStorage.getItem(key)
@@ -150,5 +154,13 @@ function getCachedSet(key) {
 function setCachedSet(key, items) {
   try {
     localStorage.setItem(key, JSON.stringify(items))
+  } catch {}
+}
+
+export function clearUserSocialCache(userId) {
+  if (!userId) return
+  try {
+    localStorage.removeItem(`${LOCAL_LIKES_KEY}_${userId}`)
+    localStorage.removeItem(`${LOCAL_SAVES_KEY}_${userId}`)
   } catch {}
 }
