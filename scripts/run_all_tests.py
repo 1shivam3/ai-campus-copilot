@@ -1,18 +1,15 @@
-"""
-CoursePilot Master Test Suite
-Runs all integration and unit tests across FastAPI backend, RAG services, and intelligence engines.
-Usage: python scripts/run_all_tests.py
-"""
-
 import sys
 import os
 import time
 
+os.environ["TEST_MODE"] = "1"
+
 backend_path = os.path.join(os.path.dirname(__file__), "..", "backend")
-sys.path.append(backend_path)
+sys.path.insert(0, backend_path)
 
 from fastapi.testclient import TestClient
 from main import app
+from services.auth import generate_test_token
 
 client = TestClient(app)
 
@@ -21,6 +18,10 @@ def run_tests():
     print("\n=======================================================")
     print("       COURSEPIOT AI CAMPUS COPILOT - MASTER TEST SUITE")
     print("=======================================================\n")
+
+    test_user_id = "00000000-0000-0000-0000-000000000000"
+    test_token = generate_test_token(test_user_id, "test@university.edu")
+    auth_headers = {"Authorization": f"Bearer {test_token}"}
 
     # 1. Health & Security
     print("[TEST 1/7] Backend Health & Security Headers Check...")
@@ -31,19 +32,19 @@ def run_tests():
 
     # 2. Input Validation & Schema Guards
     print("[TEST 2/7] Input Validation & Schema Rejection Guards...")
-    r_bad_chat = client.post("/api/copilot-chat", json={"message": "   ", "user_id": "00000000-0000-0000-0000-000000000000"})
+    r_bad_chat = client.post("/api/copilot-chat", headers=auth_headers, json={"message": "   ", "user_id": test_user_id})
     assert r_bad_chat.status_code == 400, "Should reject empty message"
-    r_bad_schema = client.post("/api/copilot-chat", json={"user_id": "00000000-0000-0000-0000-000000000000"})
+    r_bad_schema = client.post("/api/copilot-chat", headers=auth_headers, json={"user_id": test_user_id})
     assert r_bad_schema.status_code == 422, "Should reject missing required field"
-    r_blank_search = client.post("/api/academic-search", json={"query": "  ", "user_id": "00000000-0000-0000-0000-000000000000"})
+    r_blank_search = client.post("/api/academic-search", headers=auth_headers, json={"query": "  ", "user_id": test_user_id})
     assert r_blank_search.status_code == 200 and r_blank_search.json().get("total_results") == 0
     print("  --> [PASS] Input validation and schema rejection guards verified.")
 
     # 3. Global Academic Search
     print("[TEST 3/7] Global Academic Search (Hybrid Keyword + RAG)...")
-    r_search = client.post("/api/academic-search", json={
+    r_search = client.post("/api/academic-search", headers=auth_headers, json={
         "query": "Data Structures",
-        "user_id": "00000000-0000-0000-0000-000000000000",
+        "user_id": test_user_id,
         "semester": 3,
         "section": "B2",
         "limit": 10
@@ -54,19 +55,19 @@ def run_tests():
 
     # 4. Spaced Repetition Flashcards Review Validation
     print("[TEST 4/7] Spaced Repetition Review Validation...")
-    r_bad_rating = client.post("/api/review-flashcard", json={
+    r_bad_rating = client.post("/api/review-flashcard", headers=auth_headers, json={
         "flashcard_id": 999999,
-        "user_id": "00000000-0000-0000-0000-000000000000",
+        "user_id": test_user_id,
         "rating": "invalid_rating"
     })
     assert r_bad_rating.status_code == 422, "Should reject invalid rating option"
 
-    r_valid_schema = client.post("/api/review-flashcard", json={
+    r_valid_schema = client.post("/api/review-flashcard", headers=auth_headers, json={
         "flashcard_id": 999999,
-        "user_id": "00000000-0000-0000-0000-000000000000",
+        "user_id": test_user_id,
         "rating": "good"
     })
-    assert r_valid_schema.status_code in [404, 500, 200]
+    assert r_valid_schema.status_code in [403, 404, 500, 200]
     print("  --> [PASS] Spaced repetition rating validation guard verified.")
 
     # 5. Free Time & Study Window Math Utilities
@@ -84,7 +85,7 @@ def run_tests():
     from main import supabase_client
     if supabase_client:
         import asyncio
-        ctx = asyncio.run(build_copilot_context(supabase_client, "00000000-0000-0000-0000-000000000000"))
+        ctx = asyncio.run(build_copilot_context(supabase_client, test_user_id))
         assert "student" in ctx and "today" in ctx and "exams" in ctx and "tasks" in ctx
         print("  --> [PASS] Copilot context aggregated profile, timetable, and mastery.")
     else:
@@ -92,9 +93,9 @@ def run_tests():
 
     # 7. AI Study Copilot Chat
     print("[TEST 7/8] AI Study Copilot Chat Grounding & Intent Routing...")
-    r_chat = client.post("/api/copilot-chat", json={
+    r_chat = client.post("/api/copilot-chat", headers=auth_headers, json={
         "message": "What is my academic priority today?",
-        "user_id": "00000000-0000-0000-0000-000000000000"
+        "user_id": test_user_id
     })
     assert r_chat.status_code == 200
     assert "message" in r_chat.json()
@@ -102,7 +103,7 @@ def run_tests():
 
     # 8. Dynamic One-at-a-Time Exam Question Generation
     print("[TEST 8/9] Dynamic Exam Question Generator (MCQ / Short / Long / Practicals)...")
-    r_q_mcq = client.post("/api/generate-exam-question", json={
+    r_q_mcq = client.post("/api/generate-exam-question", headers=auth_headers, json={
         "subject_name": "Data Structure and Algorithms",
         "syllabus_type": "theory",
         "question_type": "mcq",
@@ -115,7 +116,7 @@ def run_tests():
     assert "question" in r_q_mcq.json()
     assert r_q_mcq.json()["question"]["question_type"] == "mcq"
 
-    r_q_short = client.post("/api/generate-exam-question", json={
+    r_q_short = client.post("/api/generate-exam-question", headers=auth_headers, json={
         "subject_name": "Software Engineering Lab",
         "syllabus_type": "lab",
         "question_type": "short_answer",

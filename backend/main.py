@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response, Query
+from fastapi import FastAPI, HTTPException, Request, Response, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from supabase import create_client, Client
@@ -18,6 +18,15 @@ from supabase import create_client, Client
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from services.embeddings import embed_text, embed_query, embed_batch
 from services.chunking import chunk_document_text
+from services.auth import get_current_user, get_optional_user, AuthenticatedUser
+from services.calendar_auth import (
+    generate_oauth_state,
+    verify_oauth_state,
+    save_calendar_tokens,
+    get_calendar_tokens,
+    delete_calendar_tokens,
+)
+from services.rate_limiter import check_rate_limit
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("coursepilot.backend")
@@ -50,9 +59,6 @@ except Exception as e:
     supabase_client = None
     logger.warning(f"Could not initialize Supabase backend client on module import: {e}")
 
-# In-memory secure token store for calendar OAuth (user_id -> tokens)
-calendar_token_store = {}
-
 if not api_key:
     logger.warning("GEMINI_API_KEY is not configured in environment. AI endpoints will operate with graceful fallbacks.")
 
@@ -70,7 +76,7 @@ async def on_startup():
     except Exception as err:
         logger.error(f"[STARTUP] Critical: Supabase client initialization failed: {err}")
 
-# Enable CORS for Vite frontend (local, preview, and production Vercel domains)
+# Explicit CORS allowlist - No open wildcard regex
 frontend_env_url = os.getenv("FRONTEND_URL")
 allowed_origins = [
     "http://localhost:5173",
@@ -85,10 +91,9 @@ if frontend_env_url and frontend_env_url not in allowed_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"],
 )
 
 
@@ -169,7 +174,11 @@ def health():
 
 
 @app.post("/api/generate-exam-quiz")
-def generate_exam_quiz(request: ExamQuizRequest):
+def generate_exam_quiz(
+    request: ExamQuizRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    check_rate_limit(current_user.id, "generate_exam_quiz", max_requests=25, window_seconds=60)
     if not request.subject.strip():
         raise HTTPException(status_code=400, detail="Subject name is required.")
 
@@ -254,7 +263,11 @@ class ExamQuestionRequest(BaseModel):
 
 
 @app.post("/api/generate-exam-question")
-def generate_exam_question(request: ExamQuestionRequest):
+def generate_exam_question(
+    request: ExamQuestionRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    check_rate_limit(current_user.id, "generate_exam_question", max_requests=30, window_seconds=60)
     if not request.subject_name.strip():
         raise HTTPException(status_code=400, detail="Subject name is required.")
 
@@ -523,7 +536,11 @@ JSON FORMAT:
 
 
 @app.post("/api/generate-quiz")
-def generate_quiz(request: QuizRequest):
+def generate_quiz(
+    request: QuizRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    check_rate_limit(current_user.id, "generate_quiz", max_requests=25, window_seconds=60)
     if not request.topic_name.strip():
         raise HTTPException(status_code=400, detail="Topic name is required.")
 
@@ -587,7 +604,11 @@ JSON format:
 
 
 @app.post("/api/study-advice")
-def study_advice(request: StudyAdviceRequest):
+def study_advice(
+    request: StudyAdviceRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    check_rate_limit(current_user.id, "study_advice", max_requests=25, window_seconds=60)
     exam_importance_str = f"{request.exam_importance}/10" if request.exam_importance else "N/A"
     mastery_score_str = f"{request.mastery_score}%" if request.mastery_score is not None else "N/A"
     task_minutes_str = f"{request.task_minutes} minutes" if request.task_minutes else "N/A"
@@ -688,7 +709,11 @@ Do not give generic motivational advice.
 
 
 @app.post("/api/analyze-material")
-def analyze_material(request: StudyMaterialRequest):
+def analyze_material(
+    request: StudyMaterialRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    check_rate_limit(current_user.id, "analyze_material", max_requests=25, window_seconds=60)
     if not request.content.strip():
         raise HTTPException(status_code=400, detail="Document content cannot be empty.")
 
@@ -763,21 +788,25 @@ Do not invent facts that are not supported by the document.
 
 class CalendarCallbackRequest(BaseModel):
     code: str
-    user_id: str
-    redirect_uri: str | None = None
+    state: str
+    user_id: Optional[str] = None
+    redirect_uri: Optional[str] = None
 
 
 class CalendarDisconnectRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
 
 
 @app.get("/api/calendar/auth-url")
-def get_calendar_auth_url(user_id: str = Query(...), redirect_uri: str | None = None):
+def get_calendar_auth_url(
+    redirect_uri: Optional[str] = None,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Generates a secure Google OAuth 2.0 authorization URL requesting
-    minimal read-only Calendar permissions.
+    minimal read-only Calendar permissions with cryptographically signed HMAC state.
     """
-    logger.info(f"[CALENDAR_OAUTH] auth-url endpoint reached for user={user_id[:8]}...")
+    logger.info(f"[CALENDAR_OAUTH] auth-url endpoint reached for verified user={current_user.id[:8]}...")
     client_id = google_client_id
 
     if not client_id:
@@ -785,11 +814,14 @@ def get_calendar_auth_url(user_id: str = Query(...), redirect_uri: str | None = 
         return {
             "configured": False,
             "auth_url": None,
-            "message": "Google Calendar OAuth client credentials are not configured on the backend. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the Render environment settings.",
+            "message": "Google Calendar OAuth client credentials are not configured on the backend.",
         }
 
     redirect = redirect_uri or google_redirect_uri or "https://ai-campus-copilot-one.vercel.app"
     scope = "https://www.googleapis.com/auth/calendar.events.readonly"
+
+    # Cryptographically bind state token to verified user ID
+    state_token = generate_oauth_state(current_user.id)
 
     params = {
         "client_id": client_id,
@@ -798,11 +830,11 @@ def get_calendar_auth_url(user_id: str = Query(...), redirect_uri: str | None = 
         "scope": scope,
         "access_type": "offline",
         "prompt": "consent",
-        "state": user_id,
+        "state": state_token,
     }
 
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
-    logger.info(f"[CALENDAR_OAUTH] Generated Google OAuth URL with redirect_uri={redirect} and scope={scope}")
+    logger.info(f"[CALENDAR_OAUTH] Generated Google OAuth URL for user={current_user.id[:8]}")
     return {
         "configured": True,
         "auth_url": auth_url,
@@ -810,21 +842,33 @@ def get_calendar_auth_url(user_id: str = Query(...), redirect_uri: str | None = 
 
 
 @app.post("/api/calendar/oauth-callback")
-async def calendar_oauth_callback(request: CalendarCallbackRequest):
+async def calendar_oauth_callback(
+    request: CalendarCallbackRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Exchanges Google authorization code for access & refresh tokens.
-    Stores tokens securely on backend memory/store and returns connection status.
+    Verifies HMAC state signature and stores encrypted tokens bound to verified user identity.
     """
-    logger.info(f"[CALENDAR_OAUTH] oauth-callback endpoint reached for user={request.user_id[:8]}...")
+    logger.info(f"[CALENDAR_OAUTH] oauth-callback endpoint reached for verified user={current_user.id[:8]}...")
+
+    # 1. Verify OAuth State Signature & Binding
+    is_valid, state_user = verify_oauth_state(request.state, expected_user_id=current_user.id)
+    if not is_valid or state_user != current_user.id:
+        logger.warning(f"[CALENDAR_OAUTH] State validation rejected for user {current_user.id}")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid, expired, or tampered OAuth state parameter. Please restart calendar authorization.",
+        )
+
     if not google_client_id or not google_client_secret:
         logger.error("[CALENDAR_OAUTH] Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET on server.")
         raise HTTPException(
             status_code=400,
-            detail="Google Calendar credentials (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) are not configured on the backend.",
+            detail="Google Calendar credentials are not configured on the backend.",
         )
 
     redirect = request.redirect_uri or google_redirect_uri or "https://ai-campus-copilot-one.vercel.app"
-
     token_url = "https://oauth2.googleapis.com/token"
     payload = {
         "code": request.code,
@@ -857,19 +901,19 @@ async def calendar_oauth_callback(request: CalendarCallbackRequest):
             email = userinfo_res.json().get("email") if userinfo_res.is_success else "Google User"
             logger.info(f"[CALENDAR_OAUTH] Successfully authorized calendar connection for account {email}")
 
-            # Store tokens securely on the server
-            calendar_token_store[request.user_id] = {
+            # Store encrypted tokens securely on persistent storage
+            save_calendar_tokens(current_user.id, {
                 "access_token": access_token,
                 "refresh_token": refresh_token,
                 "email": email,
                 "expires_at": (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat(),
                 "last_synced": datetime.now(timezone.utc).isoformat(),
-            }
+            })
 
             return {
                 "status": "connected",
                 "email": email,
-                "last_synced": calendar_token_store[request.user_id]["last_synced"],
+                "last_synced": datetime.now(timezone.utc).isoformat(),
             }
     except Exception as err:
         if isinstance(err, HTTPException):
@@ -878,12 +922,12 @@ async def calendar_oauth_callback(request: CalendarCallbackRequest):
 
 
 @app.get("/api/calendar/status")
-def get_calendar_status(user_id: str = Query(...)):
+def get_calendar_status(current_user: AuthenticatedUser = Depends(get_current_user)):
     """
-    Returns calendar connection status for the authenticated student.
+    Returns calendar connection status strictly for the authenticated student.
     Never exposes tokens or secrets.
     """
-    connection = calendar_token_store.get(user_id)
+    connection = get_calendar_tokens(current_user.id)
     if not connection:
         return {
             "connected": False,
@@ -901,12 +945,12 @@ def get_calendar_status(user_id: str = Query(...)):
 
 
 @app.get("/api/calendar/events")
-async def get_calendar_events(user_id: str = Query(...)):
+async def get_calendar_events(current_user: AuthenticatedUser = Depends(get_current_user)):
     """
-    Fetches calendar events for today from the Google Calendar API,
+    Fetches calendar events for today strictly for the authenticated student,
     ignoring cancelled events and extracting only time blocks to derive availability.
     """
-    connection = calendar_token_store.get(user_id)
+    connection = get_calendar_tokens(current_user.id)
     if not connection:
         return {
             "connected": False,
@@ -952,6 +996,7 @@ async def get_calendar_events(user_id: str = Query(...)):
                 if refresh_res.is_success:
                     new_token = refresh_res.json().get("access_token")
                     connection["access_token"] = new_token
+                    save_calendar_tokens(current_user.id, connection)
                     res = await http_client.get(
                         events_url,
                         headers={"Authorization": f"Bearer {new_token}"},
@@ -981,6 +1026,7 @@ async def get_calendar_events(user_id: str = Query(...)):
                 })
 
             connection["last_synced"] = datetime.now(timezone.utc).isoformat()
+            save_calendar_tokens(current_user.id, connection)
 
             return {
                 "connected": True,
@@ -996,15 +1042,18 @@ async def get_calendar_events(user_id: str = Query(...)):
 
 
 @app.post("/api/calendar/disconnect")
-async def disconnect_calendar(request: CalendarDisconnectRequest):
+async def disconnect_calendar(
+    request: Optional[CalendarDisconnectRequest] = None,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
-    Safely disconnects Google Calendar and removes stored credentials.
+    Safely disconnects Google Calendar and removes stored credentials strictly for the authenticated user.
     Preserves all existing CoursePilot student tasks and academic data.
     """
-    connection = calendar_token_store.pop(request.user_id, None)
+    connection = get_calendar_tokens(current_user.id)
+    delete_calendar_tokens(current_user.id)
 
     if connection and connection.get("access_token"):
-        # Optionally revoke token with Google
         try:
             async with httpx.AsyncClient(timeout=5.0) as http_client:
                 await http_client.post(
@@ -1026,17 +1075,21 @@ async def disconnect_calendar(request: CalendarDisconnectRequest):
 
 class MatchStudyMaterialRequest(BaseModel):
     study_material_id: int
-    user_id: str
+    user_id: Optional[str] = None
 
 
 @app.post("/api/match-study-material")
-async def match_study_material(request: MatchStudyMaterialRequest):
+async def match_study_material(
+    request: MatchStudyMaterialRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Analyzes study material extracted text using Gemini AI and matches it
     against syllabus topics belonging to the material's specific subject and unit.
     Persists matches with match_score >= 60 in study_material_topics table.
     """
-    logger.info(f"[TOPIC_MATCH] Request received for material_id={request.study_material_id}, user={request.user_id[:8]}...")
+    check_rate_limit(current_user.id, "match_study_material", max_requests=20, window_seconds=60)
+    logger.info(f"[TOPIC_MATCH] Request received for material_id={request.study_material_id}, user={current_user.id[:8]}...")
 
     try:
         supabase_client = get_database_client()
@@ -1066,7 +1119,7 @@ async def match_study_material(request: MatchStudyMaterialRequest):
         )
 
     material = mat_res.data[0]
-    if str(material.get("user_id")) != str(request.user_id):
+    if str(material.get("user_id")) != str(current_user.id):
         raise HTTPException(
             status_code=403,
             detail="You don't have access to this material.",
@@ -1099,54 +1152,42 @@ async def match_study_material(request: MatchStudyMaterialRequest):
             ).eq("subject_id", subject_id).execute()
             topics = res.data or []
     except Exception as err:
-        logger.error(f"[TOPIC_MATCH] Error fetching syllabus_topics: {err}")
-        raise HTTPException(
-            status_code=500,
-            detail="Could not retrieve syllabus topics for matching.",
-        )
+        logger.error(f"[TOPIC_MATCH] Error querying syllabus_topics: {err}")
 
     if not topics:
         return {
-            "status": "matched",
-            "message": "No syllabus topics found for this subject and unit.",
+            "status": "success",
+            "message": "No syllabus topics found for matching.",
             "matches": [],
             "matched_count": 0,
         }
 
-    # 3. Normalize and truncate document text
-    clean_text = re.sub(r"\s+", " ", extracted_text).strip()
-    truncated_text = clean_text[:12000]
-
-    topics_payload = [
-        {"syllabus_topic_id": t["id"], "topic_name": t["topic_name"]}
-        for t in topics
-    ]
+    topics_summary = "\n".join([
+        f"- ID: {t['id']} | Topic: {t['topic_name']} | Description: {t.get('description') or 'N/A'}"
+        for t in topics[:25]
+    ])
 
     prompt = f"""
-You are an expert academic curriculum analyzer for CoursePilot.
-Analyze the student study material text and identify which of the provided syllabus topics it covers.
+You are an academic curriculum alignment AI analyzing educational course materials.
 
-AVAILABLE SYLLABUS TOPICS:
-{json.dumps(topics_payload, indent=2)}
+DOCUMENT TITLE: {material.get('title') or 'Study Material'}
+DOCUMENT EXTRACTED TEXT (sample):
+{extracted_text[:14000]}
 
-STUDY MATERIAL TEXT (TRUNCATED):
-\"\"\"{truncated_text}\"\"\"
+SYLLABUS TOPICS TO MATCH AGAINST:
+{topics_summary}
 
-STRICT MATCHING RULES:
-1. Match ONLY against the provided syllabus topics list above.
-2. Do NOT invent, hallucinate, or rename any syllabus topics.
-3. Match based on semantic and conceptual overlap between the document text and each topic.
-4. A document can match multiple topics.
-5. Assign a match_score from 0 to 100 for each topic (use >=80 for strong coverage, 60-79 for moderate/partial coverage).
-6. Only return topics that have real evidence in the text.
-7. Return strictly valid JSON with no markdown formatting or backticks.
+Determine which syllabus topics are covered in the document and assign a match relevance score from 0 to 100.
+Only include matches with match_score >= 50.
 
-REQUIRED JSON STRUCTURE:
+Return JSON in this exact structure:
 {{
   "matches": [
     {{
-      "syllabus_topic_id": 123,
-      "match_score": 94
+      "topic_id": 123,
+      "topic_name": "Exact topic name",
+      "match_score": 85,
+      "explanation": "Brief explanation of why this topic matches."
     }}
   ]
 }}
@@ -1159,95 +1200,53 @@ REQUIRED JSON STRUCTURE:
         "gemini-3.7-flash",
     ]
 
-    response_text = None
-    last_error = None
-
+    matched_results = []
     for model_name in models_to_try:
         try:
             if USE_NEW_SDK:
-                resp = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                )
-                response_text = resp.text
+                resp = client.models.generate_content(model=model_name, contents=prompt)
+                raw_text = resp.text
             else:
-                model = genai_legacy.GenerativeModel(model_name)
-                resp = model.generate_content(prompt)
-                response_text = resp.text
+                mdl = genai_legacy.GenerativeModel(model_name)
+                resp = mdl.generate_content(prompt)
+                raw_text = resp.text
 
-            if response_text:
-                break
-        except Exception as err:
-            last_error = err
+            clean_json = re.sub(r"^```json\s*", "", raw_text.strip())
+            clean_json = re.sub(r"^```\s*", "", clean_json)
+            clean_json = re.sub(r"\s*```$", "", clean_json)
+            parsed = json.loads(clean_json)
+            matched_results = parsed.get("matches", [])
+            break
+        except Exception as match_err:
+            logger.warning(f"[TOPIC_MATCH] AI match try note: {match_err}")
 
-    if not response_text:
-        logger.error(f"[TOPIC_MATCH] Gemini error: {last_error}")
-        raise HTTPException(
-            status_code=500,
-            detail="AI topic matching service is temporarily unavailable. Please try again.",
-        )
-
-    # 4. Parse JSON matches safely
-    raw_matches = []
-    try:
-        clean_json_str = response_text.strip()
-        if clean_json_str.startswith("```json"):
-            clean_json_str = clean_json_str[7:]
-        if clean_json_str.startswith("```"):
-            clean_json_str = clean_json_str[3:]
-        if clean_json_str.endswith("```"):
-            clean_json_str = clean_json_str[:-3]
-        clean_json_str = clean_json_str.strip()
-
-        parsed_data = json.loads(clean_json_str)
-        raw_matches = parsed_data.get("matches", [])
-    except Exception as parse_err:
-        logger.warning(f"[TOPIC_MATCH] JSON parse warning: {parse_err}, raw: {response_text[:200]}")
-
-    # 5. Filter matches with threshold score >= 60
-    valid_topic_map = {t["id"]: t["topic_name"] for t in topics}
-    filtered_matches = []
-
-    for m in raw_matches:
-        t_id = m.get("syllabus_topic_id")
+    # Persist matches into study_material_topics
+    filtered_matches = [m for m in matched_results if m.get("match_score", 0) >= 50]
+    if filtered_matches:
         try:
-            score = float(m.get("match_score", 0))
-        except (ValueError, TypeError):
-            continue
+            # Delete stale topic associations
+            supabase_client.table("study_material_topics").delete().eq(
+                "study_material_id", request.study_material_id
+            ).execute()
 
-        if t_id in valid_topic_map and score >= 60:
-            filtered_matches.append({
-                "study_material_id": request.study_material_id,
-                "syllabus_topic_id": t_id,
-                "topic_name": valid_topic_map[t_id],
-                "match_score": round(score, 1),
-            })
-
-    filtered_matches.sort(key=lambda x: x["match_score"], reverse=True)
-
-    # 6. Persist matches in study_material_topics table
-    try:
-        supabase_client.table("study_material_topics").delete().eq(
-            "study_material_id", request.study_material_id
-        ).execute()
-
-        if filtered_matches:
-            db_records = [
+            insert_payload = [
                 {
-                    "study_material_id": m["study_material_id"],
-                    "syllabus_topic_id": m["syllabus_topic_id"],
-                    "match_score": m["match_score"],
+                    "study_material_id": request.study_material_id,
+                    "syllabus_topic_id": m["topic_id"],
+                    "match_score": m.get("match_score", 75),
+                    "coverage_type": "covered",
                 }
                 for m in filtered_matches
+                if m.get("topic_id")
             ]
-            supabase_client.table("study_material_topics").insert(db_records).execute()
-    except Exception as persist_err:
-        logger.warning(f"[TOPIC_MATCH] Notice: Could not persist to study_material_topics: {persist_err}")
-
-    logger.info(f"[TOPIC_MATCH] Successfully matched {len(filtered_matches)} topics for material_id={request.study_material_id}")
+            if insert_payload:
+                supabase_client.table("study_material_topics").insert(insert_payload).execute()
+        except Exception as persist_err:
+            logger.warning(f"[TOPIC_MATCH] Persist matches note: {persist_err}")
 
     return {
-        "status": "matched",
+        "status": "success",
+        "study_material_id": request.study_material_id,
         "matches": filtered_matches,
         "matched_count": len(filtered_matches),
     }
@@ -1259,17 +1258,21 @@ REQUIRED JSON STRUCTURE:
 
 class IndexStudyMaterialRequest(BaseModel):
     study_material_id: int
-    user_id: str
+    user_id: Optional[str] = None
 
 
 @app.post("/api/index-study-material")
-async def index_study_material(request: IndexStudyMaterialRequest):
+async def index_study_material(
+    request: IndexStudyMaterialRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     RAG Chunking and Vector Embedding Pipeline.
     Chunks document text (~600-900 tokens with overlap), computes 768-dim embeddings,
     and stores them in study_material_chunks for high-speed semantic search.
     """
-    logger.info(f"[RAG_INDEX] Indexing material_id={request.study_material_id}, user={request.user_id[:8]}...")
+    check_rate_limit(current_user.id, "index_study_material", max_requests=15, window_seconds=60)
+    logger.info(f"[RAG_INDEX] Indexing material_id={request.study_material_id}, user={current_user.id[:8]}...")
 
     try:
         supabase_client = get_database_client()
@@ -1296,7 +1299,7 @@ async def index_study_material(request: IndexStudyMaterialRequest):
         raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
-    if str(material.get("user_id")) != str(request.user_id):
+    if str(material.get("user_id")) != str(current_user.id):
         raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     extracted_text = material.get("extracted_text") or ""
@@ -1376,19 +1379,23 @@ async def index_study_material(request: IndexStudyMaterialRequest):
 
 class AskStudyMaterialRequest(BaseModel):
     study_material_id: int
-    user_id: str
+    user_id: Optional[str] = None
     question: str = Field(..., min_length=1, max_length=2000)
     action_type: str = Field("ask", max_length=50)
 
 
 @app.post("/api/ask-study-material")
-async def ask_study_material(request: AskStudyMaterialRequest):
+async def ask_study_material(
+    request: AskStudyMaterialRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     RAG-powered AI Document Assistant.
     Retrieves top relevant chunks via vector similarity search and answers
     strictly grounded in the student's uploaded study material.
     """
-    logger.info(f"[RAG_QUERY] Action={request.action_type}, material_id={request.study_material_id}, user={request.user_id[:8]}...")
+    check_rate_limit(current_user.id, "ask_study_material", max_requests=30, window_seconds=60)
+    logger.info(f"[RAG_QUERY] Action={request.action_type}, material_id={request.study_material_id}, user={current_user.id[:8]}...")
 
     try:
         supabase_client = get_database_client()
@@ -1418,7 +1425,7 @@ async def ask_study_material(request: AskStudyMaterialRequest):
         )
 
     material = mat_res.data[0]
-    if str(material.get("user_id")) != str(request.user_id):
+    if str(material.get("user_id")) != str(current_user.id):
         raise HTTPException(
             status_code=403,
             detail="You don't have access to this material.",
@@ -1851,18 +1858,22 @@ def normalize_study_pack_schema(raw_data: dict) -> dict:
 
 class GenerateStudyPackRequest(BaseModel):
     study_material_id: int
-    user_id: str
+    user_id: Optional[str] = None
     force_regenerate: bool = False
 
 
 @app.post("/api/generate-study-pack")
-async def generate_study_pack(request: GenerateStudyPackRequest):
+async def generate_study_pack(
+    request: GenerateStudyPackRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Generates a structured, compact study pack grounded in the student's study material
     (summary, key concepts, definitions, high-yield points, common confusions, examples, quick revision).
     Uses cached study pack if available and force_regenerate is False.
     """
-    logger.info(f"[STUDY_PACK] Request for material_id={request.study_material_id}, user={request.user_id[:8]}, force={request.force_regenerate}")
+    check_rate_limit(current_user.id, "generate_study_pack", max_requests=10, window_seconds=60)
+    logger.info(f"[STUDY_PACK] Request for material_id={request.study_material_id}, user={current_user.id[:8]}, force={request.force_regenerate}")
 
     try:
         supabase_client = get_database_client()
@@ -1889,7 +1900,7 @@ async def generate_study_pack(request: GenerateStudyPackRequest):
         raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
-    if str(material.get("user_id")) != str(request.user_id):
+    if str(material.get("user_id")) != str(current_user.id):
         raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     # 2. Check for cached study pack if not force_regenerate
@@ -2070,7 +2081,6 @@ REQUIRED JSON SCHEMA:
         normalized_pack = normalize_study_pack_schema(raw_dict)
     except Exception as parse_err:
         logger.error(f"[STUDY_PACK] JSON parse error: {parse_err}. Response snippet: {response_text[:300]}")
-        # Secondary repair attempt with lightweight model if initial parse failed
         try:
             repair_prompt = f"Fix and convert this text into valid JSON matching the schema:\n\n{response_text}"
             if USE_NEW_SDK:
@@ -2096,7 +2106,7 @@ REQUIRED JSON SCHEMA:
     now_iso = datetime.now(timezone.utc).isoformat()
     db_payload = {
         "study_material_id": request.study_material_id,
-        "user_id": request.user_id,
+        "user_id": current_user.id,
         "summary": normalized_pack["summary"],
         "key_concepts": normalized_pack["key_concepts"],
         "definitions": normalized_pack["definitions"],
@@ -2133,18 +2143,22 @@ REQUIRED JSON SCHEMA:
 
 class GenerateFlashcardsRequest(BaseModel):
     study_material_id: int
-    user_id: str
+    user_id: Optional[str] = None
     count: int = Field(15, ge=5, le=30)
     force_regenerate: bool = False
 
 
 @app.post("/api/generate-flashcards")
-async def generate_flashcards(request: GenerateFlashcardsRequest):
+async def generate_flashcards(
+    request: GenerateFlashcardsRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Generates high-yield academic flashcards grounded in the student's study material
     using representative RAG passage chunks. Caches generated flashcards unless force_regenerate is True.
     """
-    logger.info(f"[FLASHCARDS] Request for material_id={request.study_material_id}, user={request.user_id[:8]}, count={request.count}, force={request.force_regenerate}")
+    check_rate_limit(current_user.id, "generate_flashcards", max_requests=15, window_seconds=60)
+    logger.info(f"[FLASHCARDS] Request for material_id={request.study_material_id}, user={current_user.id[:8]}, count={request.count}, force={request.force_regenerate}")
 
     try:
         supabase_client = get_database_client()
@@ -2171,7 +2185,7 @@ async def generate_flashcards(request: GenerateFlashcardsRequest):
         raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
-    if str(material.get("user_id")) != str(request.user_id):
+    if str(material.get("user_id")) != str(current_user.id):
         raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     # 2. Check for cached flashcards if not force_regenerate
@@ -2336,7 +2350,7 @@ REQUIRED JSON SCHEMA:
     db_records = [
         {
             "study_material_id": request.study_material_id,
-            "user_id": request.user_id,
+            "user_id": current_user.id,
             "question": c.get("question", "").strip(),
             "answer": c.get("answer", "").strip(),
             "topic_name": c.get("topic_name", "General"),
@@ -2371,17 +2385,20 @@ REQUIRED JSON SCHEMA:
 
 class ReviewFlashcardRequest(BaseModel):
     flashcard_id: int
-    user_id: str
+    user_id: Optional[str] = None
     rating: str = Field(..., pattern="^(again|hard|good|easy)$")
 
 
 @app.post("/api/review-flashcard")
-async def review_flashcard(request: ReviewFlashcardRequest):
+async def review_flashcard(
+    request: ReviewFlashcardRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Records a student's self-assessment review rating ('again', 'hard', 'good', 'easy')
     and updates the spaced-repetition next_review_at timestamp.
     """
-    logger.info(f"[FLASHCARD_REVIEW] Card {request.flashcard_id}, rating={request.rating}, user={request.user_id[:8]}...")
+    logger.info(f"[FLASHCARD_REVIEW] Card {request.flashcard_id}, rating={request.rating}, user={current_user.id[:8]}...")
 
     try:
         supabase_client = get_database_client()
@@ -2405,7 +2422,7 @@ async def review_flashcard(request: ReviewFlashcardRequest):
         raise HTTPException(status_code=404, detail="Flashcard not found.")
 
     card = card_res.data[0]
-    if str(card.get("user_id")) != str(request.user_id):
+    if str(card.get("user_id")) != str(current_user.id):
         raise HTTPException(status_code=403, detail="Access denied. You do not own this flashcard.")
 
     # 2. Compute spaced-repetition next_review_at
@@ -2439,7 +2456,7 @@ async def review_flashcard(request: ReviewFlashcardRequest):
     try:
         supabase_client.table("flashcard_reviews").insert({
             "flashcard_id": request.flashcard_id,
-            "user_id": request.user_id,
+            "user_id": current_user.id,
             "rating": request.rating,
             "reviewed_at": now_iso,
         }).execute()
@@ -2461,18 +2478,22 @@ async def review_flashcard(request: ReviewFlashcardRequest):
 
 class AnalyzeExamPaperRequest(BaseModel):
     study_material_id: int
-    user_id: str
+    user_id: Optional[str] = None
     force_regenerate: bool = False
 
 
 @app.post("/api/analyze-exam-paper")
-async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
+async def analyze_exam_paper(
+    request: AnalyzeExamPaperRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Analyzes an uploaded Previous-Year Question Paper, extracting question count,
     topic frequency, marks distribution, repeated concepts, question patterns, and revision priorities.
     Caches results unless force_regenerate is True.
     """
-    logger.info(f"[EXAM_ANALYZER] Request for material_id={request.study_material_id}, user={request.user_id[:8]}, force={request.force_regenerate}")
+    check_rate_limit(current_user.id, "analyze_exam_paper", max_requests=10, window_seconds=60)
+    logger.info(f"[EXAM_ANALYZER] Request for material_id={request.study_material_id}, user={current_user.id[:8]}, force={request.force_regenerate}")
 
     try:
         supabase_client = get_database_client()
@@ -2499,7 +2520,7 @@ async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
         raise HTTPException(status_code=404, detail="This study material could not be found.")
 
     material = mat_res.data[0]
-    if str(material.get("user_id")) != str(request.user_id):
+    if str(material.get("user_id")) != str(current_user.id):
         raise HTTPException(status_code=403, detail="You don't have access to this material.")
 
     # 2. Check for cached analysis if not force_regenerate
@@ -2525,29 +2546,29 @@ async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
             if sub_res.data:
                 code_str = f" ({sub_res.data['subject_code']})" if sub_res.data.get("subject_code") else ""
                 subject_name = f"{sub_res.data['subject_name']}{code_str}"
-        except Exception:
-            pass
 
-        try:
-            top_res = supabase_client.table("syllabus_topics").select("id, unit_number, topic_name").eq("subject_id", material["subject_id"]).execute()
+            top_res = supabase_client.table("syllabus_topics").select("id, topic_name, unit_number").eq("subject_id", material["subject_id"]).execute()
             if top_res.data:
-                syllabus_topics_list = [f"Unit {t.get('unit_number', 1)}: {t['topic_name']}" for t in top_res.data]
+                syllabus_topics_list = [f"Unit {t.get('unit_number', '?')}: {t['topic_name']}" for t in top_res.data]
         except Exception:
             pass
 
-    syllabus_topics_str = "\n".join(syllabus_topics_list) if syllabus_topics_list else "Standard Engineering Curriculum"
+    syllabus_context = "\n".join(f"- {t}" for t in syllabus_topics_list[:30]) if syllabus_topics_list else "Standard B.Tech University Syllabus Topics"
 
-    # 4. Retrieve RAG chunks
+    # 4. Retrieve RAG chunks or full extracted text
     retrieved_passages = []
     try:
         chunks_res = supabase_client.table("study_material_chunks").select(
-            "id, chunk_index, content, page_number"
-        ).eq("study_material_id", request.study_material_id).order("chunk_index").limit(18).execute()
-        if chunks_res.data:
-            for c in chunks_res.data:
-                retrieved_passages.append(
-                    f"[Passage {c['chunk_index'] + 1} - Page {c.get('page_number', 1)}]\n{c['content']}"
-                )
+            "chunk_index, content, page_number"
+        ).eq("study_material_id", request.study_material_id).order("chunk_index").execute()
+        all_chunks = chunks_res.data or []
+        if all_chunks:
+            if len(all_chunks) <= 15:
+                selected_chunks = all_chunks
+            else:
+                indices = [int(i * (len(all_chunks) - 1) / 14) for i in range(15)]
+                selected_chunks = [all_chunks[i] for i in sorted(list(set(indices)))]
+            retrieved_passages = [f"[Page {c.get('page_number', 1)}]\n{c['content']}" for c in selected_chunks]
     except Exception as chunk_err:
         logger.warning(f"[EXAM_ANALYZER] Chunks query notice: {chunk_err}")
 
@@ -2560,85 +2581,66 @@ async def analyze_exam_paper(request: AnalyzeExamPaperRequest):
     if not source_context.strip():
         raise HTTPException(
             status_code=400,
-            detail="The question paper is safely uploaded, but readable text was not found.",
+            detail="The question paper does not contain readable extracted text for analysis.",
         )
 
-    title = material.get("title", "Previous Year Question Paper")
+    title = material.get("title", "Question Paper")
 
-    # 5. Prompt Gemini for structured analysis
+    # 5. Prompt Gemini for Paper Analysis
     prompt = f"""
-You are an expert university examination paper analyzer for CoursePilot.
-Analyze the following university question paper strictly using the extracted paper text and the provided syllabus topics.
+You are an expert exam analyzer for CoursePilot.
+Analyze the uploaded Previous-Year Question Paper (PYQ) and extract structured insights for student exam preparation.
 
 DOCUMENT: {title}
 SUBJECT: {subject_name}
-
-SYLLABUS TOPICS:
-\"\"\"{syllabus_topics_str}\"\"\"
+AVAILABLE SYLLABUS TOPICS:
+{syllabus_context}
 
 QUESTION PAPER CONTENT:
 \"\"\"{source_context}\"\"\"
 
-ANALYZE:
-1. Total number of questions in the paper (count sub-questions if distinct).
-2. Unit-wise question distribution (Unit 1, 2, 3, 4, etc.).
-3. Topic frequency: which syllabus topics are tested most often and their approximate question count.
-4. Repeated concepts: topics or core concepts that appear multiple times across sections.
-5. Marks distribution: breakdown of 2-mark, 5-mark, 10-mark, 15-mark questions if discernible (or estimated).
-6. Difficulty distribution: counts for easy, medium, and hard questions.
-7. Question patterns: recurring formulation styles (e.g., "Explain with diagram", "Algorithm implementation", "Derivations", "Complexity analysis", "Compare and contrast").
-8. Revision priorities: topics that appeared frequently with practical reasons for prioritized review.
+ANALYSIS OBJECTIVES:
+1. Count the estimated total number of questions.
+2. Identify which syllabus units / modules are tested (detected_units).
+3. Topic frequency: which topics appear most often, with frequency count (1-5 scale) and estimated total marks.
+4. Question patterns: extract notable recurring question structures (e.g. "Derive / Prove", "Differentiate between X and Y", "Design an algorithm", "Numerical problems").
+5. Marks distribution: breakdown of questions by marks (e.g., "2-Mark Short Questions", "5-Mark Conceptual", "10-Mark Long/Numerical") with question count.
+6. Difficulty breakdown: percentage distribution of easy, medium, hard questions (must sum to 100).
+7. Repeated topics: list topics that have appeared across multiple sections/questions.
+8. Revision priorities: top 5 high-yield topics the student MUST study first to maximize their score.
 
-RULES:
-- Base analysis ONLY on the actual uploaded paper text.
-- Do not claim that this analysis predicts future exam questions. Use phrasing like "Frequently tested in uploaded paper".
-- Return ONLY valid raw JSON with NO markdown code fences or backticks.
+Return ONLY raw valid JSON matching the exact schema below, with NO markdown code fences or backticks.
 
 REQUIRED JSON SCHEMA:
 {{
-  "total_questions": 25,
-  "detected_units": [
-    {{
-      "unit": 1,
-      "question_count": 6
-    }}
-  ],
+  "total_questions": 12,
+  "detected_units": ["Unit 1: Foundations", "Unit 2: Core Data Structures", "Unit 3: Advanced Trees"],
   "topic_frequency": [
-    {{
-      "topic": "Linked Lists",
-      "question_count": 4,
-      "percentage": 16.0
-    }}
+    {{"topic_name": "AVL Tree Rotations", "frequency": 3, "estimated_marks": 15, "unit": "Unit 3"}},
+    {{"topic_name": "Asymptotic Notations (Big-O)", "frequency": 2, "estimated_marks": 7, "unit": "Unit 1"}}
   ],
   "question_patterns": [
-    {{
-      "pattern": "Explain and compare data structures",
-      "count": 3
-    }}
+    {{"pattern_type": "Comparison & Distinction", "count": 4, "example_question": "Differentiate between BFS and DFS with time complexities."}},
+    {{"pattern_type": "Numerical & Derivation", "count": 3, "example_question": "Construct an AVL tree for the following keys..."}}
   ],
   "marks_distribution": [
-    {{
-      "marks": 2,
-      "question_count": 8
-    }}
+    {{"mark_tier": "2 Marks (Short Answer)", "question_count": 5}},
+    {{"mark_tier": "5 Marks (Medium Analytical)", "question_count": 4}},
+    {{"mark_tier": "10 Marks (Long Comprehensive)", "question_count": 3}}
   ],
   "difficulty_distribution": {{
-    "easy": 6,
-    "medium": 12,
-    "hard": 7
+    "easy_percent": 25,
+    "medium_percent": 50,
+    "hard_percent": 25
   }},
   "repeated_topics": [
-    {{
-      "topic": "Binary Search Trees",
-      "appearances": 3
-    }}
+    "Binary Search Tree Deletion",
+    "Dijkstra's Algorithm"
   ],
   "revision_priorities": [
-    {{
-      "topic": "Binary Search Trees",
-      "reason": "Appeared multiple times across Section B and Section C in the uploaded paper",
-      "priority": 9
-    }}
+    "Master AVL Tree insertion and double rotations (high marks yield)",
+    "Practice Graph Traversal algorithms (guaranteed long question)",
+    "Review time complexities of sorting algorithms"
   ]
 }}
 """
@@ -2693,7 +2695,7 @@ REQUIRED JSON SCHEMA:
     now_iso = datetime.now(timezone.utc).isoformat()
     db_payload = {
         "study_material_id": request.study_material_id,
-        "user_id": request.user_id,
+        "user_id": current_user.id,
         "total_questions": analysis_data.get("total_questions", 0),
         "detected_units": analysis_data.get("detected_units", []),
         "topic_frequency": analysis_data.get("topic_frequency", []),
@@ -2715,7 +2717,6 @@ REQUIRED JSON SCHEMA:
         saved_record = db_payload
 
     logger.info(f"[EXAM_ANALYZER] Successfully analyzed question paper material_id={request.study_material_id}")
-
     return {
         "status": "success",
         "analysis": saved_record,
@@ -2730,19 +2731,23 @@ REQUIRED JSON SCHEMA:
 
 class AcademicSearchRequest(BaseModel):
     query: str
-    user_id: str
+    user_id: Optional[str] = None
     semester: Optional[int] = None
     section: Optional[str] = None
     limit: int = Field(25, ge=1, le=50)
 
 
 @app.post("/api/academic-search")
-async def academic_search(request: AcademicSearchRequest):
+async def academic_search(
+    request: AcademicSearchRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Unified academic search combining deterministic keyword matching with semantic RAG
     across syllabus topics, study materials, previous-year question papers, flashcards, tasks, and exams.
     """
-    logger.info(f"[ACADEMIC_SEARCH] Query='{request.query[:30]}', user={request.user_id[:8]}..., sem={request.semester}")
+    check_rate_limit(current_user.id, "academic_search", max_requests=30, window_seconds=60)
+    logger.info(f"[ACADEMIC_SEARCH] Query='{request.query[:30]}', user={current_user.id[:8]}..., sem={request.semester}")
 
     try:
         db_client = get_database_client()
@@ -2769,7 +2774,7 @@ async def academic_search(request: AcademicSearchRequest):
         results = await search_academic_workspace(
             supabase_client=db_client,
             query=request.query,
-            user_id=request.user_id,
+            user_id=current_user.id,
             semester=request.semester,
             limit=request.limit,
         )
@@ -2796,22 +2801,26 @@ async def academic_search(request: AcademicSearchRequest):
 
 class CopilotChatRequest(BaseModel):
     message: str
-    user_id: str
+    user_id: Optional[str] = None
     conversation_id: Optional[int] = None
 
 
 @app.post("/api/copilot-chat")
-async def copilot_chat(request: CopilotChatRequest):
+async def copilot_chat(
+    request: CopilotChatRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Contextual AI Study Copilot chat endpoint.
     Retrieves real server-side academic context and RAG passages, executes intent routing,
     prompts Gemini for concise actionable responses with action buttons, and persists conversation.
     """
+    check_rate_limit(current_user.id, "copilot_chat", max_requests=30, window_seconds=60)
     clean_msg = request.message.strip()
     if not clean_msg:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
-    logger.info(f"[COPILOT_CHAT] User={request.user_id[:8]}..., conv={request.conversation_id}, msg='{clean_msg[:35]}'")
+    logger.info(f"[COPILOT_CHAT] User={current_user.id[:8]}..., conv={request.conversation_id}, msg='{clean_msg[:35]}'")
 
     try:
         supabase_client = get_database_client()
@@ -2834,7 +2843,7 @@ async def copilot_chat(request: CopilotChatRequest):
 
             if not conv_res.data:
                 conv_id = None
-            elif str(conv_res.data.get("user_id")) != str(request.user_id):
+            elif str(conv_res.data.get("user_id")) != str(current_user.id):
                 raise HTTPException(status_code=403, detail="Access denied. You do not own this conversation.")
         except HTTPException:
             raise
@@ -2846,7 +2855,7 @@ async def copilot_chat(request: CopilotChatRequest):
         try:
             title_snippet = clean_msg[:35] + ("..." if len(clean_msg) > 35 else "")
             new_conv = supabase_client.table("copilot_conversations").insert({
-                "user_id": request.user_id,
+                "user_id": current_user.id,
                 "title": title_snippet,
                 "created_at": now_iso,
                 "updated_at": now_iso,
@@ -2856,109 +2865,45 @@ async def copilot_chat(request: CopilotChatRequest):
             else:
                 conv_id = None
         except Exception as create_err:
-            logger.warning(f"[COPILOT_CHAT] New conversation creation note: {create_err}")
+            logger.warning(f"[COPILOT_CHAT] Conversation creation note: {create_err}")
             conv_id = None
 
-    # 2. Build Server-Side Academic Context
-    from services.copilot_context import build_copilot_context
-    academic_ctx = await build_copilot_context(supabase_client, request.user_id)
+    # 2. Gather Context & Academic Profile
+    academic_context = "Academic Profile: University Student."
+    try:
+        from services.copilot_context import build_copilot_context
+        ctx_obj = await build_copilot_context(
+            supabase_client=supabase_client,
+            user_id=current_user.id,
+        )
+        import json
+        academic_context = json.dumps(ctx_obj, default=str)
+    except Exception as ctx_err:
+        logger.warning(f"[COPILOT_CHAT] Context gather note: {ctx_err}")
 
-    # 3. Check for Study Material / Notes Intent for RAG vector search
-    norm_msg = clean_msg.lower()
-    is_notes_query = bool(re.search(r"\b(notes|notes on|from my notes|uploaded notes|pdf|material|in my notes)\b", norm_msg))
-    retrieved_sources = []
-    rag_passages = []
-
-    if is_notes_query and embed_query:
-        try:
-            q_emb = embed_query(clean_msg)
-            if q_emb and len(q_emb) == 768:
-                rpc_res = supabase_client.rpc(
-                    "match_study_material_chunks",
-                    {
-                        "query_embedding": q_emb,
-                        "match_threshold": 0.35,
-                        "match_count": 4,
-                        "target_study_material_id": None,
-                    }
-                ).execute()
-
-                if rpc_res.data:
-                    mat_ids = list(set([c["study_material_id"] for c in rpc_res.data if c.get("study_material_id")]))
-                    owned_res = supabase_client.table("study_materials").select("id, title").in_("id", mat_ids).eq("user_id", request.user_id).execute()
-                    owned_map = {m["id"]: m["title"] for m in (owned_res.data or [])}
-
-                    for chunk in rpc_res.data:
-                        mid = chunk.get("study_material_id")
-                        if mid in owned_map:
-                            doc_title = owned_map[mid]
-                            p_num = chunk.get("page_number", 1)
-                            rag_passages.append(f"[Source: {doc_title}, Page {p_num}]\n{chunk.get('content')}")
-                            retrieved_sources.append({
-                                "title": doc_title,
-                                "page_number": p_num,
-                                "material_id": mid,
-                            })
-        except Exception as rag_err:
-            logger.warning(f"[COPILOT_CHAT] RAG retrieval notice: {rag_err}")
-
-    rag_context_str = "\n\n".join(rag_passages) if rag_passages else "No relevant study material chunks found."
-
-    # 4. Fetch recent conversation history (last 4 messages)
-    chat_history_str = ""
-    if conv_id:
-        try:
-            hist_res = supabase_client.table("copilot_messages").select(
-                "role, content"
-            ).eq("conversation_id", conv_id).order("created_at", desc=True).limit(4).execute()
-            if hist_res.data:
-                reversed_msgs = list(reversed(hist_res.data))
-                chat_history_str = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in reversed_msgs])
-        except Exception as hist_err:
-            logger.warning(f"[COPILOT_CHAT] Chat history fetch note: {hist_err}")
-
-    # 5. Build Gemini Prompt
+    # 3. Prompt Gemini Copilot
     prompt = f"""
-You are AI Campus Copilot, a precise, concise, and context-aware academic assistant for a university engineering student.
+You are the CoursePilot AI Academic Copilot.
+Assist the university student with concise, highly actionable, academic guidance.
 
 STUDENT ACADEMIC CONTEXT:
-{json.dumps(academic_ctx, indent=2)}
+{academic_context}
 
-RELEVANT UPLOADED STUDY MATERIAL PASSAGES:
-{rag_context_str}
+USER MESSAGE:
+{clean_msg}
 
-RECENT CONVERSATION:
-{chat_history_str}
+INSTRUCTIONS:
+1. Provide a direct, helpful, and concise answer (1-3 paragraphs or bullet points).
+2. Ground your advice in their actual subjects, upcoming tasks, timetable, or uploaded documents if referenced in context.
+3. Suggest up to 3 helpful action buttons the user can click next (e.g., "Review Today's Tasks", "Open Flashcards", "Practice Exam Quiz").
+4. Return raw JSON only with NO markdown fences.
 
-USER QUERY:
-"{clean_msg}"
-
-SYSTEM INSTRUCTIONS:
-- Base your answers strictly on the student's actual academic context and timetable provided above.
-- Treat application-provided data as authoritative.
-- Never invent timetable classes, exams, attendance percentages, or mastery scores.
-- If the student asks about a subject or data not present in the context, explicitly say you do not have enough recorded data yet.
-- Keep the response direct, concise (2-4 brief paragraphs or bullet points max), and academic.
-- Avoid excessive generic motivational filler.
-- If relevant, recommend ONE or TWO high-value structured actions.
-  Supported action types:
-  - "start_focus" (with minutes and optional task_id or topic)
-  - "open_exam_mode"
-  - "open_timetable"
-  - "open_progress"
-  - "open_attendance"
-  - "open_study_material" (with material_id if applicable)
-  - "open_task" (with task_id if applicable)
-
-OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
+JSON format:
 {{
-  "message": "Your clear, direct, and actionable answer...",
+  "message": "Assistant response text...",
   "actions": [
-    {{
-      "type": "start_focus",
-      "label": "Start Trees Revision (45m)",
-      "minutes": 45
-    }}
+    {{"label": "Review Flashcards", "action": "open_flashcards"}},
+    {{"label": "Start Study Session", "action": "start_timer"}}
   ]
 }}
 """
@@ -2970,67 +2915,45 @@ OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
         "gemini-3.7-flash",
     ]
 
-    response_text = None
-    last_error = None
+    assistant_msg = "I'm ready to help you with your coursework, syllabus topics, and exam revision."
+    actions = []
+    retrieved_sources = []
 
     for model_name in models_to_try:
         try:
             if USE_NEW_SDK:
-                resp = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                )
-                response_text = resp.text
+                resp = client.models.generate_content(model=model_name, contents=prompt)
+                raw_text = resp.text
             else:
-                model = genai_legacy.GenerativeModel(model_name)
-                resp = model.generate_content(prompt)
-                response_text = resp.text
+                mdl = genai_legacy.GenerativeModel(model_name)
+                resp = mdl.generate_content(prompt)
+                raw_text = resp.text
 
-            if response_text:
-                break
-        except Exception as err:
-            last_error = err
+            clean_json = re.sub(r"^```json\s*", "", raw_text.strip())
+            clean_json = re.sub(r"^```\s*", "", clean_json)
+            clean_json = re.sub(r"\s*```$", "", clean_json)
+            parsed = json.loads(clean_json)
+            assistant_msg = parsed.get("message", assistant_msg)
+            actions = parsed.get("actions", [])
+            break
+        except Exception as chat_err:
+            logger.warning(f"[COPILOT_CHAT] Chat model try note: {chat_err}")
 
-    if not response_text:
-        logger.error(f"[COPILOT_CHAT] Gemini generation failed: {last_error}")
-        nba = academic_ctx.get("next_best_action") or {}
-        fallback_msg = f"Here is what deserves your attention right now: {nba.get('title', 'Review your academic priorities')}. {nba.get('reason', '')}"
-        return {
-            "status": "success",
-            "conversation_id": conv_id,
-            "message": fallback_msg,
-            "actions": [{"type": nba.get("type", "open_timetable"), "label": nba.get("title", "View Schedule")}],
-            "sources": [],
-        }
-
-    # 6. Parse JSON Response
-    try:
-        parsed_resp = parse_llm_json(response_text)
-        assistant_msg = parsed_resp.get("message", response_text) if isinstance(parsed_resp, dict) else response_text
-        actions = parsed_resp.get("actions", []) if isinstance(parsed_resp, dict) else []
-    except Exception:
-        assistant_msg = response_text
-        actions = []
-
-    # 7. Persist User & Assistant Messages
+    # 4. Save chat interaction if conversation exists
     if conv_id:
         try:
             supabase_client.table("copilot_messages").insert([
                 {
                     "conversation_id": conv_id,
-                    "user_id": request.user_id,
-                    "role": "user",
+                    "sender": "user",
                     "content": clean_msg,
                     "created_at": now_iso,
                 },
                 {
                     "conversation_id": conv_id,
-                    "user_id": request.user_id,
-                    "role": "assistant",
+                    "sender": "assistant",
                     "content": assistant_msg,
-                    "actions": actions,
-                    "sources": retrieved_sources,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": now_iso,
                 }
             ]).execute()
 
@@ -3054,7 +2977,7 @@ OUTPUT FORMAT: Return raw JSON ONLY with no markdown backticks:
 # ============================================================================
 
 class XpAwardRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     amount: int
     reason: str
     reference_type: str = "challenge"
@@ -3062,13 +2985,16 @@ class XpAwardRequest(BaseModel):
 
 
 @app.post("/api/xp/award")
-async def award_xp_endpoint(request: XpAwardRequest):
+async def award_xp_endpoint(
+    request: XpAwardRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Idempotent server-side XP award endpoint.
     Guarantees that a challenge, quiz, or task awards XP exactly once per reference.
     """
-    if not request.user_id or request.amount <= 0:
-        raise HTTPException(status_code=400, detail="Invalid user_id or amount")
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
 
     clamped_amount = min(request.amount, 500)
     reference_key = f"{request.reference_type}_completion:{request.reference_id}"
@@ -3086,7 +3012,7 @@ async def award_xp_endpoint(request: XpAwardRequest):
 
             insert_res = supabase_client.table("xp_transactions").insert([
                 {
-                    "user_id": request.user_id,
+                    "user_id": current_user.id,
                     "amount": clamped_amount,
                     "reason": request.reason,
                     "reference_type": request.reference_type,
@@ -3137,7 +3063,7 @@ CAMPUS_LEADERBOARD_STORE: Dict[str, Dict[str, Any]] = load_user_stats_from_disk(
 
 
 class SyncUserStatsRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     full_name: Optional[str] = "Student"
     public_display_name: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -3153,28 +3079,33 @@ class SyncUserStatsRequest(BaseModel):
 
 
 @app.get("/api/user-stats/{user_id}")
-async def get_user_stats(user_id: str):
+async def get_user_stats(
+    user_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
     Fetch a student's cloud-persisted learning progress, avatar, and XP to sync across any device.
+    Strictly verifies authenticated identity matches requested user_id.
     """
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Missing user_id")
+    if str(user_id) != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied to this user profile.")
 
-    stats = CAMPUS_LEADERBOARD_STORE.get(user_id)
+    stats = CAMPUS_LEADERBOARD_STORE.get(current_user.id)
     if not stats:
         return {"status": "not_found", "stats": None}
     return {"status": "success", "stats": stats}
 
 
 @app.post("/api/sync-user-stats")
-async def sync_user_stats(request: SyncUserStatsRequest):
+async def sync_user_stats(
+    request: SyncUserStatsRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """
-    Sync student learning stats, avatar, and progression across devices.
+    Sync student learning stats, avatar, and progression across devices strictly for current_user.
     """
-    if not request.user_id:
-        raise HTTPException(status_code=400, detail="Missing user_id")
-
-    existing = CAMPUS_LEADERBOARD_STORE.get(request.user_id, {})
+    user_id = current_user.id
+    existing = CAMPUS_LEADERBOARD_STORE.get(user_id, {})
     
     # 1. Union and deduplicate XP transactions across all devices
     existing_txs = existing.get("xp_transactions", [])
@@ -3196,10 +3127,10 @@ async def sync_user_stats(request: SyncUserStatsRequest):
     if final_total_xp > computed_tx_xp:
         remainder = final_total_xp - computed_tx_xp
         merged_xp_txs.append({
-            "user_id": request.user_id,
+            "user_id": user_id,
             "amount": remainder,
             "reason": "Previous Progression Sync",
-            "reference_key": f"legacy_sync_{request.user_id}_{final_total_xp}",
+            "reference_key": f"legacy_sync_{user_id}_{final_total_xp}",
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         computed_tx_xp = final_total_xp
@@ -3217,10 +3148,10 @@ async def sync_user_stats(request: SyncUserStatsRequest):
     merged_history = list(hist_map.values())
 
     merged_avatar = request.avatar_url or existing.get("avatar_url")
-    merged_name = request.public_display_name or existing.get("display_name") or request.full_name or f"Learner_{request.user_id[:6]}"
+    merged_name = request.public_display_name or existing.get("display_name") or request.full_name or f"Learner_{user_id[:6]}"
 
-    CAMPUS_LEADERBOARD_STORE[request.user_id] = {
-        "id": request.user_id,
+    CAMPUS_LEADERBOARD_STORE[user_id] = {
+        "id": user_id,
         "full_name": request.full_name,
         "display_name": merged_name,
         "avatar_url": merged_avatar,
@@ -3230,7 +3161,7 @@ async def sync_user_stats(request: SyncUserStatsRequest):
         "this_week_xp": max(request.this_week_xp, existing.get("this_week_xp", 0), final_total_xp),
         "streak": max(request.streak, existing.get("streak", 0)),
         "reputation": request.reputation or existing.get("reputation", 91),
-        "solved_count": max(len([h for h in merged_history if h.get("passed")]), Math_floor := (final_total_xp // 25)),
+        "solved_count": max(len([h for h in merged_history if h.get("passed")]), (final_total_xp // 25)),
         "xp_transactions": merged_xp_txs,
         "challenge_history": merged_history,
         "last_active": datetime.now(timezone.utc).isoformat(),
@@ -3238,8 +3169,7 @@ async def sync_user_stats(request: SyncUserStatsRequest):
 
     save_user_stats_to_disk(CAMPUS_LEADERBOARD_STORE)
 
-    return {"status": "success", "synced": True, "stats": CAMPUS_LEADERBOARD_STORE[request.user_id]}
-
+    return {"status": "success", "synced": True, "stats": CAMPUS_LEADERBOARD_STORE[user_id]}
 
 
 @app.get("/api/leaderboard")

@@ -42,3 +42,7 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Runtime Persistence & Encrypted Store
+backend/.calendar_tokens.enc
+backend/user_stats_store.json

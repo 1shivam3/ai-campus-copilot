@@ -27,6 +27,37 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 45000) {
   }
 }
 
+/**
+ * Retrieves the current authenticated user's access token from Supabase session
+ * to securely authorize all CoursePilot backend calls.
+ */
+export async function getAuthHeaders() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      return {
+        Authorization: `Bearer ${session.access_token}`,
+      }
+    }
+  } catch (err) {
+    console.warn("Could not retrieve Supabase session token:", err)
+  }
+  return {}
+}
+
+/**
+ * Centralized fetch helper that automatically attaches Supabase JWT Bearer authentication
+ * to all protected CoursePilot backend endpoints.
+ */
+export async function fetchWithAuth(url, options = {}, timeoutMs = 45000) {
+  const authHeaders = await getAuthHeaders()
+  const headers = {
+    ...authHeaders,
+    ...(options.headers || {}),
+  }
+  return fetchWithTimeout(url, { ...options, headers }, timeoutMs)
+}
+
 export async function checkBackendHealth() {
   try {
     const res = await fetchWithTimeout(`${API_URL}/health`, { method: "GET" }, 5000)
@@ -41,7 +72,7 @@ export async function checkBackendHealth() {
 }
 
 export async function generateStudyAdvice(data) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/study-advice`,
     {
       method: "POST",
@@ -63,7 +94,7 @@ export async function generateStudyAdvice(data) {
 }
 
 export async function analyzeStudyMaterial(content, subject) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/analyze-material`,
     {
       method: "POST",
@@ -85,7 +116,7 @@ export async function analyzeStudyMaterial(content, subject) {
 }
 
 export async function generateTopicQuiz(data) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/generate-quiz`,
     {
       method: "POST",
@@ -107,7 +138,7 @@ export async function generateTopicQuiz(data) {
 }
 
 export async function generateExamQuiz(data) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/generate-exam-quiz`,
     {
       method: "POST",
@@ -129,7 +160,7 @@ export async function generateExamQuiz(data) {
 }
 
 export async function generateExamQuestion(payload) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/generate-exam-question`,
     {
       method: "POST",
@@ -156,8 +187,8 @@ export async function generateExamQuestion(payload) {
 
 export async function fetchCalendarAuthUrl(userId) {
   const redirect = window.location.origin
-  const response = await fetchWithTimeout(
-    `${API_URL}/api/calendar/auth-url?user_id=${encodeURIComponent(userId)}&redirect_uri=${encodeURIComponent(redirect)}`,
+  const response = await fetchWithAuth(
+    `${API_URL}/api/calendar/auth-url?redirect_uri=${encodeURIComponent(redirect)}`,
     { method: "GET" },
     15000
   )
@@ -174,9 +205,9 @@ export async function fetchCalendarAuthUrl(userId) {
   return response.json()
 }
 
-export async function submitCalendarOAuthCode(code, userId) {
+export async function submitCalendarOAuthCode(code, state, userId) {
   const redirect = window.location.origin
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/calendar/oauth-callback`,
     {
       method: "POST",
@@ -185,6 +216,7 @@ export async function submitCalendarOAuthCode(code, userId) {
       },
       body: JSON.stringify({
         code,
+        state,
         user_id: userId,
         redirect_uri: redirect,
       }),
@@ -201,8 +233,8 @@ export async function submitCalendarOAuthCode(code, userId) {
 }
 
 export async function fetchCalendarStatus(userId) {
-  const response = await fetchWithTimeout(
-    `${API_URL}/api/calendar/status?user_id=${encodeURIComponent(userId)}`,
+  const response = await fetchWithAuth(
+    `${API_URL}/api/calendar/status`,
     { method: "GET" },
     10000
   )
@@ -215,8 +247,8 @@ export async function fetchCalendarStatus(userId) {
 }
 
 export async function fetchCalendarEvents(userId) {
-  const response = await fetchWithTimeout(
-    `${API_URL}/api/calendar/events?user_id=${encodeURIComponent(userId)}`,
+  const response = await fetchWithAuth(
+    `${API_URL}/api/calendar/events`,
     { method: "GET" },
     15000
   )
@@ -229,7 +261,7 @@ export async function fetchCalendarEvents(userId) {
 }
 
 export async function disconnectCalendarService(userId) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/calendar/disconnect`,
     {
       method: "POST",
@@ -253,7 +285,7 @@ export async function disconnectCalendarService(userId) {
 // ---------------------------------------------------------
 
 export async function matchStudyMaterialTopics(studyMaterialId, userId) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/match-study-material`,
     {
       method: "POST",
@@ -281,7 +313,7 @@ export async function matchStudyMaterialTopics(studyMaterialId, userId) {
 // ---------------------------------------------------------
 
 export async function askStudyMaterial({ studyMaterialId, userId, question, actionType = "ask" }) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/ask-study-material`,
     {
       method: "POST",
@@ -311,7 +343,7 @@ export async function askStudyMaterial({ studyMaterialId, userId, question, acti
 // ---------------------------------------------------------
 
 export async function indexStudyMaterial({ studyMaterialId, userId }) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/index-study-material`,
     {
       method: "POST",
@@ -339,7 +371,7 @@ export async function indexStudyMaterial({ studyMaterialId, userId }) {
 // ---------------------------------------------------------
 
 export async function generateStudyPack({ studyMaterialId, userId, forceRegenerate = false }) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/generate-study-pack`,
     {
       method: "POST",
@@ -368,7 +400,7 @@ export async function generateStudyPack({ studyMaterialId, userId, forceRegenera
 // ---------------------------------------------------------
 
 export async function generateFlashcards({ studyMaterialId, userId, count = 15, forceRegenerate = false }) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/generate-flashcards`,
     {
       method: "POST",
@@ -394,7 +426,7 @@ export async function generateFlashcards({ studyMaterialId, userId, count = 15, 
 }
 
 export async function reviewFlashcard({ flashcardId, userId, rating }) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/review-flashcard`,
     {
       method: "POST",
@@ -423,7 +455,7 @@ export async function reviewFlashcard({ flashcardId, userId, rating }) {
 // ---------------------------------------------------------
 
 export async function analyzeExamPaper({ studyMaterialId, userId, forceRegenerate = false }) {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithAuth(
     `${API_URL}/api/analyze-exam-paper`,
     {
       method: "POST",
@@ -515,7 +547,7 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
 
   // 1. Try Backend API
   try {
-    const response = await fetchWithTimeout(
+    const response = await fetchWithAuth(
       `${API_URL}/api/academic-search`,
       {
         method: "POST",
@@ -704,7 +736,7 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
 
 export async function sendCopilotMessage({ message, userId, conversationId = null }) {
   try {
-    const response = await fetchWithTimeout(
+    const response = await fetchWithAuth(
       `${API_URL}/api/copilot-chat`,
       {
         method: "POST",
@@ -756,12 +788,16 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
     const errData = await response.json().catch(() => ({}))
     throw new Error(errData.detail || "Copilot message failed. Please try again.")
   } catch (err) {
-    // If local dev server is running on port 8000, attempt direct local call
+    // If local dev server is running on port 8000, attempt direct local call with auth
     if (typeof window !== "undefined" && window.location.hostname === "localhost" && !API_URL.includes("localhost:8000")) {
       try {
+        const authHeaders = await getAuthHeaders()
         const localResp = await fetch("http://localhost:8000/api/copilot-chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders,
+          },
           body: JSON.stringify({
             message: message.trim(),
             user_id: userId,
@@ -793,7 +829,7 @@ export async function fetchUserStats(userId) {
 
   const promise = (async () => {
     try {
-      const response = await fetchWithTimeout(
+      const response = await fetchWithAuth(
         `${API_URL}/api/user-stats/${userId}`,
         { method: "GET" },
         10000
@@ -817,7 +853,7 @@ export async function fetchUserStats(userId) {
 export async function syncUserLearningStats(stats) {
   if (!stats?.user_id) return null
   try {
-    const response = await fetchWithTimeout(
+    const response = await fetchWithAuth(
       `${API_URL}/api/sync-user-stats`,
       {
         method: "POST",
