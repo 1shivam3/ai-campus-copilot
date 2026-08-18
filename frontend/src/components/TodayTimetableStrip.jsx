@@ -165,14 +165,12 @@ function TodayTimetableStrip({
           {/* Meta: Room & Faculty */}
           <div className="mt-3.5 flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 text-xs">
             <span className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-slate-800 px-3 py-1 font-bold text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700">
-              📍 {classItem?.formattedRoom || formatRoom(classItem?.room || classItem?.room_number)}
+              📍 {classItem?.formattedRoom || formatRoom(classItem?.room || classItem?.academic_subjects?.room || classItem?.room_number)}
             </span>
 
-            {classItem?.teacher_name && (
-              <span className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-slate-800 px-3 py-1 font-medium text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
-                👨‍🏫 {classItem.teacher_name}
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-slate-800 px-3 py-1 font-medium text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
+              👨‍🏫 {classItem?.teacher_name || classItem?.academic_subjects?.teacher_name || "Faculty not assigned"}
+            </span>
 
             {state === "current" && nextClass && (
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-auto hidden md:inline">
@@ -203,7 +201,8 @@ function TodayTimetableStrip({
               const isLab =
                 (item.academic_subjects?.subject_type || "").toLowerCase().includes("lab") ||
                 subjectName.toLowerCase().includes("lab")
-              const roomDisplay = item.formattedRoom || formatRoom(item.room || item.room_number)
+              const roomDisplay = item.formattedRoom || formatRoom(item.room || item.academic_subjects?.room || item.room_number)
+              const teacherDisplay = item.teacher_name || item.academic_subjects?.teacher_name || "Faculty not assigned"
 
               return (
                 <div
@@ -261,13 +260,18 @@ function TodayTimetableStrip({
                   </div>
 
                   {/* Bottom: Time & Room info */}
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800/80 pt-2.5 text-xs text-slate-600 dark:border-slate-800/80 dark:text-slate-400">
-                    <span className="font-semibold text-[11px]">
-                      ⏱️ {item.start_time?.slice(0, 5)} – {item.end_time?.slice(0, 5)}
-                    </span>
-                    <span className="font-bold text-[11px] text-slate-800 dark:text-slate-200">
-                      📍 {roomDisplay}
-                    </span>
+                  <div className="mt-3 flex flex-col gap-1 border-t border-slate-200/60 dark:border-slate-800/80 pt-2.5 text-xs text-slate-600 dark:border-slate-800/80 dark:text-slate-400">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[11px]">
+                        ⏱️ {item.start_time?.slice(0, 5)} – {item.end_time?.slice(0, 5)}
+                      </span>
+                      <span className="font-bold text-[11px] text-slate-800 dark:text-slate-200">
+                        📍 {roomDisplay}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      👨‍🏫 {teacherDisplay}
+                    </div>
                   </div>
                 </div>
               )

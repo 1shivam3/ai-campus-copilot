@@ -104,8 +104,8 @@ async def build_copilot_context(supabase_client=None, user_id: str = "") -> Dict
     # 2. Fetch Today's Timetable & Compute Free Windows
     if sem:
         try:
-            sched_query = supabase_client.table("class_schedules").select(
-                "id, subject_name, subject_code, start_time, end_time, room_number, faculty_name, class_type"
+            sched_query = supabase_client.table("class_schedule").select(
+                "id, day_of_week, start_time, end_time, room, teacher_name, academic_subjects(subject_name, subject_code, subject_type)"
             ).eq("day_of_week", today_day).eq("semester", sem)
 
             if sec:
@@ -121,13 +121,21 @@ async def build_copilot_context(supabase_client=None, user_id: str = "") -> Dict
             for c in classes:
                 start_m = parse_time_minutes(c.get("start_time", ""))
                 end_m = parse_time_minutes(c.get("end_time", ""))
+                sub = c.get("academic_subjects") or {}
+                s_name = sub.get("subject_name") or c.get("subject_name", "Subject")
+                s_code = sub.get("subject_code") or c.get("subject_code", "")
+                c_type = sub.get("subject_type") or c.get("class_type", "Lecture")
+                c_teacher = c.get("teacher_name") or sub.get("teacher_name", "Faculty not assigned")
+                c_room = c.get("room") or sub.get("room", "")
+
                 c_info = {
-                    "subject": c.get("subject_name", "Subject"),
-                    "code": c.get("subject_code", ""),
+                    "subject": s_name,
+                    "code": s_code,
                     "start_time": c.get("start_time", ""),
                     "end_time": c.get("end_time", ""),
-                    "room": c.get("room_number", ""),
-                    "type": c.get("class_type", "Lecture"),
+                    "room": c_room,
+                    "teacher": c_teacher,
+                    "type": c_type,
                 }
                 formatted_classes.append(c_info)
 

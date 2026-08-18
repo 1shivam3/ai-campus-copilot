@@ -189,10 +189,10 @@ function MyAcademics({ profile }) {
 
                         <div className="mt-4 flex flex-wrap gap-2 text-xs">
                           <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700 border border-slate-200">
-                            👨‍🏫 {item.teacher_name || "Faculty N/A"}
+                            👨‍🏫 {item.teacher_name || item.academic_subjects?.teacher_name || "Faculty not assigned"}
                           </span>
                           <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700 border border-slate-200">
-                            📍 {formatRoom(item.room)}
+                            📍 {formatRoom(item.room || item.academic_subjects?.room)}
                           </span>
                         </div>
                       </div>
@@ -241,7 +241,8 @@ function MyAcademics({ profile }) {
                             const subject = item.academic_subjects
                             const isLab =
                               subject?.subject_type === "Lab" ||
-                              subject?.subject_code?.endsWith("L")
+                              subject?.subject_code?.endsWith("L") ||
+                              item.subject_name?.toLowerCase().includes("lab")
 
                             return (
                               <div key={item.id} className="p-4 hover:bg-slate-50/50 transition-colors">
@@ -274,7 +275,7 @@ function MyAcademics({ profile }) {
                                     </div>
 
                                     <p className="mt-1.5 text-[11px] text-slate-500 truncate">
-                                      👨‍🏫 {item.teacher_name || "Faculty N/A"} · 📍 {formatRoom(item.room)}
+                                      👨‍🏫 {item.teacher_name || subject?.teacher_name || "Faculty not assigned"} · 📍 {formatRoom(item.room || subject?.room)}
                                     </p>
                                   </div>
                                 </div>
@@ -297,7 +298,7 @@ function MyAcademics({ profile }) {
                   Laboratory Sessions
                 </h3>
                 {labs.length === 0 ? (
-                  <p className="text-xs text-slate-400">No lab practicals found.</p>
+                  <p className="text-xs text-slate-400">No laboratory practicals assigned for this section.</p>
                 ) : (
                   <div className="space-y-3">
                     {labs.map((lab) => (
@@ -309,7 +310,7 @@ function MyAcademics({ profile }) {
                           </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                          {lab.start_time?.slice(0, 5)} - {lab.end_time?.slice(0, 5)} · 📍 {lab.lab_room || "Lab"} · 👨‍🏫 {lab.teacher_name || "Faculty"}
+                          {lab.start_time?.slice(0, 5)} - {lab.end_time?.slice(0, 5)} · 📍 {formatRoom(lab.lab_room || lab.room)} · 👨‍🏫 {lab.teacher_name || "Faculty not assigned"}
                         </p>
                       </div>
                     ))}

@@ -67,8 +67,8 @@ export async function saveClassSchedule(semester, section, scheduleList) {
         day_of_week: item.day_of_week,
         start_time: item.start_time,
         end_time: item.end_time,
-        room: item.room || "",
-        teacher_name: item.teacher_name || "",
+        room: item.room || item.academic_subjects?.room || "",
+        teacher_name: item.teacher_name || item.academic_subjects?.teacher_name || "",
         subject_id: item.subject_id,
         academic_subjects: item.academic_subjects || null,
       }))
@@ -80,7 +80,7 @@ export async function saveClassSchedule(semester, section, scheduleList) {
         key: metaKey,
         value: { count: records.length },
         last_synced_at: new Date().toISOString(),
-        version: 1,
+        version: 2,
       })
     })
   } catch (err) {
@@ -96,6 +96,53 @@ export async function getCachedClassSchedule(semester, section) {
       .toArray()
   } catch (err) {
     console.warn("[OfflineDB] getCachedClassSchedule error:", err)
+    return []
+  }
+}
+
+export async function saveLabSchedule(semester, section, labsList) {
+  if (!semester || !section || !Array.isArray(labsList)) return
+  try {
+    await db.transaction("rw", db.lab_schedule, db.cached_metadata, async () => {
+      await db.lab_schedule
+        .where({ semester: Number(semester), section: String(section) })
+        .delete()
+
+      const records = labsList.map((item) => ({
+        id: item.id,
+        semester: Number(item.semester || semester),
+        section: String(item.section || section),
+        day_of_week: item.day_of_week,
+        start_time: item.start_time,
+        end_time: item.end_time,
+        subject_name: item.subject_name || "",
+        lab_room: item.lab_room || item.room || "",
+        teacher_name: item.teacher_name || "",
+      }))
+
+      await db.lab_schedule.bulkPut(records)
+
+      const metaKey = `labs_${semester}_${section}`
+      await db.cached_metadata.put({
+        key: metaKey,
+        value: { count: records.length },
+        last_synced_at: new Date().toISOString(),
+        version: 2,
+      })
+    })
+  } catch (err) {
+    console.warn("[OfflineDB] saveLabSchedule error:", err)
+  }
+}
+
+export async function getCachedLabSchedule(semester, section) {
+  if (!semester || !section) return []
+  try {
+    return await db.lab_schedule
+      .where({ semester: Number(semester), section: String(section) })
+      .toArray()
+  } catch (err) {
+    console.warn("[OfflineDB] getCachedLabSchedule error:", err)
     return []
   }
 }
@@ -120,6 +167,7 @@ export async function saveAcademicSubjects(semester, section, subjectsList) {
           subject_name: s.subject_name,
           subject_type: s.subject_type || "Theory",
           teacher_name: s.teacher_name || "",
+          room: s.room || "",
         }))
       )
 
@@ -127,7 +175,7 @@ export async function saveAcademicSubjects(semester, section, subjectsList) {
         key: `subjects_${semester}_${section}`,
         value: { count: subjectsList.length },
         last_synced_at: new Date().toISOString(),
-        version: 1,
+        version: 2,
       })
     })
   } catch (err) {

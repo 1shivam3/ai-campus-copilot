@@ -4,6 +4,8 @@ import {
   getCachedClassSchedule,
   saveAcademicSubjects,
   getCachedAcademicSubjects,
+  saveLabSchedule,
+  getCachedLabSchedule,
 } from "./offlineDb"
 
 /**
@@ -26,16 +28,23 @@ export async function getAcademicData(semester, section) {
     return memorySubjectsCache.get(cacheKey)
   }
 
-  const cachedSubjects = await getCachedAcademicSubjects(semester, section)
-  if (cachedSubjects && cachedSubjects.length > 0) {
-    const cachedResult = { subjects: cachedSubjects, labs: [] }
+  const [cachedSubjects, cachedLabs] = await Promise.all([
+    getCachedAcademicSubjects(semester, section),
+    getCachedLabSchedule(semester, section),
+  ])
+
+  if ((cachedSubjects && cachedSubjects.length > 0) || (cachedLabs && cachedLabs.length > 0)) {
+    const cachedResult = {
+      subjects: cachedSubjects || [],
+      labs: cachedLabs || [],
+    }
     memorySubjectsCache.set(cacheKey, cachedResult)
   }
 
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return {
       subjects: cachedSubjects || [],
-      labs: [],
+      labs: cachedLabs || [],
     }
   }
 
@@ -43,36 +52,49 @@ export async function getAcademicData(semester, section) {
     const [subjectsResult, labsResult] = await Promise.all([
       supabase
         .from("academic_subjects")
-        .select("id, semester, section, subject_name, subject_code, subject_type, credits, teacher_name")
-        .eq("semester", semester)
-        .eq("section", section)
+        .select("id, semester, section, subject_name, subject_code, subject_type, teacher_name, room")
+        .eq("semester", Number(semester))
+        .eq("section", String(section))
         .order("subject_name"),
 
       supabase
         .from("lab_schedule")
-        .select("id, semester, section, day_of_week, start_time, end_time, lab_name, room, batch")
-        .eq("semester", semester)
-        .eq("section", section)
+        .select("id, semester, section, day_of_week, start_time, end_time, subject_name, lab_room, teacher_name")
+        .eq("semester", Number(semester))
+        .eq("section", String(section))
         .order("day_of_week")
         .order("start_time"),
     ])
 
+    if (subjectsResult.error) {
+      console.warn("[AcademicData] Subjects fetch warning:", subjectsResult.error)
+    }
+    if (labsResult.error) {
+      console.warn("[AcademicData] Labs fetch warning:", labsResult.error)
+    }
+
+    const fetchedSubjects = subjectsResult.data || cachedSubjects || []
+    const fetchedLabs = labsResult.data || cachedLabs || []
+
     const resultData = {
-      subjects: subjectsResult.data || cachedSubjects || [],
-      labs: labsResult.data || [],
+      subjects: fetchedSubjects,
+      labs: fetchedLabs,
     }
 
     if (!subjectsResult.error && subjectsResult.data) {
       saveAcademicSubjects(semester, section, subjectsResult.data)
-      memorySubjectsCache.set(cacheKey, resultData)
+    }
+    if (!labsResult.error && labsResult.data) {
+      saveLabSchedule(semester, section, labsResult.data)
     }
 
+    memorySubjectsCache.set(cacheKey, resultData)
     return resultData
   } catch (err) {
     console.warn("[AcademicData] Online fetch notice, falling back to cache:", err)
     return {
       subjects: cachedSubjects || [],
-      labs: [],
+      labs: cachedLabs || [],
     }
   }
 }
@@ -104,24 +126,34 @@ export async function getClassSchedule(semester, section) {
         start_time,
         end_time,
         room,
+        teacher_name,
         subject_id,
         academic_subjects (
+          id,
           subject_name,
           subject_code,
-          subject_type
+          subject_type,
+          teacher_name,
+          room
         )
       `)
-      .eq("semester", semester)
-      .eq("section", section)
+      .eq("semester", Number(semester))
+      .eq("section", String(section))
       .order("day_of_week")
       .order("start_time")
 
     if (error) throw error
 
     if (data && data.length > 0) {
-      saveClassSchedule(semester, section, data)
-      memoryScheduleCache.set(cacheKey, data)
-      return data
+      const normalized = data.map((item) => ({
+        ...item,
+        teacher_name: item.teacher_name || item.academic_subjects?.teacher_name || "",
+        room: item.room || item.academic_subjects?.room || "",
+      }))
+
+      saveClassSchedule(semester, section, normalized)
+      memoryScheduleCache.set(cacheKey, normalized)
+      return normalized
     }
 
     return cachedSchedule || []
