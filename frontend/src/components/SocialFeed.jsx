@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, memo } from "react"
 import { FEED_CATALOG } from "../data/feedCatalog"
 import { rankFeedItems } from "../utils/feedRanking"
 import { awardXP } from "../utils/xpEngine"
@@ -19,7 +19,7 @@ const FEED_TABS = [
   { id: "Community", label: "Community", icon: "👥" },
 ]
 
-export default function SocialFeed({
+function SocialFeed({
   user,
   profile,
   topicProgress = [],
@@ -499,3 +499,5 @@ function ChallengeSolverModal({
     </div>
   )
 }
+
+export default memo(SocialFeed)

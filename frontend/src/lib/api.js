@@ -779,24 +779,35 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
   }
 }
 
+const inFlightUserStats = new Map()
+
 export async function fetchUserStats(userId) {
   if (!userId) return null
-  for (let attempt = 0; attempt < 2; attempt++) {
+  if (inFlightUserStats.has(userId)) {
+    return inFlightUserStats.get(userId)
+  }
+
+  const promise = (async () => {
     try {
       const response = await fetchWithTimeout(
         `${API_URL}/api/user-stats/${userId}`,
         { method: "GET" },
-        25000
+        10000
       )
       if (response.ok) {
         const data = await response.json()
         return data.stats || null
       }
     } catch (err) {
-      if (attempt === 1) console.warn("User stats fetch notice:", err)
+      console.warn("User stats fetch notice:", err)
+    } finally {
+      setTimeout(() => inFlightUserStats.delete(userId), 3000)
     }
-  }
-  return null
+    return null
+  })()
+
+  inFlightUserStats.set(userId, promise)
+  return promise
 }
 
 export async function syncUserLearningStats(stats) {
@@ -809,7 +820,7 @@ export async function syncUserLearningStats(stats) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stats),
       },
-      25000
+      12000
     )
     if (response.ok) {
       return await response.json()
@@ -821,20 +832,18 @@ export async function syncUserLearningStats(stats) {
 }
 
 export async function fetchCampusLeaderboard(timeframe = "global") {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await fetchWithTimeout(
-        `${API_URL}/api/leaderboard?timeframe=${timeframe}`,
-        { method: "GET" },
-        25000
-      )
-      if (response.ok) {
-        const data = await response.json()
-        return data.leaderboard || []
-      }
-    } catch (err) {
-      if (attempt === 1) console.warn("Campus leaderboard fetch notice:", err)
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/api/leaderboard?timeframe=${timeframe}`,
+      { method: "GET" },
+      12000
+    )
+    if (response.ok) {
+      const data = await response.json()
+      return data.leaderboard || []
     }
+  } catch (err) {
+    console.warn("Campus leaderboard fetch notice:", err)
   }
   return []
 }

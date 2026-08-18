@@ -1,4 +1,6 @@
-export default function DailyProgressCard({
+import { memo } from "react"
+
+function DailyProgressCard({
   completedCount = 0,
   totalCount = 5,
   isSetComplete = false,
@@ -76,3 +78,5 @@ export default function DailyProgressCard({
     </div>
   )
 }
+
+export default memo(DailyProgressCard)

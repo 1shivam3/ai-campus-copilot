@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, memo } from "react"
 import { getClassStatus, formatRoom } from "../utils/classStatus"
 
-export default function TodayTimetableStrip({
+function TodayTimetableStrip({
   schedule = [],
   profile = null,
   onNavigateToAcademics,
@@ -278,3 +278,5 @@ export default function TodayTimetableStrip({
     </section>
   )
 }
+
+export default memo(TodayTimetableStrip)

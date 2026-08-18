@@ -1,6 +1,6 @@
-import { useMemo } from "react"
+import { useMemo, memo } from "react"
 
-export default function HomeHeader({
+function HomeHeader({
   user,
   profile,
   totalXP = 0,
@@ -138,3 +138,5 @@ export default function HomeHeader({
     </header>
   )
 }
+
+export default memo(HomeHeader)

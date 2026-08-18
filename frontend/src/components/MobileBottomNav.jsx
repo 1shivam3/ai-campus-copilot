@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 
 function MobileBottomNav({
   currentPage,
@@ -369,4 +369,4 @@ function MobileBottomNav({
   )
 }
 
-export default MobileBottomNav
+export default memo(MobileBottomNav)

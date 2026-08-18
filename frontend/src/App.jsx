@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, lazy, Suspense } from "react"
+import { useEffect, useMemo, useCallback, useState, lazy, Suspense } from "react"
 import { supabase } from "./lib/supabase"
 import Sidebar from "./components/Sidebar"
 import HomeHeader from "./components/HomeHeader"
@@ -389,45 +389,27 @@ function App() {
   // -------------------------------------------------------------
   // 3. PROGRESSIVE DASHBOARD DATA LOADING (CRITICAL FIRST)
   // -------------------------------------------------------------
-  useEffect(() => {
-    if (user?.id && profile && (currentPage === "Home" || currentPage === "Dashboard")) {
-      loadAllDashboardData()
-    }
-  }, [user?.id, profile?.semester, profile?.section, currentPage])
-
-  async function loadAllDashboardData() {
+  const loadAllDashboardData = useCallback(async () => {
     if (!user?.id || !profile) return
 
     // 1. Critical first: Timetable (0ms cached + background refresh)
-    loadDashboardSchedule()
-
-    // 2. Secondary in background: Tasks, Exams, Study sessions
-    loadSecondaryDashboardData()
-  }
-
-  async function loadDashboardSchedule() {
     try {
-      // 0ms Instant cache check
       const cached = await getCachedClassSchedule(profile.semester, profile.section)
       if (cached && cached.length > 0) {
         setDashboardSchedule(cached)
       }
 
-      if (typeof navigator !== "undefined" && !navigator.onLine) return
-
-      // Fresh background fetch
-      const data = await getClassSchedule(profile.semester, profile.section)
-      if (data && data.length > 0) {
-        setDashboardSchedule(data)
+      if (typeof navigator !== "undefined" && navigator.onLine) {
+        const data = await getClassSchedule(profile.semester, profile.section)
+        if (data && data.length > 0) {
+          setDashboardSchedule(data)
+        }
       }
     } catch (error) {
       console.warn("Dashboard schedule note:", error)
     }
-  }
 
-  async function loadSecondaryDashboardData() {
-    if (!user?.id) return
-
+    // 2. Secondary in background: Tasks, Exams, Study sessions
     try {
       const [
         tasksResult,
@@ -516,7 +498,22 @@ function App() {
     } catch (err) {
       console.warn("Secondary academic data note:", err)
     }
-  }
+  }, [user?.id, profile?.semester, profile?.section])
+
+  useEffect(() => {
+    if (user?.id && profile && (currentPage === "Home" || currentPage === "Dashboard")) {
+      loadAllDashboardData()
+    }
+  }, [user?.id, profile?.semester, profile?.section, currentPage, loadAllDashboardData])
+
+  // Stable navigation & interaction callbacks
+  const handleOpenProfile = useCallback(() => setCurrentPage("Profile"), [])
+  const handleOpenNotifications = useCallback(() => setNotificationModalOpen(true), [])
+  const handleOpenSearch = useCallback(() => setSearchModalOpen(true), [])
+  const handleNavigateToAcademics = useCallback(() => setCurrentPage("My Academics"), [])
+  const handleToggleBonusMode = useCallback(() => setIsBonusMode((prev) => !prev), [])
+  const handleOpenFocusSession = useCallback(() => setCurrentPage("Focus Session"), [])
+  const handleNavigateToSyllabus = useCallback(() => setCurrentPage("Syllabus"), [])
 
   // Derived Social Learning & Streak Stats
   const xpSummary = useMemo(() => {
@@ -880,15 +877,15 @@ function App() {
                 streak={learningStreak.currentStreak}
                 reputation={profile.reputation || 91}
                 unreadCount={unreadNotifCount}
-                onOpenProfile={() => setCurrentPage("Profile")}
-                onOpenNotifications={() => setNotificationModalOpen(true)}
-                onOpenSearch={() => setSearchModalOpen(true)}
+                onOpenProfile={handleOpenProfile}
+                onOpenNotifications={handleOpenNotifications}
+                onOpenSearch={handleOpenSearch}
               />
 
               <TodayTimetableStrip
                 schedule={dashboardSchedule}
                 profile={profile}
-                onNavigateToAcademics={() => setCurrentPage("My Academics")}
+                onNavigateToAcademics={handleNavigateToAcademics}
               />
 
               <DailyProgressCard
@@ -897,7 +894,7 @@ function App() {
                 isSetComplete={dailyChallengeSet.isSetComplete}
                 isBonusMode={isBonusMode}
                 adaptiveLevel={dailyChallengeSet.adaptiveLevel}
-                onToggleBonusMode={() => setIsBonusMode((prev) => !prev)}
+                onToggleBonusMode={handleToggleBonusMode}
               />
 
               <SocialFeed
@@ -907,8 +904,8 @@ function App() {
                 exams={dashboardExams}
                 completedKeys={xpSummary.completedKeys}
                 onXPUpdated={loadAllDashboardData}
-                onOpenFocusSession={() => setCurrentPage("Focus Session")}
-                onChallengeSolved={() => loadAllDashboardData()}
+                onOpenFocusSession={handleOpenFocusSession}
+                onChallengeSolved={loadAllDashboardData}
               />
             </div>
           )}

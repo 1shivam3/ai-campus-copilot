@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { CoursePilotLogo } from "./CoursePilotLogo"
 
 function Sidebar({
@@ -253,4 +254,4 @@ function Sidebar({
   )
 }
 
-export default Sidebar
+export default memo(Sidebar)
