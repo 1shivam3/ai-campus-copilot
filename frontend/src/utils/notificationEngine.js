@@ -93,7 +93,7 @@ export function generateSmartNotifications({
             message: `${task.title} (${task.subject || "Task"}) is due in less than 2 hours.`,
             related_entity_type: "task",
             related_entity_id: task.id,
-            target_page: "Focus Session",
+            target_page: "Tasks",
             is_read: false,
             created_at: now.toISOString(),
           })
@@ -225,7 +225,7 @@ export function generateSmartNotifications({
           message: `You have ${primaryWindow.minutes} mins free. Recommended focus: ${bestAction.title || "Academic Review"}.`,
           related_entity_type: "study_window",
           related_entity_id: primaryWindow.start,
-          target_page: "Focus Session",
+          target_page: "Exam Mode",
           is_read: false,
           created_at: now.toISOString(),
         })

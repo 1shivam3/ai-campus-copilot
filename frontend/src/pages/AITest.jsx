@@ -261,7 +261,7 @@ function AITest({ user, onStartSession, schedule, profile }) {
                       onClick={() => onStartSession(recommendation.item.id)}
                       className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition shadow-sm active:scale-[0.98]"
                     >
-                      Start Recommended Focus Session →
+                      Open Recommended Task →
                     </button>
                   </div>
                 )}

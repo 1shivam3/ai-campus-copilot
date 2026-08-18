@@ -680,27 +680,40 @@ export async function searchAcademicWorkspace({ query, userId, semester, section
         })
       }
 
-      // E. User Study Materials
-      const matFilter = searchTerms.map((t) => `title.ilike.%${t}%`).join(",")
-      const { data: matData } = await supabase
-        .from("study_materials")
-        .select("id, title, material_type, unit_number, academic_subjects(subject_name, subject_code)")
-        .eq("user_id", userId)
-        .or(matFilter)
-        .limit(6)
+      // E. Class Timetable / Schedule
+      if (semester) {
+        let schedQuery = supabase
+          .from("class_schedule")
+          .select("id, day_of_week, start_time, end_time, room, teacher_name, academic_subjects(subject_name, subject_code)")
+          .eq("semester", Number(semester))
 
-      if (matData && matData.length > 0) {
-        matData.forEach((m) => {
-          const sub = m.academic_subjects || {}
-          const isPaper = m.material_type === "Previous Year Paper"
-          fallbackResults.push({
-            type: isPaper ? "previous_paper" : "study_material",
-            title: m.title || "Document",
-            subtitle: `${sub.subject_name || "Course Notes"} · ${m.material_type || "Study Material"}`,
-            score: 0.92,
-            metadata: { id: m.id, material_id: m.id, material_type: m.material_type },
+        if (section) {
+          schedQuery = schedQuery.eq("section", String(section))
+        }
+
+        const { data: schedData } = await schedQuery.limit(20)
+        if (schedData && schedData.length > 0) {
+          schedData.forEach((s) => {
+            const sub = s.academic_subjects || {}
+            const subName = sub.subject_name || "Academic Class"
+            const subCode = sub.subject_code ? ` (${sub.subject_code})` : ""
+            const teacher = s.teacher_name ? ` · 👨‍🏫 ${s.teacher_name}` : ""
+            const room = s.room ? ` · 📍 Room ${s.room}` : ""
+
+            const matchTarget = `${subName} ${sub.subject_code || ""} ${s.teacher_name || ""} ${s.room || ""} ${s.day_of_week || ""}`.toLowerCase()
+            const isMatch = searchTerms.some((t) => matchTarget.includes(t.toLowerCase()))
+
+            if (isMatch) {
+              fallbackResults.push({
+                type: "timetable",
+                title: `${subName}${subCode} — ${s.day_of_week}`,
+                subtitle: `⏱️ ${s.start_time?.slice(0, 5)} - ${s.end_time?.slice(0, 5)}${room}${teacher}`,
+                score: 0.91,
+                metadata: { id: s.id, schedule_id: s.id, day: s.day_of_week },
+              })
+            }
           })
-        })
+        }
       }
     }
 
@@ -774,7 +787,7 @@ export async function sendCopilotMessage({ message, userId, conversationId = nul
             conversation_id: conversationId,
             message: answerText,
             actions: [
-              { type: "start_focus", label: "Start 45m Focus Session", minutes: 45 },
+              { type: "open_task", label: "View Tasks & Assignments" },
               { type: "open_timetable", label: "View Timetable" },
             ],
             sources: [],

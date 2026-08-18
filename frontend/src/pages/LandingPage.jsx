@@ -160,7 +160,7 @@ function LandingPage({ onGetStarted, onSignIn, user, onGoToDashboard }) {
 
                   <div className="shrink-0 self-start md:self-center">
                     <div className="rounded-xl bg-white px-5 py-3 text-xs font-bold text-slate-950 shadow-md">
-                      Start Focus Session →
+                      Take High-Yield Practice Quiz →
                     </div>
                   </div>
                 </div>
@@ -224,7 +224,7 @@ function LandingPage({ onGetStarted, onSignIn, user, onGoToDashboard }) {
               { num: "01", title: "Academic Data", desc: "Timetable, exams & tasks" },
               { num: "02", title: "Analyze Priorities", desc: "Urgency, impact & free slots" },
               { num: "03", title: "Next Best Action", desc: "One clear recommendation" },
-              { num: "04", title: "Focus Session", desc: "Distraction-free deep work" },
+              { num: "04", title: "Targeted Practice", desc: "Adaptive exam revision" },
               { num: "05", title: "Topic Mastery", desc: "Scores update dynamically" },
               { num: "06", title: "Recalculate", desc: "Better next action generated" },
             ].map((step, idx) => (
@@ -285,14 +285,14 @@ function LandingPage({ onGetStarted, onSignIn, user, onGoToDashboard }) {
                 desc: "Your test results and study sessions dynamically update topic mastery curves from 0% to 100%.",
               },
               {
-                icon: "📄",
-                title: "Study Material Analysis",
-                desc: "Turn study PDFs and lecture notes into concise summaries, key revision points, and practice MCQs.",
+                icon: "🗓️",
+                title: "Smart Timetable",
+                desc: "Live class countdowns, room locations, teacher schedules, and lab sessions synced with your section.",
               },
               {
-                icon: "⏱️",
-                title: "Deep Work Focus Sessions",
-                desc: "Turn recommendations into structured 25, 45, or 60-minute study blocks with automatic progress tracking.",
+                icon: "✅",
+                title: "Task & Deadline Tracking",
+                desc: "Keep track of upcoming assignments, priority coursework, and submissions in one unified workspace.",
               },
             ].map((feat, idx) => (
               <div
@@ -320,65 +320,77 @@ function LandingPage({ onGetStarted, onSignIn, user, onGoToDashboard }) {
               WHY COURSEPILOT
             </p>
             <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Why a task manager isn&apos;t enough for university
+              Engineered for academic momentum
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-xs sm:text-sm text-slate-500">
-              Static to-do lists tell you what is pending, but fail to account for upcoming exam risks or timetable free time.
+              Unlike generic to-do apps, CoursePilot understands your semester syllabus, exam weightage, and daily class schedule.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {/* Traditional Task Manager */}
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-6 sm:p-8">
-              <span className="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold text-slate-700">
-                TRADITIONAL TO-DO APP
-              </span>
-              <p className="mt-4 font-mono text-xs text-slate-400 uppercase tracking-wider">Output:</p>
-              <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-4 font-medium text-slate-700 text-xs sm:text-sm space-y-2">
-                <p className="line-through text-slate-400">☐ Physics Assignment #3</p>
-                <p>☐ DBMS assignment due tomorrow</p>
-                <p>☐ Mathematics Exam in 3 days</p>
-              </div>
-              <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-                No synthesis. You must guess whether to do the minor assignment or revise for the high-stakes exam.
-              </p>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+            {/* Generic Apps */}
+            <div className="rounded-3xl border border-slate-200/80 bg-slate-50/50 p-6 sm:p-8">
+              <h3 className="text-base font-bold text-slate-500 uppercase tracking-wider text-xs">
+                TRADITIONAL METHODS
+              </h3>
+              <ul className="mt-5 space-y-3.5 text-xs sm:text-sm text-slate-600">
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-500 font-bold">✕</span>
+                  <span>Static schedules that don&apos;t know when you actually have free study gaps.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-500 font-bold">✕</span>
+                  <span>Long checklists with zero guidance on what has the highest exam impact.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-500 font-bold">✕</span>
+                  <span>No concept of subject mastery or syllabus progression tracking.</span>
+                </li>
+              </ul>
             </div>
 
-            {/* CoursePilot Engine */}
-            <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-6 sm:p-8 shadow-sm">
-              <span className="rounded-full bg-blue-600 px-3 py-1 text-[11px] font-bold text-white">
+            {/* CoursePilot Solution */}
+            <div className="rounded-3xl border-2 border-blue-600 bg-blue-50/20 p-6 sm:p-8 shadow-xs">
+              <h3 className="text-base font-bold text-blue-600 uppercase tracking-wider text-xs">
                 COURSEPILOT DECISION ENGINE
-              </span>
-              <p className="mt-4 font-mono text-xs text-blue-600 uppercase tracking-wider">Synthesized Recommendation:</p>
-              <div className="mt-2 rounded-2xl border border-blue-200 bg-white p-4 font-semibold text-slate-900 text-xs sm:text-sm leading-relaxed">
-                &ldquo;Your DBMS assignment is due tomorrow, but your Mathematics exam is in 3 days and <strong>Relations</strong> is currently your weakest exam topic (35% mastery). Study Relations first in your 14:00 free window.&rdquo;
-              </div>
-              <p className="mt-4 text-xs text-blue-900/80 leading-relaxed">
-                Combines syllabus weights, mastery gaps, and today&apos;s timetable to eliminate decision fatigue.
-              </p>
+              </h3>
+              <ul className="mt-5 space-y-3.5 text-xs sm:text-sm text-slate-800">
+                <li className="flex items-start gap-2.5">
+                  <span className="text-blue-600 font-bold">✓</span>
+                  <span>Dynamic daily planner that adapts to class changes and study windows.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-blue-600 font-bold">✓</span>
+                  <span>Next Best Action formula ranking your single most critical priority.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-blue-600 font-bold">✓</span>
+                  <span>Adaptive mastery scoring from 0% to 100% across all curriculum topics.</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 7. Trust & Security */}
-      <section id="security" className="border-t border-slate-200/80 bg-[#f8fafc] py-16 sm:py-20">
+      {/* 7. Security & Architecture */}
+      <section className="border-t border-slate-200/80 bg-[#f8fafc] py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-xs font-bold tracking-widest text-blue-600 uppercase">
-              STUDENT PRIVACY
+            <p className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+              DATA PRIVACY & INTEGRITY
             </p>
-            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Built with secure cloud infrastructure
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+              Built on academic data isolation
             </h2>
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             {[
-              { title: "Row Level Security", desc: "Your tasks, exams and notes are strictly isolated to your account." },
+              { title: "Row Level Security", desc: "Your tasks, exams and records are strictly isolated to your account." },
               { title: "Secure Auth", desc: "Protected authentication powered by Supabase Auth with token encryption." },
               { title: "Server-Side AI", desc: "Gemini API credentials remain strictly secured on the backend server." },
-              { title: "Isolated Storage", desc: "Uploaded study PDFs are stored in dedicated private user buckets." },
+              { title: "Isolated Cache", desc: "Local cache is cryptographically partitioned per authenticated student." },
             ].map((item, i) => (
               <div key={i} className="rounded-2xl border border-slate-200/80 bg-white p-5 text-center">
                 <span className="text-xl text-blue-600">🛡️</span>

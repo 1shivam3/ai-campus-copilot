@@ -3,15 +3,24 @@ import { searchAcademicWorkspace } from "../lib/api"
 
 const RECENT_SEARCHES_KEY = "coursepilot_recent_searches"
 const QUICK_SUGGESTIONS = [
-  "my upcoming exams",
+  "upcoming exams",
   "pending tasks",
-  "linked lists",
-  "normalization",
-  "trees",
-  "flashcards",
+  "data structures",
+  "operating systems",
+  "database management",
+  "class schedule",
 ]
 
-function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
+function GlobalSearch({
+  isOpen,
+  onClose,
+  user,
+  profile,
+  currentUserId,
+  currentSemester,
+  currentSection,
+  onNavigate,
+}) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -21,6 +30,10 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
 
   const inputRef = useRef(null)
   const debounceTimerRef = useRef(null)
+
+  const effectiveUserId = user?.id || currentUserId
+  const effectiveSemester = profile?.semester || currentSemester || 3
+  const effectiveSection = profile?.section || currentSection || "B2"
 
   // ---------------------------------------------------------
   // 1. LOAD RECENT SEARCHES
@@ -40,7 +53,10 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
     if (!searchStr || searchStr.trim().length < 2) return
     const clean = searchStr.trim()
     try {
-      const updated = [clean, ...recentSearches.filter((s) => s.toLowerCase() !== clean.toLowerCase())].slice(0, 5)
+      const updated = [
+        clean,
+        ...recentSearches.filter((s) => s.toLowerCase() !== clean.toLowerCase()),
+      ].slice(0, 5)
       setRecentSearches(updated)
       localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
     } catch (e) {
@@ -73,7 +89,7 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
   // ---------------------------------------------------------
   const executeSearch = useCallback(
     async (searchQuery) => {
-      if (!searchQuery || searchQuery.trim().length < 2 || !user?.id) {
+      if (!searchQuery || searchQuery.trim().length < 2) {
         setResults([])
         setLoading(false)
         return
@@ -91,14 +107,23 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
       try {
         const res = await searchAcademicWorkspace({
           query: searchQuery,
-          userId: user.id,
-          semester: profile?.semester,
-          section: profile?.section,
+          userId: effectiveUserId,
+          semester: effectiveSemester,
+          section: effectiveSection,
           limit: 25,
         })
 
         if (res && Array.isArray(res.results)) {
-          setResults(res.results)
+          // Filter out any legacy or unsupported categories
+          const filtered = res.results.filter(
+            (r) =>
+              r.type === "syllabus" ||
+              r.type === "task" ||
+              r.type === "exam" ||
+              r.type === "timetable" ||
+              r.type === "academics"
+          )
+          setResults(filtered)
           setSelectedIndex(0)
         } else {
           setResults([])
@@ -112,7 +137,7 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
         setLoading(false)
       }
     },
-    [user?.id, profile?.semester, profile?.section]
+    [effectiveUserId, effectiveSemester, effectiveSection]
   )
 
   const handleQueryChange = (e) => {
@@ -132,16 +157,23 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
     setLoading(true)
     debounceTimerRef.current = setTimeout(() => {
       executeSearch(val)
-    }, 300)
+    }, 250)
   }
 
   // ---------------------------------------------------------
-  // 4. KEYBOARD NAVIGATION & SHORTCUTS
+  // 4. KEYBOARD NAVIGATION & SELECTION
   // ---------------------------------------------------------
   const handleItemClick = (item) => {
     saveRecentSearch(query || item.title)
     if (onNavigate) {
-      onNavigate(item.type, item.metadata)
+      let targetPage = "Home"
+      if (item.type === "syllabus") targetPage = "Syllabus"
+      else if (item.type === "task") targetPage = "Tasks"
+      else if (item.type === "exam") targetPage = "Exams"
+      else if (item.type === "timetable" || item.type === "academics") targetPage = "My Academics"
+      else if (item.type === "progress") targetPage = "Progress"
+
+      onNavigate(targetPage, item.metadata || item)
     }
     onClose()
   }
@@ -174,18 +206,14 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
   // ---------------------------------------------------------
   const groupedResults = {
     syllabus: results.filter((r) => r.type === "syllabus"),
-    study_material: results.filter((r) => r.type === "study_material"),
-    previous_paper: results.filter((r) => r.type === "previous_paper"),
-    flashcard: results.filter((r) => r.type === "flashcard"),
+    timetable: results.filter((r) => r.type === "timetable" || r.type === "academics"),
     task: results.filter((r) => r.type === "task"),
     exam: results.filter((r) => r.type === "exam"),
   }
 
   const categoryMeta = {
-    syllabus: { label: "Syllabus Topics", icon: "📘", color: "text-blue-600" },
-    study_material: { label: "Study Material", icon: "📄", color: "text-indigo-600" },
-    previous_paper: { label: "Previous-Year Papers", icon: "📊", color: "text-emerald-600" },
-    flashcard: { label: "Flashcards", icon: "🎴", color: "text-purple-600" },
+    syllabus: { label: "Syllabus & Subjects", icon: "📘", color: "text-blue-600" },
+    timetable: { label: "Class Timetable", icon: "🗓️", color: "text-emerald-600" },
     task: { label: "Tasks & Assignments", icon: "✅", color: "text-amber-600" },
     exam: { label: "Exams & Tests", icon: "📅", color: "text-rose-600" },
   }
@@ -208,7 +236,7 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search syllabus, notes, past papers, tasks, exams, flashcards... (Esc to exit)"
+            placeholder="Search subjects, syllabus topics, tasks, exams, schedule... (Esc to exit)"
             value={query}
             onChange={handleQueryChange}
             className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-slate-900 placeholder:text-slate-400 outline-none"
@@ -367,7 +395,7 @@ function GlobalSearch({ isOpen, onClose, user, profile, onNavigate }) {
                 No results found for &ldquo;{query}&rdquo;
               </h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Try searching for a subject name, a syllabus topic, a study note, an assignment, an exam, or a flashcard keyword.
+                Try searching for a subject name, syllabus topic, scheduled class, assignment, or upcoming examination.
               </p>
             </div>
           )}

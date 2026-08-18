@@ -108,21 +108,6 @@ function MobileBottomNav({
       ),
     },
     {
-      id: "Study Material",
-      label: "Study Material",
-      desc: "PDF reader, packs & past papers",
-      icon: (
-        <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-          />
-        </svg>
-      ),
-    },
-    {
       id: "Exams",
       label: "Exams",
       desc: "Datesheet & weightage tracking",
@@ -148,21 +133,6 @@ function MobileBottomNav({
             strokeLinejoin="round"
             strokeWidth={2}
             d="M13 10V3L4 14h7v7l9-11h-7z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "Focus Session",
-      label: "Focus Session",
-      desc: "Pomodoro timer & study tracker",
-      icon: (
-        <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
       ),

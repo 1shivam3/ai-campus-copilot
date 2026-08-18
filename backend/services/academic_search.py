@@ -65,6 +65,7 @@ async def search_academic_workspace(
     query: str = "",
     user_id: str = "",
     semester: Optional[int] = None,
+    section: Optional[str] = None,
     limit: int = 25,
 ) -> List[Dict[str, Any]]:
     """
@@ -159,74 +160,46 @@ async def search_academic_workspace(
         logger.warning(f"[ACADEMIC_SEARCH] Syllabus query notice: {syl_err}")
 
     # ---------------------------------------------------------
-    # 3. STUDY MATERIALS & PREVIOUS PAPERS (User-Specific Keyword Search)
+    # 3. CLASS SCHEDULE & TIMETABLE SEARCH
     # ---------------------------------------------------------
     try:
-        mat_filter = ",".join([f"title.ilike.%{term}%" for term in search_terms])
-        mat_res = supabase_client.table("study_materials").select(
-            "id, title, material_type, unit_number, original_file_name, academic_subjects(subject_name, subject_code)"
-        ).eq("user_id", user_id).or_(mat_filter).limit(8).execute()
+        sched_query = supabase_client.table("class_schedule").select(
+            "id, semester, section, day_of_week, start_time, end_time, room, teacher_name, academic_subjects(subject_name, subject_code)"
+        )
+        if semester is not None:
+            sched_query = sched_query.eq("semester", semester)
+        if section is not None:
+            sched_query = sched_query.eq("section", section)
+        sched_res = sched_query.limit(25).execute()
+        if sched_res.data:
+            for s in sched_res.data:
+                sub = s.get("academic_subjects") or {}
+                sub_name = sub.get("subject_name", "Class")
+                sub_code = f" ({sub.get('subject_code')})" if sub.get("subject_code") else ""
+                day = s.get("day_of_week", "")
+                teacher = f" · 👨‍🏫 {s.get('teacher_name')}" if s.get("teacher_name") else ""
+                room = f" · 📍 Room {s.get('room')}" if s.get("room") else ""
 
-        if mat_res.data:
-            for m in mat_res.data:
-                sub = m.get("academic_subjects") or {}
-                sub_name = sub.get("subject_name", "General")
-                unit_str = f"Unit {m.get('unit_number')}" if m.get("unit_number") else "General"
-                mat_type = m.get("material_type", "Study Material")
-                is_paper = mat_type == "Previous Year Paper"
-
-                norm_title = normalize_str(m.get("title", ""))
-                score = 0.96 if norm_q in norm_title else 0.82
-
-                results.append({
-                    "type": "previous_paper" if is_paper else "study_material",
-                    "title": m.get("title", "Document"),
-                    "subtitle": f"{sub_name} · {unit_str} · {mat_type}",
-                    "score": score,
-                    "metadata": {
-                        "id": m["id"],
-                        "material_id": m["id"],
-                        "material_type": mat_type,
-                        "unit_number": m.get("unit_number"),
-                    },
-                })
-    except Exception as mat_err:
-        logger.warning(f"[ACADEMIC_SEARCH] Materials query notice: {mat_err}")
-
-    # ---------------------------------------------------------
-    # 4. FLASHCARDS SEARCH (User-Specific)
-    # ---------------------------------------------------------
-    try:
-        fc_query = supabase_client.table("study_flashcards").select(
-            "id, question, answer, topic_name, difficulty, study_material_id, study_materials(title)"
-        ).eq("user_id", user_id)
-
-        if not is_flashcard_intent:
-            fc_filter = ",".join([f"question.ilike.%{term}%,answer.ilike.%{term}%,topic_name.ilike.%{term}%" for term in search_terms])
-            fc_query = fc_query.or_(fc_filter)
-
-        fc_res = fc_query.limit(6).execute()
-        if fc_res.data:
-            for fc in fc_res.data:
-                doc_title = (fc.get("study_materials") or {}).get("title", "Flashcard Deck")
-                results.append({
-                    "type": "flashcard",
-                    "title": fc.get("question", "Flashcard Question"),
-                    "subtitle": f"🏷️ {fc.get('topic_name', 'General')} · {doc_title}",
-                    "score": 0.78,
-                    "metadata": {
-                        "id": fc["id"],
-                        "flashcard_id": fc["id"],
-                        "material_id": fc.get("study_material_id"),
-                        "answer": fc.get("answer", ""),
-                        "difficulty": fc.get("difficulty", "medium"),
-                    },
-                })
-    except Exception as fc_err:
-        logger.warning(f"[ACADEMIC_SEARCH] Flashcards query notice: {fc_err}")
+                target_str = f"{sub_name} {sub.get('subject_code', '')} {s.get('teacher_name', '')} {s.get('room', '')} {day}".lower()
+                if any(t.lower() in target_str for t in search_terms):
+                    results.append({
+                        "type": "timetable",
+                        "title": f"{sub_name}{sub_code} — {day}",
+                        "subtitle": f"⏱️ {s.get('start_time', '')[:5]} - {s.get('end_time', '')[:5]}{room}{teacher}",
+                        "score": 0.91,
+                        "metadata": {
+                            "id": s["id"],
+                            "schedule_id": s["id"],
+                            "day": day,
+                            "room": s.get("room"),
+                            "teacher": s.get("teacher_name"),
+                        },
+                    })
+    except Exception as sched_err:
+        logger.warning(f"[ACADEMIC_SEARCH] Schedule query notice: {sched_err}")
 
     # ---------------------------------------------------------
-    # 5. TASKS & ASSIGNMENTS SEARCH (User-Specific)
+    # 4. TASKS & ASSIGNMENTS SEARCH (User-Specific)
     # ---------------------------------------------------------
     try:
         task_query = supabase_client.table("tasks").select(
@@ -267,7 +240,7 @@ async def search_academic_workspace(
         logger.warning(f"[ACADEMIC_SEARCH] Tasks query notice: {task_err}")
 
     # ---------------------------------------------------------
-    # 6. EXAMS SEARCH (User-Specific)
+    # 5. EXAMS SEARCH (User-Specific)
     # ---------------------------------------------------------
     try:
         exam_query = supabase_client.table("exams").select(
@@ -305,67 +278,7 @@ async def search_academic_workspace(
         logger.warning(f"[ACADEMIC_SEARCH] Exams query notice: {ex_err}")
 
     # ---------------------------------------------------------
-    # 7. SEMANTIC RAG VECTOR RETRIEVAL (Content Passages in User's Study Materials)
-    # ---------------------------------------------------------
-    if embed_query and not (is_exam_intent or is_task_intent):
-        try:
-            q_emb = embed_query(clean_q)
-            if q_emb and len(q_emb) == 768:
-                # Retrieve matching chunks
-                rpc_res = supabase_client.rpc(
-                    "match_study_material_chunks",
-                    {
-                        "query_embedding": q_emb,
-                        "match_threshold": 0.35,
-                        "match_count": 5,
-                        "target_study_material_id": None,
-                    },
-                ).execute()
-
-                if rpc_res.data:
-                    chunk_ids = [c["id"] for c in rpc_res.data if c.get("id")]
-                    mat_ids = list(set([c["study_material_id"] for c in rpc_res.data if c.get("study_material_id")]))
-
-                    # Verify ownership of retrieved materials
-                    owned_mats_res = supabase_client.table("study_materials").select(
-                        "id, title, material_type, unit_number, academic_subjects(subject_name, subject_code)"
-                    ).in_("id", mat_ids).eq("user_id", user_id).execute()
-
-                    owned_map = {m["id"]: m for m in (owned_mats_res.data or [])}
-
-                    for chunk in rpc_res.data:
-                        mid = chunk.get("study_material_id")
-                        if mid in owned_map:
-                            mat = owned_map[mid]
-                            sub = mat.get("academic_subjects") or {}
-                            sub_name = sub.get("subject_name", "Academic Notes")
-                            is_paper = mat.get("material_type") == "Previous Year Paper"
-                            sim = round(float(chunk.get("similarity", 0.7)), 2)
-
-                            # Format passage snippet
-                            snippet = chunk.get("content", "")
-                            if len(snippet) > 120:
-                                snippet = snippet[:117] + "..."
-
-                            results.append({
-                                "type": "previous_paper" if is_paper else "study_material",
-                                "title": mat.get("title", "Study Note"),
-                                "subtitle": f"Pg {chunk.get('page_number', 1)} · {sub_name} · {snippet}",
-                                "score": sim,
-                                "metadata": {
-                                    "id": mat["id"],
-                                    "material_id": mat["id"],
-                                    "chunk_id": chunk.get("id"),
-                                    "page_number": chunk.get("page_number", 1),
-                                    "similarity": sim,
-                                    "material_type": mat.get("material_type"),
-                                },
-                            })
-        except Exception as sem_err:
-            logger.warning(f"[ACADEMIC_SEARCH] Semantic vector retrieval notice: {sem_err}")
-
-    # ---------------------------------------------------------
-    # 8. DEDUPLICATE & SORT BY RELEVANCE SCORE
+    # 6. DEDUPLICATE & SORT BY RELEVANCE SCORE
     # ---------------------------------------------------------
     seen = set()
     unique_results = []

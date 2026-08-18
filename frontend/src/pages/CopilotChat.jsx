@@ -209,11 +209,8 @@ function CopilotChat({
 
     switch (action.type) {
       case "start_focus":
-        if (onStartSession) {
-          onStartSession(action.task_id || null)
-        } else if (onNavigate) {
-          onNavigate("Focus Session")
-        }
+      case "open_task":
+        if (onNavigate) onNavigate("Tasks")
         break
       case "open_exam_mode":
         if (onOpenExamMode) {
@@ -226,23 +223,18 @@ function CopilotChat({
         if (onNavigate) onNavigate("My Academics")
         break
       case "open_progress":
+      case "open_syllabus":
+      case "open_study_material":
         if (onNavigate) onNavigate("Syllabus")
         break
       case "open_attendance":
         if (onNavigate) onNavigate("My Academics")
         break
-      case "open_study_material":
-        if (action.material_id && onOpenReader) {
-          onOpenReader(action.material_id)
-        } else if (onNavigate) {
-          onNavigate("Study Material")
-        }
-        break
-      case "open_task":
-        if (onNavigate) onNavigate("Tasks")
+      case "open_exams":
+        if (onNavigate) onNavigate("Exams")
         break
       default:
-        if (onNavigate) onNavigate("Dashboard")
+        if (onNavigate) onNavigate("Home")
         break
     }
   }
@@ -358,7 +350,7 @@ function CopilotChat({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 hidden sm:block">
-                Grounded in your timetable, syllabus mastery, exams, study materials, and next best action.
+                Grounded in your timetable, syllabus mastery, exams, tasks, and next best action.
               </p>
             </div>
           </div>

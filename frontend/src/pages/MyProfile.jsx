@@ -592,7 +592,7 @@ export default function MyProfile({
                 {activityStats.totalFocusMinutes}m
               </span>
               <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                Focus Time Logged
+                Study Time Logged
               </p>
             </div>
 
@@ -607,7 +607,7 @@ export default function MyProfile({
           </div>
 
           <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center">
-            Updated in real-time upon completing focus sessions, quizzes, and daily challenges.
+            Updated in real-time upon completing quizzes, tasks, and daily challenges.
           </p>
         </section>
       </div>

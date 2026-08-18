@@ -9,9 +9,6 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('pdfjs-dist')) {
-              return 'pdfjs'
-            }
             if (id.includes('@supabase')) {
               return 'supabase'
             }

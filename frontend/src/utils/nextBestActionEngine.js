@@ -193,7 +193,7 @@ export function generateCandidateActions(context) {
       description: `Pending task for ${task.subject || "academics"} due in ${hours <= 24 ? `${hours} hours` : `${days} days`}.`,
       subject: task.subject || "Academics",
       source: "tasks",
-      page: "Focus Session",
+      page: "Tasks",
       action_url: "/tasks",
       estimated_minutes: Number(task.estimated_minutes || 30),
       deadline: task.deadline,

@@ -40,10 +40,6 @@ const Progress = lazyWithRetry(() => import("./pages/Progress"))
 const Tasks = lazyWithRetry(() => import("./pages/Tasks"))
 const Exams = lazyWithRetry(() => import("./pages/Exams"))
 const ExamMode = lazyWithRetry(() => import("./pages/ExamMode"))
-const StudyMaterial = lazyWithRetry(() => import("./pages/StudyMaterial"))
-const StudyPack = lazyWithRetry(() => import("./pages/StudyPack"))
-const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"))
-const FocusSession = lazyWithRetry(() => import("./pages/FocusSession"))
 const MyProfile = lazyWithRetry(() => import("./pages/MyProfile"))
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard"))
 const SavedChallenges = lazyWithRetry(() => import("./pages/SavedChallenges"))
@@ -52,8 +48,6 @@ const ProfileSetup = lazyWithRetry(() => import("./pages/ProfileSetup"))
 const LandingPage = lazyWithRetry(() => import("./pages/LandingPage"))
 const GlobalSearch = lazyWithRetry(() => import("./components/GlobalSearch"))
 const NotificationCenter = lazyWithRetry(() => import("./components/NotificationCenter"))
-const StudyMaterialReader = lazyWithRetry(() => import("./pages/StudyMaterialReader"))
-const ExamPaperAnalysis = lazyWithRetry(() => import("./pages/ExamPaperAnalysis"))
 
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
@@ -111,13 +105,7 @@ function App() {
   const [pendingSyncCount, setPendingSyncCount] = useState(0)
   const [showOfflineBanner, setShowOfflineBanner] = useState(true)
   const [currentPage, setCurrentPage] = useState("Home")
-  const [selectedMaterialIdForReader, setSelectedMaterialIdForReader] = useState(null)
-  const [selectedMaterialIdForStudyPack, setSelectedMaterialIdForStudyPack] = useState(null)
-  const [selectedMaterialIdForFlashcards, setSelectedMaterialIdForFlashcards] = useState(null)
-  const [selectedMaterialIdForAnalysis, setSelectedMaterialIdForAnalysis] = useState(null)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
-  const [dueFlashcardsCount, setDueFlashcardsCount] = useState(0)
-  const [dueFlashcardsMaterialId, setDueFlashcardsMaterialId] = useState(null)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [recommendedTaskId, setRecommendedTaskId] = useState(null)
   const [dashboardTasks, setDashboardTasks] = useState([])
@@ -581,8 +569,19 @@ function App() {
   const handleOpenSearch = useCallback(() => setSearchModalOpen(true), [])
   const handleNavigateToAcademics = useCallback(() => setCurrentPage("My Academics"), [])
   const handleToggleBonusMode = useCallback(() => setIsBonusMode((prev) => !prev), [])
-  const handleOpenFocusSession = useCallback(() => setCurrentPage("Focus Session"), [])
   const handleNavigateToSyllabus = useCallback(() => setCurrentPage("Syllabus"), [])
+
+  // Global search keyboard shortcut (Ctrl+K or Cmd+K)
+  useEffect(() => {
+    function handleGlobalKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setSearchModalOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener("keydown", handleGlobalKeyDown)
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown)
+  }, [])
 
   // Derived Social Learning & Streak Stats
   const xpSummary = useMemo(() => {
@@ -680,16 +679,24 @@ function App() {
   // Next Best Action navigation handler
   function handleExecuteNextAction(action) {
     if (!action) return
-    if (action.action_type === "start_focus_session") {
-      setCurrentPage("Focus Session")
-    } else if (action.action_type === "navigate_to_study_material") {
-      setCurrentPage("Study Material")
-    } else if (action.action_type === "open_syllabus") {
-      setCurrentPage("Syllabus")
-    } else if (action.action_type === "open_tasks") {
+    if (action.action_type === "start_focus_session" || action.action_type === "open_tasks") {
       setCurrentPage("Tasks")
+    } else if (action.action_type === "open_exam_mode" || action.action_type === "start_exam_quiz") {
+      setCurrentPage("Exam Mode")
+    } else if (action.action_type === "open_syllabus" || action.action_type === "navigate_to_study_material") {
+      setCurrentPage("Syllabus")
     } else if (action.action_type === "open_academics") {
       setCurrentPage("My Academics")
+    } else if (action.action_type === "open_exams") {
+      setCurrentPage("Exams")
+    } else if (action.page) {
+      if (action.page === "Focus Session") {
+        setCurrentPage("Tasks")
+      } else if (action.page === "Study Material") {
+        setCurrentPage("Syllabus")
+      } else {
+        setCurrentPage(action.page)
+      }
     }
   }
 
@@ -705,7 +712,6 @@ function App() {
       exams: dashboardExams,
       studySessions,
       topicProgress: dashboardTopics,
-      flashcardCount: dueFlashcardsCount,
       preferences: notificationPreferences,
     })
 
@@ -737,7 +743,6 @@ function App() {
     dashboardExams,
     studySessions,
     dashboardTopics,
-    dueFlashcardsCount,
     notificationPreferences,
   ])
 
@@ -745,46 +750,37 @@ function App() {
     setNotificationModalOpen(false)
     if (!notif?.action_type) return
 
-    if (notif.action_type === "open_flashcards") {
-      if (dueFlashcardsMaterialId) {
-        setSelectedMaterialIdForFlashcards(dueFlashcardsMaterialId)
-        setCurrentPage("Flashcards")
-      } else {
-        setCurrentPage("Study Material")
-      }
-    } else if (notif.action_type === "open_tasks") {
+    if (notif.action_type === "open_tasks") {
       setCurrentPage("Tasks")
     } else if (notif.action_type === "open_exams") {
       setCurrentPage("Exams")
+    } else if (notif.action_type === "open_exam_mode") {
+      setCurrentPage("Exam Mode")
     } else if (notif.action_type === "open_academics") {
       setCurrentPage("My Academics")
+    } else if (notif.action_type === "open_syllabus") {
+      setCurrentPage("Syllabus")
     } else if (notif.action_type === "open_progress") {
       setCurrentPage("Progress")
     }
   }
 
   function handleNavigate(page, payload) {
-    if (payload?.materialId) {
-      if (payload.action === "study_pack") {
-        setSelectedMaterialIdForStudyPack(payload.materialId)
-        setCurrentPage("Study Pack")
-        return
-      }
-      if (payload.action === "flashcards") {
-        setSelectedMaterialIdForFlashcards(payload.materialId)
-        setCurrentPage("Flashcards")
-        return
-      }
-      if (payload.action === "analysis") {
-        setSelectedMaterialIdForAnalysis(payload.materialId)
-        setCurrentPage("Study Material")
-        return
-      }
-      setSelectedMaterialIdForReader(payload.materialId)
-      setCurrentPage("Study Material")
+    if (payload?.taskId) {
+      setCurrentPage("Tasks")
       return
     }
-    setCurrentPage(page)
+    if (payload?.examId) {
+      setCurrentPage("Exams")
+      return
+    }
+    if (page === "Focus Session" || page === "Study Material" || page === "Study Pack" || page === "Flashcards") {
+      setCurrentPage("Home")
+      return
+    }
+    if (page) {
+      setCurrentPage(page)
+    }
   }
 
   // -------------------------------------------------------------
@@ -973,7 +969,6 @@ function App() {
                 exams={dashboardExams}
                 completedKeys={xpSummary.completedKeys}
                 onXPUpdated={loadAllDashboardData}
-                onOpenFocusSession={handleOpenFocusSession}
                 onChallengeSolved={loadAllDashboardData}
               />
             </div>
@@ -1016,128 +1011,6 @@ function App() {
             </Suspense>
           )}
 
-          {currentPage === "Study Material" && (
-            selectedMaterialIdForAnalysis ? (
-              <Suspense fallback={<PageSuspenseFallback />}>
-                <ExamPaperAnalysis
-                  materialId={selectedMaterialIdForAnalysis}
-                  user={user}
-                  profile={profile}
-                  onBack={() => setSelectedMaterialIdForAnalysis(null)}
-                  onOpenReader={(id) => {
-                    setSelectedMaterialIdForAnalysis(null)
-                    setSelectedMaterialIdForReader(id)
-                  }}
-                  onOpenExamMode={() => {
-                    setSelectedMaterialIdForAnalysis(null)
-                    setCurrentPage("Exam Mode")
-                  }}
-                  onOpenStudyPack={(id) => {
-                    setSelectedMaterialIdForAnalysis(null)
-                    setSelectedMaterialIdForStudyPack(id)
-                    setCurrentPage("Study Pack")
-                  }}
-                  onOpenFlashcards={(id) => {
-                    setSelectedMaterialIdForAnalysis(null)
-                    setSelectedMaterialIdForFlashcards(id)
-                    setCurrentPage("Flashcards")
-                  }}
-                />
-              </Suspense>
-            ) : selectedMaterialIdForReader ? (
-              <Suspense fallback={<PageSuspenseFallback />}>
-                <StudyMaterialReader
-                  materialId={selectedMaterialIdForReader}
-                  user={user}
-                  profile={profile}
-                  onBack={() => setSelectedMaterialIdForReader(null)}
-                  onNavigateToSyllabus={() => setCurrentPage("Syllabus")}
-                  onOpenStudyPack={(id) => {
-                    setSelectedMaterialIdForStudyPack(id)
-                    setCurrentPage("Study Pack")
-                  }}
-                  onOpenFlashcards={(id) => {
-                    setSelectedMaterialIdForFlashcards(id)
-                    setCurrentPage("Flashcards")
-                  }}
-                  onOpenExamAnalysis={(id) => {
-                    setSelectedMaterialIdForAnalysis(id)
-                  }}
-                />
-              </Suspense>
-            ) : (
-              <Suspense fallback={<PageSuspenseFallback />}>
-                <StudyMaterial
-                  user={user}
-                  profile={profile}
-                  onOpenReader={(id) => setSelectedMaterialIdForReader(id)}
-                  onOpenStudyPack={(id) => {
-                    setSelectedMaterialIdForStudyPack(id)
-                    setCurrentPage("Study Pack")
-                  }}
-                  onOpenFlashcards={(id) => {
-                    setSelectedMaterialIdForFlashcards(id)
-                    setCurrentPage("Flashcards")
-                  }}
-                  onOpenExamAnalysis={(id) => {
-                    setSelectedMaterialIdForAnalysis(id)
-                  }}
-                  onNavigateToSyllabus={() => setCurrentPage("Syllabus")}
-                />
-              </Suspense>
-            )
-          )}
-
-          {currentPage === "Study Pack" && (
-            <Suspense fallback={<PageSuspenseFallback />}>
-              <StudyPack
-                user={user}
-                profile={profile}
-                initialMaterialId={selectedMaterialIdForStudyPack}
-                onBack={() => {
-                  setSelectedMaterialIdForStudyPack(null)
-                  setCurrentPage("Study Material")
-                }}
-                onOpenReader={(id) => {
-                  setSelectedMaterialIdForReader(id)
-                  setCurrentPage("Study Material")
-                }}
-                onOpenFlashcards={(id) => {
-                  setSelectedMaterialIdForFlashcards(id)
-                  setCurrentPage("Flashcards")
-                }}
-              />
-            </Suspense>
-          )}
-
-          {currentPage === "Flashcards" && (
-            <Suspense fallback={<PageSuspenseFallback />}>
-              <Flashcards
-                user={user}
-                profile={profile}
-                initialMaterialId={selectedMaterialIdForFlashcards}
-                onBack={() => {
-                  setSelectedMaterialIdForFlashcards(null)
-                  setCurrentPage("Study Material")
-                }}
-                onOpenReader={(id) => {
-                  setSelectedMaterialIdForReader(id)
-                  setCurrentPage("Study Material")
-                }}
-                onOpenStudyPack={(id) => {
-                  setSelectedMaterialIdForStudyPack(id)
-                  setCurrentPage("Study Pack")
-                }}
-              />
-            </Suspense>
-          )}
-
-          {currentPage === "Focus Session" && (
-            <Suspense fallback={<PageSuspenseFallback />}>
-              <FocusSession user={user} profile={profile} />
-            </Suspense>
-          )}
-
           {currentPage === "Leaderboard" && (
             <Suspense fallback={<PageSuspenseFallback />}>
               <Leaderboard user={user} profile={profile} />
@@ -1172,13 +1045,15 @@ function App() {
           <GlobalSearch
             isOpen={searchModalOpen}
             onClose={() => setSearchModalOpen(false)}
+            user={user}
+            profile={profile}
+            currentSemester={profile?.semester || 3}
+            currentSection={profile?.section || "B2"}
+            currentUserId={user?.id}
             onNavigate={(page, payload) => {
               handleNavigate(page, payload)
               setSearchModalOpen(false)
             }}
-            currentSemester={profile?.semester || 3}
-            currentSection={profile?.section || "B2"}
-            currentUserId={user?.id}
           />
         </Suspense>
       )}
