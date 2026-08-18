@@ -4,10 +4,26 @@ let deferredPrompt = null
 
 export function registerServiceWorker() {
   if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    // 1. Clean up legacy caches immediately on app boot
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((k) => {
+          if (k === "coursepilot-shell-v1") {
+            caches.delete(k).catch(() => {})
+          }
+        })
+      }).catch(() => {})
+    }
+
     window.addEventListener("load", () => {
       navigator.serviceWorker
         .register("/sw.js")
         .then((reg) => {
+          // Immediately check for updates
+          try {
+            reg.update()
+          } catch {}
+
           // Check for service worker updates
           reg.addEventListener("updatefound", () => {
             const installingWorker = reg.installing
@@ -17,8 +33,9 @@ export function registerServiceWorker() {
                   installingWorker.state === "installed" &&
                   navigator.serviceWorker.controller
                 ) {
-                  // A new update is available in the background
-                  console.info("CoursePilot update available.")
+                  // Post skip waiting to activate immediately
+                  installingWorker.postMessage({ type: "SKIP_WAITING" })
+                  console.info("[PWA] CoursePilot updated to latest version.")
                 }
               })
             }
@@ -27,6 +44,20 @@ export function registerServiceWorker() {
         .catch((err) => {
           console.warn("Service worker registration notice:", err)
         })
+    })
+
+    // Listen for controller changes to ensure smooth seamless upgrade
+    let refreshing = false
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) {
+        refreshing = true
+        // Only auto-reload if user was stuck on an outdated build
+        const isStuck = sessionStorage.getItem("coursepilot_chunk_error_reloaded")
+        if (isStuck) {
+          sessionStorage.removeItem("coursepilot_chunk_error_reloaded")
+          window.location.reload()
+        }
+      }
     })
   }
 }

@@ -12,29 +12,48 @@ import { SkeletonBanner, SkeletonCard, SkeletonList } from "./components/Skeleto
 import EmptyState from "./components/EmptyState"
 
 // =========================================================
-// ROUTE-BASED CODE SPLITTING (Lazy-loaded Subpages & Heavy Modals)
-// Keeps initial bundle ultra-compact and speeds up first frame render
+// RESILIENT ROUTE-BASED CODE SPLITTING
+// Keeps initial bundle ultra-compact and self-heals any deployment chunk mismatch
 // =========================================================
-const MyAcademics = lazy(() => import("./pages/MyAcademics"))
-const Syllabus = lazy(() => import("./pages/Syllabus"))
-const Progress = lazy(() => import("./pages/Progress"))
-const Tasks = lazy(() => import("./pages/Tasks"))
-const Exams = lazy(() => import("./pages/Exams"))
-const ExamMode = lazy(() => import("./pages/ExamMode"))
-const StudyMaterial = lazy(() => import("./pages/StudyMaterial"))
-const StudyPack = lazy(() => import("./pages/StudyPack"))
-const Flashcards = lazy(() => import("./pages/Flashcards"))
-const FocusSession = lazy(() => import("./pages/FocusSession"))
-const MyProfile = lazy(() => import("./pages/MyProfile"))
-const Leaderboard = lazy(() => import("./pages/Leaderboard"))
-const SavedChallenges = lazy(() => import("./pages/SavedChallenges"))
-const Auth = lazy(() => import("./pages/Auth"))
-const ProfileSetup = lazy(() => import("./pages/ProfileSetup"))
-const LandingPage = lazy(() => import("./pages/LandingPage"))
-const GlobalSearch = lazy(() => import("./components/GlobalSearch"))
-const NotificationCenter = lazy(() => import("./components/NotificationCenter"))
-const StudyMaterialReader = lazy(() => import("./pages/StudyMaterialReader"))
-const ExamPaperAnalysis = lazy(() => import("./pages/ExamPaperAnalysis"))
+function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    try {
+      return await componentImport()
+    } catch (error) {
+      console.warn("[App] Dynamic import failed, retrying once:", error)
+      if (typeof window !== "undefined") {
+        const isRetried = sessionStorage.getItem("cp_chunk_retry")
+        if (!isRetried) {
+          sessionStorage.setItem("cp_chunk_retry", "true")
+          window.location.reload()
+          return new Promise(() => {})
+        }
+      }
+      throw error
+    }
+  })
+}
+
+const MyAcademics = lazyWithRetry(() => import("./pages/MyAcademics"))
+const Syllabus = lazyWithRetry(() => import("./pages/Syllabus"))
+const Progress = lazyWithRetry(() => import("./pages/Progress"))
+const Tasks = lazyWithRetry(() => import("./pages/Tasks"))
+const Exams = lazyWithRetry(() => import("./pages/Exams"))
+const ExamMode = lazyWithRetry(() => import("./pages/ExamMode"))
+const StudyMaterial = lazyWithRetry(() => import("./pages/StudyMaterial"))
+const StudyPack = lazyWithRetry(() => import("./pages/StudyPack"))
+const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"))
+const FocusSession = lazyWithRetry(() => import("./pages/FocusSession"))
+const MyProfile = lazyWithRetry(() => import("./pages/MyProfile"))
+const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard"))
+const SavedChallenges = lazyWithRetry(() => import("./pages/SavedChallenges"))
+const Auth = lazyWithRetry(() => import("./pages/Auth"))
+const ProfileSetup = lazyWithRetry(() => import("./pages/ProfileSetup"))
+const LandingPage = lazyWithRetry(() => import("./pages/LandingPage"))
+const GlobalSearch = lazyWithRetry(() => import("./components/GlobalSearch"))
+const NotificationCenter = lazyWithRetry(() => import("./components/NotificationCenter"))
+const StudyMaterialReader = lazyWithRetry(() => import("./pages/StudyMaterialReader"))
+const ExamPaperAnalysis = lazyWithRetry(() => import("./pages/ExamPaperAnalysis"))
 
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
