@@ -48,6 +48,7 @@ const ProfileSetup = lazyWithRetry(() => import("./pages/ProfileSetup"))
 const LandingPage = lazyWithRetry(() => import("./pages/LandingPage"))
 const GlobalSearch = lazyWithRetry(() => import("./components/GlobalSearch"))
 const NotificationCenter = lazyWithRetry(() => import("./components/NotificationCenter"))
+import NextBestActionCard from "./components/NextBestActionCard"
 
 import { getTodaySchedule, getNextClass } from "./lib/todaySchedule"
 import { getMergedFreeWindows, getBestStudyWindow } from "./utils/freeTime"
@@ -945,6 +946,14 @@ function App() {
                 onOpenProfile={handleOpenProfile}
                 onOpenNotifications={handleOpenNotifications}
                 onOpenSearch={handleOpenSearch}
+              />
+
+              <NextBestActionCard
+                action={nextBestAction}
+                onExecute={handleExecuteNextAction}
+                onOpenTasks={() => setCurrentPage("Tasks")}
+                onOpenExams={() => setCurrentPage("Exams")}
+                onOpenAcademics={handleNavigateToAcademics}
               />
 
               <TodayTimetableStrip
