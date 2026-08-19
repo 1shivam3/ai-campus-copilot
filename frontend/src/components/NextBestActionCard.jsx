@@ -7,9 +7,7 @@ function NextBestActionCard({
   onOpenExams,
   onOpenAcademics,
 }) {
-  const effectiveAction = action?.bestAction || action
-
-  if (!effectiveAction || !effectiveAction.title) {
+  if (!action) {
     return (
       <div className="mb-6 rounded-2xl border border-[#E4E4E7] bg-white p-5 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
         <div className="flex items-center justify-between">
@@ -35,25 +33,8 @@ function NextBestActionCard({
     )
   }
 
-  const isUrgent = effectiveAction.isHardRule || effectiveAction.urgency >= 80 || effectiveAction.risk >= 80
-  const durationMins = effectiveAction.estimated_minutes || 45
-
-  // Determine intuitive CTA text based on action type
-  let ctaLabel = "Start Now →"
-  if (effectiveAction.action_type === "ATTEND_CLASS") {
-    ctaLabel = "Go to Class →"
-  } else if (
-    effectiveAction.action_type === "SUBMIT_ASSIGNMENT" ||
-    effectiveAction.action_type === "COMPLETE_ASSIGNMENT"
-  ) {
-    ctaLabel = "Work on Task →"
-  } else if (effectiveAction.action_type === "PREPARE_FOR_EXAM") {
-    ctaLabel = "Start Revision →"
-  } else if (effectiveAction.action_type === "STUDY_TOPIC") {
-    ctaLabel = "Study Topic →"
-  } else if (effectiveAction.action_type === "REVIEW_SCHEDULE") {
-    ctaLabel = "Review Plan →"
-  }
+  const isUrgent = action.isHardRule || action.urgency >= 80 || action.risk >= 80
+  const durationMins = action.estimated_minutes || 45
 
   return (
     <div className="mb-6 rounded-2xl border-2 border-[#0F766E]/25 bg-white p-5 shadow-xs transition-all hover:border-[#0F766E]/40 dark:border-[#0F766E]/40 dark:bg-[#141c1f]">
@@ -67,9 +48,9 @@ function NextBestActionCard({
         </div>
 
         <div className="flex items-center gap-1.5">
-          {effectiveAction.hardRuleReason && (
+          {action.hardRuleReason && (
             <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold text-[#DC2626] border border-rose-200/60 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300">
-              {effectiveAction.hardRuleReason}
+              {action.hardRuleReason}
             </span>
           )}
           <span
@@ -87,13 +68,11 @@ function NextBestActionCard({
       {/* Main Focus Title & Subject Info */}
       <div className="mt-3.5">
         <h3 className="text-lg font-bold text-[#18181B] tracking-tight dark:text-[#f4f4f5]">
-          {effectiveAction.title}
+          {action.title}
         </h3>
         <p className="mt-0.5 text-xs font-semibold text-[#52525B] dark:text-[#a1a1aa]">
-          {effectiveAction.subject || "Academics"}
-          {effectiveAction.deadline
-            ? ` · Due ${new Date(effectiveAction.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-            : ""}
+          {action.subject || "Academics"}
+          {action.deadline ? ` · Due ${new Date(action.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
         </p>
       </div>
 
@@ -103,12 +82,12 @@ function NextBestActionCard({
           Why this now?
         </p>
         <p className="mt-1 text-xs text-[#52525B] leading-relaxed font-normal dark:text-[#d4d4d8]">
-          {effectiveAction.description}
+          {action.description}
         </p>
 
-        {Array.isArray(effectiveAction.whyThis) && effectiveAction.whyThis.length > 0 && (
+        {Array.isArray(action.whyThis) && action.whyThis.length > 0 && (
           <ul className="mt-2.5 flex flex-wrap gap-1.5">
-            {effectiveAction.whyThis.map((reason, idx) => (
+            {action.whyThis.map((reason, idx) => (
               <li
                 key={idx}
                 className="rounded-lg bg-white px-2 py-0.5 text-[10px] font-medium text-[#52525B] border border-[#E4E4E7] dark:bg-[#141c1f] dark:text-[#d4d4d8] dark:border-[#27343a]"
@@ -131,10 +110,10 @@ function NextBestActionCard({
 
         <button
           type="button"
-          onClick={() => onExecute && onExecute(effectiveAction)}
+          onClick={() => onExecute(action)}
           className="inline-flex items-center gap-1.5 rounded-xl bg-[#0F766E] px-4 py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#115E59] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:outline-none"
         >
-          <span>{ctaLabel}</span>
+          <span>Start →</span>
         </button>
       </div>
     </div>

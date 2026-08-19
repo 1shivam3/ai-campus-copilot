@@ -355,7 +355,7 @@ function ExamQuiz({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+            className="rounded-xl border border-[#E4E4E7] px-3 py-1.5 text-xs font-semibold text-[#52525B] hover:bg-[#F7F7F2] transition dark:border-[#27343a] dark:text-[#a1a1aa]"
           >
             Cancel
           </button>
@@ -369,13 +369,13 @@ function ExamQuiz({
 
         {/* 1. Subject Selector */}
         <div className="space-y-2">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#52525B] dark:text-[#a1a1aa]">
             Subject
           </label>
           <select
             value={selectedSubjectId || ""}
             onChange={handleSubjectSelect}
-            className="w-full rounded-2xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-600/10 transition"
+            className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-3 text-sm font-semibold text-[#18181B] outline-none focus:border-[#0F766E] focus:bg-white focus:ring-2 focus:ring-[#0F766E]/10 transition dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
           >
             {subjectList.map((s) => (
               <option key={s.id} value={s.id}>
@@ -386,7 +386,7 @@ function ExamQuiz({
         </div>
 
         {/* 2. Syllabus Scope Selection (Theory Units vs Lab Practicals) */}
-        <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 sm:p-5">
+        <div className="space-y-3 rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 sm:p-5 dark:border-[#27343a] dark:bg-[#182226]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label className="text-xs font-bold uppercase tracking-wider text-[#18181B] dark:text-[#f4f4f5]">
@@ -449,7 +449,7 @@ function ExamQuiz({
 
         {/* 3. Question Format */}
         <div className="space-y-2">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#52525B] dark:text-[#a1a1aa]">
             Question Type
           </label>
           <div className="grid grid-cols-3 gap-2.5">
@@ -464,12 +464,12 @@ function ExamQuiz({
                 onClick={() => setQuestionType(type.id)}
                 className={`rounded-2xl p-3.5 text-left border transition ${
                   questionType === type.id
-                    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-800 hover:border-slate-300"
+                    ? "border-[#0F766E] bg-[#0F766E] text-white shadow-sm dark:border-[#2DD4BF] dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                    : "border-[#E4E4E7] bg-white text-[#18181B] hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
                 }`}
               >
                 <p className="font-bold text-xs sm:text-sm">{type.label}</p>
-                <p className={`mt-0.5 text-[11px] ${questionType === type.id ? "text-slate-300" : "text-slate-500"}`}>
+                <p className={`mt-0.5 text-[11px] ${questionType === type.id ? "text-white/80 dark:text-[#0f1416]/80" : "text-[#71717A] dark:text-[#a1a1aa]"}`}>
                   {type.desc}
                 </p>
               </button>
@@ -480,7 +480,7 @@ function ExamQuiz({
         {/* 4. Number of Questions & Difficulty */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#52525B] dark:text-[#a1a1aa]">
               Number of Questions
             </label>
             <div className="flex flex-wrap gap-2">
@@ -494,8 +494,8 @@ function ExamQuiz({
                   }}
                   className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                     totalQuestions === num && !customQuestions
-                      ? "bg-slate-900 text-white"
-                      : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      ? "bg-[#0F766E] text-white dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                      : "border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
                   }`}
                 >
                   {num}
@@ -505,7 +505,7 @@ function ExamQuiz({
           </div>
 
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#52525B] dark:text-[#a1a1aa]">
               Difficulty
             </label>
             <div className="grid grid-cols-4 gap-1.5">
@@ -516,8 +516,8 @@ function ExamQuiz({
                   onClick={() => setDifficulty(diff)}
                   className={`rounded-xl py-2 text-xs font-bold capitalize transition ${
                     difficulty === diff
-                      ? "bg-slate-900 text-white"
-                      : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      ? "bg-[#0F766E] text-white dark:bg-[#2DD4BF] dark:text-[#0f1416]"
+                      : "border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
                   }`}
                 >
                   {diff}
@@ -637,7 +637,7 @@ function ExamQuiz({
 
         {loadingQuestion ? (
           <div className="py-16 text-center space-y-3">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#0F766E] border-t-transparent dark:border-[#2DD4BF]" />
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#0F766E] border-t-transparent" />
             <p className="text-sm font-semibold text-[#18181B] dark:text-[#f4f4f5]">
               Generating Question {questionNumber}...
             </p>
@@ -664,11 +664,11 @@ function ExamQuiz({
 
                   let optionStyle = "border-[#E4E4E7] bg-white text-[#18181B] hover:border-[#0F766E]/40 dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
                   if (isSelected && !isRevealed) {
-                    optionStyle = "border-[#0F766E] bg-[#ECFDF5] text-[#12312F] ring-1 ring-[#0F766E] shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF] dark:text-[#2DD4BF]"
+                    optionStyle = "border-[#0F766E] bg-[#0F766E] text-white shadow-xs dark:border-[#2DD4BF] dark:bg-[#2DD4BF] dark:text-[#0f1416]"
                   } else if (isCorrect) {
-                    optionStyle = "border-[#15803D] bg-emerald-50 text-[#15803D] ring-2 ring-emerald-500/20 dark:bg-[#182226] dark:border-[#15803D] dark:text-emerald-300"
+                    optionStyle = "border-emerald-500 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-300"
                   } else if (isWrongSelected) {
-                    optionStyle = "border-[#DC2626] bg-rose-50 text-[#DC2626] ring-2 ring-rose-500/20 dark:bg-[#182226] dark:border-[#DC2626] dark:text-rose-300"
+                    optionStyle = "border-red-400 bg-red-50 text-red-900 ring-2 ring-red-500/20 dark:bg-red-950/40 dark:text-red-300"
                   }
 
                   return (
@@ -681,11 +681,11 @@ function ExamQuiz({
                     >
                       <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
                         isSelected && !isRevealed
-                          ? "bg-[#0F766E] text-white"
+                          ? "bg-white/20 text-white dark:bg-[#0f1416]/20 dark:text-[#0f1416]"
                           : isCorrect
-                          ? "bg-[#15803D] text-white"
+                          ? "bg-emerald-600 text-white"
                           : isWrongSelected
-                          ? "bg-[#DC2626] text-white"
+                          ? "bg-red-600 text-white"
                           : "bg-[#F7F7F2] text-[#52525B] dark:bg-[#182226] dark:text-[#a1a1aa]"
                       }`}>
                         {String.fromCharCode(65 + idx)}
@@ -694,7 +694,7 @@ function ExamQuiz({
                         {opt}
                       </span>
                       {isCorrect && (
-                        <span className="text-[#15803D] font-bold text-xs shrink-0 dark:text-emerald-300">
+                        <span className="text-emerald-600 font-bold text-xs shrink-0 dark:text-emerald-400">
                           Correct Answer
                         </span>
                       )}
@@ -716,7 +716,7 @@ function ExamQuiz({
                   disabled={isRevealed}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   placeholder="Type your answer here..."
-                  className="w-full rounded-2xl border border-[#E4E4E7] bg-white p-4 text-xs sm:text-sm text-[#18181B] outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/10 transition disabled:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#f4f4f5]"
+                  className="w-full rounded-2xl border border-[#E4E4E7] p-4 text-xs sm:text-sm text-[#18181B] outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/10 transition disabled:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5] dark:disabled:bg-[#141c1f]"
                 />
               </div>
             )}
@@ -729,8 +729,8 @@ function ExamQuiz({
                   <div className="flex items-center gap-2">
                     <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
                       selectedOption === Number(currentQuestion.correct_answer)
-                        ? "bg-emerald-100 text-[#15803D]"
-                        : "bg-rose-100 text-[#DC2626]"
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                        : "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300"
                     }`}>
                       {selectedOption === Number(currentQuestion.correct_answer) ? "✓ Correct" : "✗ Incorrect"}
                     </span>
@@ -755,7 +755,7 @@ function ExamQuiz({
                     <p className="text-xs font-bold uppercase tracking-wider text-[#71717A] dark:text-[#a1a1aa]">
                       Key Grading Points
                     </p>
-                    <ul className="list-disc list-inside space-y-1 text-xs text-[#52525B] dark:text-[#a1a1aa]">
+                    <ul className="list-disc list-inside space-y-1 text-xs text-[#52525B] dark:text-[#d4d4d8]">
                       {currentQuestion.key_points.map((pt, pIdx) => (
                         <li key={pIdx}>{pt}</li>
                       ))}
@@ -776,6 +776,7 @@ function ExamQuiz({
                 )}
               </div>
             )}
+
 
             {/* Action Buttons */}
             <div className="pt-2 flex items-center justify-between gap-3">

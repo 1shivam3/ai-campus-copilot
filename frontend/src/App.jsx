@@ -436,10 +436,6 @@ function App() {
     setSavedItemIds(new Set())
     setNotifications([])
     setDashboardSchedule([])
-    setSelectedMaterialIdForReader(null)
-    setSelectedMaterialIdForStudyPack(null)
-    setSelectedMaterialIdForFlashcards(null)
-    setSelectedMaterialIdForAnalysis(null)
     setRecommendedTaskId(null)
     setCurrentPage("Home")
   }
@@ -535,24 +531,8 @@ function App() {
       if (histData) setChallengeHistory(histData)
       if (savedData) setSavedItemIds(savedData)
 
-      // Background due flashcards check
-      try {
-        const now = new Date().toISOString()
-        const { data: fcData } = await supabase
-          .from("study_flashcards")
-          .select("id, study_material_id, next_review_at")
-          .eq("user_id", user.id)
-          .lte("next_review_at", now)
-          .limit(1)
+      // Flashcard due-review check removed (Study Material feature removed)
 
-        if (fcData && fcData.length > 0) {
-          setDueFlashcardsCount(fcData.length)
-          setDueFlashcardsMaterialId(fcData[0].study_material_id)
-        } else {
-          setDueFlashcardsCount(0)
-          setDueFlashcardsMaterialId(null)
-        }
-      } catch {}
     } catch (err) {
       console.warn("Secondary academic data note:", err)
     }
@@ -656,17 +636,13 @@ function App() {
       exams: dashboardExams,
       syllabusTopics: dashboardTopics,
       studyWindow: bestStudyWindow,
-      nextClass,
     })
-  }, [profile, dashboardSchedule, dashboardTasks, dashboardExams, dashboardTopics, bestStudyWindow, nextClass])
+  }, [profile, dashboardSchedule, dashboardTasks, dashboardExams, dashboardTopics, bestStudyWindow])
 
   // Auto-fill recommended task from Next Best Action engine
   useEffect(() => {
-    const act = nextBestAction?.bestAction || nextBestAction
-    if (act?.payload?.id && (act.action_type === "SUBMIT_ASSIGNMENT" || act.action_type === "COMPLETE_ASSIGNMENT")) {
-      setRecommendedTaskId(act.payload.id)
-    } else if (act?.task_id) {
-      setRecommendedTaskId(act.task_id)
+    if (nextBestAction?.bestAction?.payload?.id) {
+      setRecommendedTaskId(nextBestAction.bestAction.payload.id)
     }
   }, [nextBestAction])
 
@@ -682,46 +658,52 @@ function App() {
     })
   }, [todaySchedule, dashboardTasks, dashboardExams, dashboardTopics, freeTimeSlots, recommendedTaskId])
 
-  // Next Best Action navigation handler
+  // Next Best Action navigation handler — handles all action_type values from the engine
   function handleExecuteNextAction(action) {
-    const act = action?.bestAction || action
-    if (!act) return
+    if (!action) return
 
-    if (act.action_type === "ATTEND_CLASS" || act.action_type === "open_academics") {
-      if (act.payload?.subject_id) {
-        handleNavigateToAcademics(act.payload.subject_id)
-      } else {
+    // Handle actual NBA engine action types
+    switch (action.action_type) {
+      case "ATTEND_CLASS":
         setCurrentPage("My Academics")
-      }
-    } else if (
-      act.action_type === "SUBMIT_ASSIGNMENT" ||
-      act.action_type === "COMPLETE_ASSIGNMENT" ||
-      act.action_type === "open_tasks" ||
-      act.action_type === "start_focus_session"
-    ) {
-      setCurrentPage("Tasks")
-    } else if (
-      act.action_type === "PREPARE_FOR_EXAM" ||
-      act.action_type === "open_exam_mode" ||
-      act.action_type === "start_exam_quiz"
-    ) {
-      setCurrentPage("Exam Mode")
-    } else if (act.action_type === "STUDY_TOPIC") {
-      setCurrentPage("Progress")
-    } else if (
-      act.action_type === "REVIEW_SCHEDULE" ||
-      act.action_type === "open_syllabus" ||
-      act.action_type === "open_exams"
-    ) {
-      setCurrentPage(act.page || "Progress")
-    } else if (act.page) {
-      if (act.page === "Focus Session") {
+        break
+      case "SUBMIT_ASSIGNMENT":
+      case "COMPLETE_ASSIGNMENT":
+      case "open_tasks":
+      case "start_focus_session":
         setCurrentPage("Tasks")
-      } else if (act.page === "Study Material") {
+        break
+      case "PREPARE_FOR_EXAM":
+      case "open_exam_mode":
+      case "start_exam_quiz":
+        setCurrentPage("Exam Mode")
+        break
+      case "STUDY_TOPIC":
+        setCurrentPage("Progress")
+        break
+      case "REVIEW_SCHEDULE":
+        setCurrentPage("Progress")
+        break
+      case "open_academics":
+        setCurrentPage("My Academics")
+        break
+      case "open_exams":
+        setCurrentPage("Exams")
+        break
+      case "open_syllabus":
         setCurrentPage("Syllabus")
-      } else {
-        setCurrentPage(act.page)
-      }
+        break
+      default:
+        // Fallback: use page name from action object
+        if (action.page) {
+          if (action.page === "Focus Session") {
+            setCurrentPage("Tasks")
+          } else if (action.page === "Study Material") {
+            setCurrentPage("Syllabus")
+          } else {
+            setCurrentPage(action.page)
+          }
+        }
     }
   }
 
@@ -973,7 +955,7 @@ function App() {
               />
 
               <NextBestActionCard
-                action={nextBestAction}
+                action={nextBestAction?.bestAction}
                 onExecute={handleExecuteNextAction}
                 onOpenTasks={() => setCurrentPage("Tasks")}
                 onOpenExams={() => setCurrentPage("Exams")}

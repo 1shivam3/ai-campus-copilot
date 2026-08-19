@@ -31,46 +31,28 @@ export function getHoursRemaining(date) {
 /**
  * 95A: Collect and normalize context
  */
-export function buildAcademicContext(rawContext) {
-  const safeContext = rawContext || {}
-  const {
-    profile,
-    schedule = [],
-    tasks = [],
-    exams = [],
-    syllabusTopics = [],
-    topics = [],
-    topicProgress = {},
-    studyWindow = null,
-    bestStudyWindow = null,
-    nextClass = null,
-  } = safeContext
-
+export function buildAcademicContext({
+  profile,
+  schedule = [],
+  tasks = [],
+  exams = [],
+  syllabusTopics = [],
+  topicProgress = {},
+  studyWindow = null,
+}) {
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" })
   const nowMinutes = getMinutesNow()
 
-  const actualSchedule = Array.isArray(schedule) ? schedule : []
-  const actualTasks = Array.isArray(tasks) ? tasks : []
-  const actualExams = Array.isArray(exams) ? exams : []
-  const actualTopics =
-    Array.isArray(syllabusTopics) && syllabusTopics.length > 0
-      ? syllabusTopics
-      : Array.isArray(topics)
-        ? topics
-        : []
-  const actualStudyWindow = studyWindow || bestStudyWindow || null
-
   // 1. Today's classes
-  const todayClasses = actualSchedule
-    .filter((item) => item?.day_of_week?.toLowerCase() === today.toLowerCase())
-    .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""))
+  const todayClasses = schedule
+    .filter((item) => item.day_of_week?.toLowerCase() === today.toLowerCase())
+    .sort((a, b) => a.start_time.localeCompare(b.start_time))
 
   // Find active class or class starting within 30 minutes
   let activeClass = null
   let upcomingSoonClass = null
 
   for (const c of todayClasses) {
-    if (!c.start_time || !c.end_time) continue
     const start = timeToMinutes(c.start_time)
     const end = timeToMinutes(c.end_time)
 
@@ -85,17 +67,9 @@ export function buildAcademicContext(rawContext) {
     }
   }
 
-  // If nextClass was provided and starts within 30m
-  if (!activeClass && !upcomingSoonClass && nextClass && nextClass.start_time) {
-    const start = timeToMinutes(nextClass.start_time)
-    if (start > nowMinutes && start - nowMinutes <= 30) {
-      upcomingSoonClass = nextClass
-    }
-  }
-
   // 2. Pending Tasks
-  const pendingTasks = actualTasks
-    .filter((t) => t && t.status !== "completed" && !t.is_completed)
+  const pendingTasks = tasks
+    .filter((t) => t.status !== "completed")
     .sort((a, b) => {
       const aHours = getHoursRemaining(a.deadline)
       const bHours = getHoursRemaining(b.deadline)
@@ -104,22 +78,16 @@ export function buildAcademicContext(rawContext) {
     })
 
   // 3. Upcoming Exams
-  const upcomingExams = actualExams
-    .filter((e) => e && e.exam_date && new Date(e.exam_date).getTime() >= Date.now() - 1000 * 60 * 60 * 24)
+  const upcomingExams = exams
+    .filter((e) => new Date(e.exam_date).getTime() >= Date.now() - 1000 * 60 * 60 * 24)
     .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date))
 
   // 4. Syllabus topics with progress
-  const topicsWithMastery = actualTopics.map((t) => {
-    const directMastery = t.mastery_score !== undefined ? Number(t.mastery_score) : null
-    const mappedMastery = topicProgress[t.id]?.mastery_score !== undefined ? Number(topicProgress[t.id]?.mastery_score) : null
-    const score = directMastery !== null ? directMastery : mappedMastery !== null ? mappedMastery : 0
-
-    return {
-      ...t,
-      mastery_score: score,
-      status: t.status || topicProgress[t.id]?.status || "not_started",
-    }
-  })
+  const topicsWithMastery = syllabusTopics.map((t) => ({
+    ...t,
+    mastery_score: Number(topicProgress[t.id]?.mastery_score || 0),
+    status: topicProgress[t.id]?.status || "not_started",
+  }))
 
   const weakestTopics = [...topicsWithMastery].sort(
     (a, b) => a.mastery_score - b.mastery_score
@@ -136,7 +104,7 @@ export function buildAcademicContext(rawContext) {
     upcomingExams,
     topicsWithMastery,
     weakestTopics,
-    studyWindow: actualStudyWindow,
+    studyWindow,
   }
 }
 

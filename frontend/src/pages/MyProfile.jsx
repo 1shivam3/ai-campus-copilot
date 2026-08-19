@@ -385,7 +385,7 @@ export default function MyProfile({
       {/* ========================================================================= */}
       {/* 1. PROFILE OVERVIEW HERO BANNER */}
       {/* ========================================================================= */}
-      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-8">
+      <section className="overflow-hidden rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           {/* Profile Photo with Upload Trigger */}
           <div className="relative group shrink-0">
@@ -393,17 +393,17 @@ export default function MyProfile({
               <img
                 src={avatarUrl}
                 alt={fullName}
-                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-blue-500/20 shadow-md"
+                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-[#0F766E]/20 shadow-md"
               />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-linear-to-br from-blue-600 to-indigo-700 text-3xl font-extrabold text-white shadow-md shadow-blue-500/20">
+              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-[#0F766E] text-3xl font-extrabold text-white shadow-md shadow-[#0F766E]/20">
                 {initial}
               </div>
             )}
 
             <label
               htmlFor="avatar-upload"
-              className="absolute inset-0 flex items-center justify-center rounded-3xl bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-bold text-white"
+              className="absolute inset-0 flex items-center justify-center rounded-3xl bg-[#12312F]/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-bold text-white"
               title="Upload new profile picture"
             >
               📷 Edit
@@ -420,7 +420,7 @@ export default function MyProfile({
           {/* Identity & Social Stats */}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white truncate">
+              <h2 className="text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5] truncate">
                 {fullName || "Student"}
               </h2>
               <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
@@ -428,12 +428,12 @@ export default function MyProfile({
               </span>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa]">
               Semester {semester} · Section {isCustomSection ? customSectionValue || section : section} · {program}
             </p>
 
             {bio && (
-              <p className="text-xs text-slate-600 dark:text-slate-300 italic max-w-xl">
+              <p className="text-xs text-[#52525B] dark:text-[#d4d4d8] italic max-w-xl">
                 "{bio}"
               </p>
             )}
@@ -471,7 +471,7 @@ export default function MyProfile({
       {/* ========================================================================= */}
       {/* 2. BADGES & ACCOMPLISHMENTS GRID */}
       {/* ========================================================================= */}
-      <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7">
+      <section className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-7">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
@@ -496,24 +496,24 @@ export default function MyProfile({
                 className={`flex flex-col items-center justify-between rounded-2xl p-4 text-center border transition ${
                   isUnlocked
                     ? "border-amber-200 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20"
-                    : "border-slate-200/70 bg-slate-50/50 opacity-60 dark:border-slate-800 dark:bg-slate-800/40"
+                    : "border-[#E4E4E7] bg-[#F7F7F2] opacity-60 dark:border-[#27343a] dark:bg-[#182226]"
                 }`}
                 title={badge.description}
               >
                 <span className={`text-3xl mb-1.5 ${!isUnlocked && "grayscale opacity-50"}`}>
                   {badge.icon}
                 </span>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                <h4 className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5] line-clamp-1">
                   {badge.name}
                 </h4>
-                <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight">
+                <p className="mt-1 text-[10px] text-[#71717A] dark:text-[#a1a1aa] line-clamp-2 leading-tight">
                   {badge.description}
                 </p>
                 <span
                   className={`mt-2.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase ${
                     isUnlocked
                       ? "bg-amber-500 text-white shadow-2xs"
-                      : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                      : "bg-[#E4E4E7] text-[#71717A] dark:bg-[#27343a] dark:text-[#a1a1aa]"
                   }`}
                 >
                   {isUnlocked ? "✓ Earned" : "Locked"}
@@ -529,12 +529,12 @@ export default function MyProfile({
       {/* ========================================================================= */}
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Real Skills Breakdown */}
-        <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7">
+        <section className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-7">
           <div className="mb-5">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
               📊 Syllabus & Topic Mastery Profile
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-[#52525B] dark:text-[#a1a1aa] mt-0.5">
               Calculated from your topic quizzes and syllabus learning paths.
             </p>
           </div>
@@ -558,19 +558,19 @@ export default function MyProfile({
         </section>
 
         {/* Academic Activity Counters */}
-        <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7 flex flex-col justify-between">
+        <section className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-7 flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
               ⚡ Academic Activity Counters
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-[#52525B] dark:text-[#a1a1aa] mt-0.5">
               Verifiable activity records that fuel your learning streaks.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5 my-4">
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center dark:border-slate-800 dark:bg-slate-800/60">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 text-center dark:border-[#27343a] dark:bg-[#182226]">
+              <span className="text-2xl font-black text-[#18181B] dark:text-[#f4f4f5]">
                 {activityStats.totalChallenges}
               </span>
               <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
@@ -578,8 +578,8 @@ export default function MyProfile({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center dark:border-slate-800 dark:bg-slate-800/60">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 text-center dark:border-[#27343a] dark:bg-[#182226]">
+              <span className="text-2xl font-black text-[#18181B] dark:text-[#f4f4f5]">
                 {activityStats.totalQuizzes}
               </span>
               <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
@@ -587,8 +587,8 @@ export default function MyProfile({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center dark:border-slate-800 dark:bg-slate-800/60">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 text-center dark:border-[#27343a] dark:bg-[#182226]">
+              <span className="text-2xl font-black text-[#18181B] dark:text-[#f4f4f5]">
                 {activityStats.totalFocusMinutes}m
               </span>
               <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
@@ -596,8 +596,8 @@ export default function MyProfile({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center dark:border-slate-800 dark:bg-slate-800/60">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <div className="rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 text-center dark:border-[#27343a] dark:bg-[#182226]">
+              <span className="text-2xl font-black text-[#18181B] dark:text-[#f4f4f5]">
                 {activityStats.masteredTopicsCount}
               </span>
               <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
@@ -618,13 +618,13 @@ export default function MyProfile({
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left 2 Cols: Edit Details Form */}
         <div className="lg:col-span-2 space-y-8">
-          <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7">
-            <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+          <section className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-7">
+            <div className="mb-6 flex items-center justify-between border-b border-[#E4E4E7] pb-4 dark:border-[#27343a]">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                   Academic & Cohort Settings
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-[#52525B] dark:text-[#a1a1aa] mt-0.5">
                   Update your display name, short bio, and semester cohort.
                 </p>
               </div>
@@ -642,7 +642,7 @@ export default function MyProfile({
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Shivam Kumar"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white dark:focus:bg-slate-800"
+                  className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5] dark:focus:bg-[#141c1f]"
                 />
               </div>
 
@@ -659,7 +659,7 @@ export default function MyProfile({
                   value={publicDisplayName}
                   onChange={(e) => setPublicDisplayName(e.target.value)}
                   placeholder="e.g. CodeNinja, AlgoMaster"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                  className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                 />
                 <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                   Visible on public leaderboards. If empty or profile is private, a safe tag like <code>Learner_7421</code> is displayed.
@@ -676,7 +676,7 @@ export default function MyProfile({
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="e.g. 3rd Sem CSE · Aspiring Software Engineer"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                  className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                 />
               </div>
 
@@ -690,7 +690,7 @@ export default function MyProfile({
                   <select
                     value={semester}
                     onChange={(e) => setSemester(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                    className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                   >
                     {SEMESTERS.map((s) => (
                       <option key={s.value} value={s.value}>
@@ -710,7 +710,7 @@ export default function MyProfile({
                       value={section}
                       onChange={(e) => setSection(e.target.value)}
                       disabled={sectionsLoading}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white disabled:opacity-60"
+                      className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5] disabled:opacity-60"
                     >
                       {availableSections.map((sec) => (
                         <option key={sec.section} value={sec.section}>
@@ -724,7 +724,7 @@ export default function MyProfile({
                       value={customSectionValue}
                       onChange={(e) => setCustomSectionValue(e.target.value.toUpperCase())}
                       placeholder="e.g. CS-A"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                      className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                     />
                   )}
                   <div className="mt-1.5 flex items-center justify-between">
@@ -753,7 +753,7 @@ export default function MyProfile({
                     value={collegeName}
                     onChange={(e) => setCollegeName(e.target.value)}
                     placeholder="e.g. College of Engineering"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                    className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                   />
                 </div>
 
@@ -766,15 +766,15 @@ export default function MyProfile({
                     value={program}
                     onChange={(e) => setProgram(e.target.value)}
                     placeholder="e.g. Computer Science & Engineering"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+                    className="w-full rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] transition focus:border-[#0F766E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/10 dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
                   />
                 </div>
               </div>
 
               {/* Privacy Setting Toggle */}
-              <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+              <div className="flex items-center justify-between rounded-2xl border border-[#E4E4E7] bg-[#F7F7F2] p-4 dark:border-[#27343a] dark:bg-[#182226]">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                  <h4 className="text-xs font-bold text-[#18181B] dark:text-[#f4f4f5]">
                     Profile Visibility
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -789,7 +789,7 @@ export default function MyProfile({
                   className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
                     isPublic
                       ? "bg-emerald-600 text-white"
-                      : "border border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                      : "border border-[#E4E4E7] bg-white text-[#52525B] dark:border-[#27343a] dark:bg-[#182226] dark:text-[#a1a1aa]"
                   }`}
                 >
                   {isPublic ? "Public" : "Private"}
@@ -797,7 +797,7 @@ export default function MyProfile({
               </div>
 
               {/* Submit Button */}
-              <div className="border-t border-slate-100 pt-4 dark:border-slate-800 flex justify-end">
+              <div className="border-t border-[#E4E4E7] pt-4 dark:border-[#27343a] flex justify-end">
                 <button
                   type="submit"
                   disabled={saving}
@@ -823,13 +823,13 @@ export default function MyProfile({
         {/* Right 1 Col: Theme & Security */}
         <div className="space-y-8">
           {/* Appearance & Theme Selector */}
-          <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7">
+          <section className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-7">
             <div className="mb-4">
               <span className="text-lg">🎨</span>
-              <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="mt-1 text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                 Appearance & Theme
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-[#52525B] dark:text-[#a1a1aa] mt-0.5">
                 Customize your visual study environment.
               </p>
             </div>
@@ -901,25 +901,25 @@ export default function MyProfile({
           </section>
 
           {/* Account Security */}
-          <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900 sm:p-7">
+          <section className="rounded-3xl border border-[#E4E4E7] bg-white p-6 shadow-sm dark:border-[#27343a] dark:bg-[#141c1f] sm:p-7">
             <div className="mb-4">
               <span className="text-lg">🛡️</span>
-              <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="mt-1 text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
                 Account & Security
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-[#52525B] dark:text-[#a1a1aa] mt-0.5">
                 Protected by Supabase Auth & RLS.
               </p>
             </div>
 
             <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
-              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between py-1 border-b border-[#E4E4E7] dark:border-[#27343a]">
                 <span className="text-slate-400">Email</span>
-                <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[180px]">
+                <span className="font-semibold text-[#18181B] dark:text-[#f4f4f5] truncate max-w-[180px]">
                   {user?.email || "Authenticated User"}
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between py-1 border-b border-[#E4E4E7] dark:border-[#27343a]">
                 <span className="text-slate-400">Tenant Security</span>
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                   RLS Enforced
