@@ -102,9 +102,9 @@ function ProfileSetup({ user, onComplete }) {
     setSectionsLoading(true)
     try {
       const { data, error } = await supabase
-        .from("sections")
-        .select("section, is_active")
-        .eq("semester_number", parseInt(semNum, 10))
+        .from("academic_sections")
+        .select("section")
+        .eq("semester", parseInt(semNum, 10))
         .order("section")
 
       if (error) throw error
@@ -122,23 +122,21 @@ function ProfileSetup({ user, onComplete }) {
           }
         }
       } else {
-        setSections([
-          { section: "B1" },
-          { section: "B2" },
-          { section: "B3" },
-          { section: "B4" },
-        ])
-        if (preselectSection) setSection(preselectSection)
+        // No sections found in DB for this semester — show empty state, not hardcoded fallback
+        setSections([])
+        if (preselectSection) {
+          setIsCustomSection(true)
+          setCustomSectionValue(preselectSection)
+        }
       }
     } catch (err) {
-      console.warn("Could not load dynamic sections, using defaults:", err)
-      setSections([
-        { section: "B1" },
-        { section: "B2" },
-        { section: "B3" },
-        { section: "B4" },
-      ])
-      if (preselectSection) setSection(preselectSection)
+      console.warn("Could not load sections from academic_sections:", err)
+      // On network/RLS error, preserve existing sections rather than showing hardcoded B-list
+      setSections((prev) => (prev.length > 0 ? prev : []))
+      if (preselectSection) {
+        setIsCustomSection(true)
+        setCustomSectionValue(preselectSection)
+      }
     } finally {
       setSectionsLoading(false)
     }
@@ -259,6 +257,7 @@ function ProfileSetup({ user, onComplete }) {
               Assigned Section *
             </label>
             {!isCustomSection ? (
+              <>
               <select
                 value={section}
                 onChange={(e) => {
@@ -278,7 +277,9 @@ function ProfileSetup({ user, onComplete }) {
                     ? "Select semester first"
                     : sectionsLoading
                       ? "Loading sections..."
-                      : "Select your section"}
+                      : sections.length === 0
+                        ? "No sections found — use custom"
+                        : "Select your section"}
                 </option>
                 {sections.map((item) => (
                   <option key={item.section} value={item.section}>
@@ -289,6 +290,12 @@ function ProfileSetup({ user, onComplete }) {
                   <option value="__custom__">✏️ Other / Custom Section...</option>
                 )}
               </select>
+              {semester && !sectionsLoading && sections.length === 0 && (
+                <p className="mt-1.5 text-xs text-[#71717A] dark:text-[#a1a1aa]">
+                  No sections available for this semester. Use "✏️ Other / Custom Section..." to enter yours manually.
+                </p>
+              )}
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <input

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useState, lazy, Suspense } from "react"
+import { useEffect, useMemo, useCallback, useState, useRef, lazy, Suspense } from "react"
 import { supabase } from "./lib/supabase"
 import Sidebar from "./components/Sidebar"
 import HomeHeader from "./components/HomeHeader"
@@ -98,6 +98,7 @@ function PageSuspenseFallback() {
 
 function App() {
   const [user, setUser] = useState(null)
+  const currentUserIdRef = useRef(null) // Tracks current user.id for onAuthStateChange closure (stable across re-renders)
   const [authLoading, setAuthLoading] = useState(true)
   const [authView, setAuthView] = useState(null) // null (landing), "login", "signup"
   const [profile, setProfile] = useState(null)
@@ -199,6 +200,7 @@ function App() {
         } = await supabase.auth.getSession()
 
         const currentUser = session?.user || null
+        currentUserIdRef.current = currentUser?.id || null
         setUser(currentUser)
 
         if (currentUser) {
@@ -232,6 +234,7 @@ function App() {
       const currentUser = session?.user || null
 
       if (event === "SIGNED_OUT" || !currentUser) {
+        currentUserIdRef.current = null
         setUser(null)
         setProfile(null)
         setDashboardTasks([])
@@ -249,8 +252,8 @@ function App() {
         return
       }
 
-      // If switching accounts (User A -> User B)
-      if (user?.id && user.id !== currentUser.id) {
+      // If switching accounts (User A -> User B) — use ref so closure is always fresh
+      if (currentUserIdRef.current && currentUserIdRef.current !== currentUser.id) {
         clearAcademicMemoryCache()
         clearApiMemoryCache()
         setProfile(null)
@@ -266,6 +269,7 @@ function App() {
         setDashboardSchedule([])
       }
 
+      currentUserIdRef.current = currentUser.id
       setUser(currentUser)
       getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
       fetchProfile(currentUser, false)
@@ -277,7 +281,7 @@ function App() {
       window.removeEventListener("offline", handleOffline)
       window.removeEventListener("coursepilot:sync-queue-updated", handleQueueUpdate)
     }
-  }, [user?.id])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- auth init runs once on mount only; onAuthStateChange handles all subsequent events
 
   // -------------------------------------------------------------
   // 2. PROFILE LOADING & ASYNCHRONOUS STATS SYNC
