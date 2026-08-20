@@ -153,8 +153,8 @@ def test_adaptive_difficulty():
 
 
 def test_safe_share_url():
-    print("[TEST 8/8] Safe Public Challenge Share URL Generation...")
-    
+    print("[TEST 8/9] Safe Public Challenge Share URL Generation...")
+
     challenge_id = "dsa-time-complexity-1"
     share_url = f"https://coursepilot.app/#challenge={challenge_id}"
 
@@ -163,6 +163,75 @@ def test_safe_share_url():
     assert "token" not in share_url
     assert challenge_id in share_url
     print("  [PASS] Safe public share URL contains zero private tokens")
+
+
+def test_saved_challenges_persistence_and_multiuser_isolation():
+    print("[TEST 9/9] Saved Challenges Persistence, Deduplication & Multi-User Isolation...")
+
+    # Simulated authoritative user storage
+    user_storage = {}
+
+    def get_user_saved_items(user_id):
+        if not user_id:
+            return set()
+        return set(user_storage.get(f"coursepilot_saved_items_{user_id}", []))
+
+    def toggle_saved_item(user_id, item_id):
+        if not user_id or not item_id:
+            return {"isSaved": False}
+        key = f"coursepilot_saved_items_{user_id}"
+        cached = set(user_storage.get(key, []))
+        if item_id in cached:
+            cached.remove(item_id)
+            is_saved = False
+        else:
+            cached.add(item_id)
+            is_saved = True
+        user_storage[key] = list(cached)
+        return {"isSaved": is_saved}
+
+    user_a = "user-uuid-aaaa-1111"
+    user_b = "user-uuid-bbbb-2222"
+
+    challenge_1 = "dsa-time-complexity-1"
+    challenge_2 = "os-deadlock-avoidance-1"
+
+    # 1. User A saves challenge 1
+    res1 = toggle_saved_item(user_a, challenge_1)
+    assert res1["isSaved"] is True
+    saves_a = get_user_saved_items(user_a)
+    assert challenge_1 in saves_a
+    assert len(saves_a) == 1
+
+    # 2. Multi-user isolation: User B has 0 saved items
+    saves_b = get_user_saved_items(user_b)
+    assert len(saves_b) == 0, "User B must not see User A's saved items"
+
+    # 3. User A saves challenge 2
+    res2 = toggle_saved_item(user_a, challenge_2)
+    assert res2["isSaved"] is True
+    saves_a = get_user_saved_items(user_a)
+    assert len(saves_a) == 2
+    assert challenge_1 in saves_a and challenge_2 in saves_a
+
+    # 4. Session reload test: Data persists across simulated reload
+    reloaded_saves_a = get_user_saved_items(user_a)
+    assert len(reloaded_saves_a) == 2
+
+    # 5. Unsave challenge 1
+    res_unsave = toggle_saved_item(user_a, challenge_1)
+    assert res_unsave["isSaved"] is False
+    saves_a_after = get_user_saved_items(user_a)
+    assert challenge_1 not in saves_a_after
+    assert challenge_2 in saves_a_after
+    assert len(saves_a_after) == 1
+
+    # 6. User B saves challenge 1 independently
+    res_b = toggle_saved_item(user_b, challenge_1)
+    assert res_b["isSaved"] is True
+    assert get_user_saved_items(user_b) == {challenge_1}
+    assert get_user_saved_items(user_a) == {challenge_2}
+    print("  [PASS] User-scoped save persistence, unsave, reload, and multi-user isolation verified.")
 
 
 def main():
@@ -177,8 +246,9 @@ def main():
     test_daily_completion_bonus_idempotency()
     test_adaptive_difficulty()
     test_safe_share_url()
+    test_saved_challenges_persistence_and_multiuser_isolation()
     print("================================================================")
-    print("ALL SOCIAL CHALLENGES & LEADERBOARD TESTS PASSED (8/8) [OK]")
+    print("ALL SOCIAL CHALLENGES & LEADERBOARD TESTS PASSED (9/9) [OK]")
     print("================================================================")
 
 

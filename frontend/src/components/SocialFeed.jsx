@@ -25,15 +25,33 @@ function SocialFeed({
   topicProgress = [],
   exams = [],
   completedKeys = new Set(),
+  savedItemIds,
+  selectedChallenge,
+  onClearSelectedChallenge,
   onXPUpdated,
   onOpenFocusSession,
   onChallengeSolved,
+  onSavedItemToggled, // Notify parent when save state changes so savedItemIds stays in sync
 }) {
   const [activeTab, setActiveTab] = useState("For You")
   const [activeSolverItem, setActiveSolverItem] = useState(null)
   const [likedIds, setLikedIds] = useState(() => new Set())
-  const [savedIds, setSavedIds] = useState(() => new Set())
+  const [savedIds, setSavedIds] = useState(() => savedItemIds || new Set())
   const [shareToast, setShareToast] = useState(null)
+
+  // Open solver modal if parent requests a specific challenge (e.g. from Saved page)
+  useEffect(() => {
+    if (selectedChallenge) {
+      setActiveSolverItem(selectedChallenge)
+    }
+  }, [selectedChallenge])
+
+  // Sync savedIds if parent passes updated savedItemIds
+  useEffect(() => {
+    if (savedItemIds) {
+      setSavedIds(savedItemIds)
+    }
+  }, [savedItemIds])
 
   // Load user likes and saves
   useEffect(() => {
@@ -43,12 +61,16 @@ function SocialFeed({
       if (isMounted) {
         setLikedIds(likes)
         setSavedIds(saves)
+        if (onSavedItemToggled && saves) {
+          // Initialize parent set if needed
+          saves.forEach((id) => onSavedItemToggled(id, true))
+        }
       }
     })
     return () => {
       isMounted = false
     }
-  }, [user?.id])
+  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ranked feed items
   const rankedItems = useMemo(() => {
@@ -86,6 +108,9 @@ function SocialFeed({
       else next.delete(itemId)
       return next
     })
+    if (onSavedItemToggled) {
+      onSavedItemToggled(itemId, res.isSaved)
+    }
   }
 
   async function handleShare(item, e) {
@@ -300,7 +325,10 @@ function SocialFeed({
             completedKeys.has(`challenge_completion:${activeSolverItem.id}`) ||
             completedKeys.has(activeSolverItem.id)
           }
-          onClose={() => setActiveSolverItem(null)}
+          onClose={() => {
+            setActiveSolverItem(null)
+            if (onClearSelectedChallenge) onClearSelectedChallenge()
+          }}
           onXPUpdated={onXPUpdated}
           onChallengeSolved={onChallengeSolved}
         />

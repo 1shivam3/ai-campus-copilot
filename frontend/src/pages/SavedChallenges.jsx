@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { FEED_CATALOG } from "../data/feedCatalog"
-import { toggleSavedItem } from "../utils/socialInteractions"
+import { toggleSavedItem, getUserSavedItems } from "../utils/socialInteractions"
 
 const CATEGORIES = ["All", "Challenges", "Learn", "Tech", "Community"]
 
@@ -13,10 +13,32 @@ export default function SavedChallenges({
   onNavigate,
 }) {
   const [activeCategory, setActiveCategory] = useState("All")
+  const [localSavedIds, setLocalSavedIds] = useState(() => savedItemIds || new Set())
+
+  // Keep localSavedIds in sync when parent prop changes
+  useEffect(() => {
+    if (savedItemIds) {
+      setLocalSavedIds(savedItemIds)
+    }
+  }, [savedItemIds])
+
+  // Eager fallback load from authoritative user storage if prop is empty on direct navigation
+  useEffect(() => {
+    if (!user?.id) return
+    let isMounted = true
+    getUserSavedItems(user.id).then((items) => {
+      if (isMounted && items) {
+        setLocalSavedIds(items)
+      }
+    })
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
 
   const savedItems = useMemo(() => {
-    return FEED_CATALOG.filter((item) => savedItemIds.has(item.id))
-  }, [savedItemIds])
+    return FEED_CATALOG.filter((item) => localSavedIds.has(item.id))
+  }, [localSavedIds])
 
   const filteredItems = useMemo(() => {
     if (activeCategory === "All") return savedItems
@@ -31,8 +53,14 @@ export default function SavedChallenges({
 
   async function handleRemoveSave(itemId) {
     if (!user?.id) return
+    // Immediate UI feedback
+    setLocalSavedIds((prev) => {
+      const next = new Set(prev)
+      next.delete(itemId)
+      return next
+    })
     await toggleSavedItem(user.id, itemId)
-    if (onSavedUpdated) onSavedUpdated()
+    if (onSavedUpdated) onSavedUpdated(itemId, false)
   }
 
   return (

@@ -62,29 +62,41 @@ export async function toggleFeedItemLike(userId, feedItemId) {
 
 /**
  * Get the set of saved feed item IDs for the user.
+ * localStorage is the authoritative store (Supabase table is optional DB sync).
  */
 export async function getUserSavedItems(userId) {
   if (!userId) return new Set()
 
   const key = `${LOCAL_SAVES_KEY}_${userId}`
+
+  // Always read localStorage first for instant, consistent results
+  const localSet = new Set(getCachedSet(key))
+
+  // Optionally sync from DB in background — only override if DB returns successfully
   try {
     const { data, error } = await supabase
       .from("saved_feed_items")
       .select("feed_item_id")
       .eq("user_id", userId)
 
-    if (!error && data) {
-      const set = new Set(data.map((d) => d.feed_item_id))
-      setCachedSet(key, Array.from(set))
-      return set
+    if (!error && data && data.length > 0) {
+      // DB returned rows — merge with local (union) to avoid data loss
+      const dbSet = new Set(data.map((d) => d.feed_item_id))
+      const merged = new Set([...localSet, ...dbSet])
+      setCachedSet(key, Array.from(merged))
+      return merged
     }
-  } catch {}
+  } catch {
+    // DB not available or table missing — local cache is the truth
+  }
 
-  return new Set(getCachedSet(key))
+  return localSet
 }
 
 /**
  * Toggle Save / Bookmark on a challenge/feed item.
+ * localStorage is the authoritative store. DB write is attempted as optional sync.
+ * Returns the actual persisted state (never optimistic on error).
  */
 export async function toggleSavedItem(userId, feedItemId) {
   if (!userId || !feedItemId) return { isSaved: false, error: "Missing user or item" }
@@ -94,6 +106,7 @@ export async function toggleSavedItem(userId, feedItemId) {
   const currentlySaved = cached.has(feedItemId)
   const newSaved = !currentlySaved
 
+  // Persist to localStorage — this IS the authoritative save
   if (newSaved) {
     cached.add(feedItemId)
   } else {
@@ -101,13 +114,18 @@ export async function toggleSavedItem(userId, feedItemId) {
   }
   setCachedSet(key, Array.from(cached))
 
-  try {
-    if (newSaved) {
-      await supabase.from("saved_feed_items").insert([{ user_id: userId, feed_item_id: feedItemId }])
-    } else {
-      await supabase.from("saved_feed_items").delete().eq("user_id", userId).eq("feed_item_id", feedItemId)
+  // Attempt optional DB sync (fire-and-forget, non-blocking)
+  ;(async () => {
+    try {
+      if (newSaved) {
+        await supabase.from("saved_feed_items").insert([{ user_id: userId, feed_item_id: feedItemId }])
+      } else {
+        await supabase.from("saved_feed_items").delete().eq("user_id", userId).eq("feed_item_id", feedItemId)
+      }
+    } catch {
+      // Table may not exist; localStorage is the truth regardless
     }
-  } catch {}
+  })()
 
   return { isSaved: newSaved }
 }

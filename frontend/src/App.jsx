@@ -205,6 +205,7 @@ function App() {
 
         if (currentUser) {
           getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
+          getUserSavedItems(currentUser.id).then(setSavedItemIds)
 
           // 0ms instant cached profile restore
           const cached = await getCachedUserProfile(currentUser.id)
@@ -272,6 +273,7 @@ function App() {
       currentUserIdRef.current = currentUser.id
       setUser(currentUser)
       getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
+      getUserSavedItems(currentUser.id).then(setSavedItemIds)
       fetchProfile(currentUser, false)
     })
 
@@ -427,7 +429,6 @@ function App() {
       await clearUserScopedCache(currentId)
       clearUserXPCache(currentId)
       clearUserChallengeHistory(currentId)
-      clearUserSocialCache(currentId)
       clearAcademicMemoryCache()
       clearApiMemoryCache()
     }
@@ -551,7 +552,7 @@ function App() {
   }, [user?.id, profile?.semester, profile?.section])
 
   useEffect(() => {
-    if (user?.id && profile && (currentPage === "Home" || currentPage === "Dashboard")) {
+    if (user?.id && profile && (currentPage === "Home" || currentPage === "Dashboard" || currentPage === "Saved")) {
       loadAllDashboardData()
     }
   }, [user?.id, profile?.semester, profile?.section, currentPage, loadAllDashboardData])
@@ -995,8 +996,19 @@ function App() {
                 topicProgress={dashboardTopics}
                 exams={dashboardExams}
                 completedKeys={xpSummary.completedKeys}
+                savedItemIds={savedItemIds}
+                selectedChallenge={activeSelectedChallenge}
+                onClearSelectedChallenge={() => setActiveSelectedChallenge(null)}
                 onXPUpdated={loadAllDashboardData}
                 onChallengeSolved={loadAllDashboardData}
+                onSavedItemToggled={(itemId, isSaved) => {
+                  setSavedItemIds((prev) => {
+                    const next = new Set(prev)
+                    if (isSaved) next.add(itemId)
+                    else next.delete(itemId)
+                    return next
+                  })
+                }}
               />
             </div>
           )}
@@ -1049,6 +1061,21 @@ function App() {
               <SavedChallenges
                 user={user}
                 profile={profile}
+                savedItemIds={savedItemIds}
+                completedKeys={xpSummary.completedKeys}
+                onSavedUpdated={(itemId, isSaved) => {
+                  setSavedItemIds((prev) => {
+                    const next = new Set(prev)
+                    if (isSaved) next.add(itemId)
+                    else next.delete(itemId)
+                    return next
+                  })
+                }}
+                onOpenChallenge={(item) => {
+                  setActiveSelectedChallenge(item)
+                  setCurrentPage("Home")
+                }}
+                onNavigate={setCurrentPage}
                 onChallengeSolved={() => loadAllDashboardData()}
               />
             </Suspense>
