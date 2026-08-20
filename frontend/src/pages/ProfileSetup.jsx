@@ -79,7 +79,7 @@ function ProfileSetup({ user, onComplete }) {
         .from("student_profiles")
         .select("full_name, semester, section")
         .eq("id", user.id)
-        .single()
+        .maybeSingle() // .single() returns 406 for new users with no row; maybeSingle() returns null safely
 
       if (data) {
         if (data.full_name) setFullName(data.full_name)

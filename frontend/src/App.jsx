@@ -309,23 +309,31 @@ function App() {
     }
 
     try {
-      // 1. Fetch minimum required profile columns
+      // 1. Fetch only columns that exist in student_profiles
+      // NOTE: avatar_url, public_display_name, reputation are NOT in student_profiles —
+      // they come from the cloud stats API (background sync) and localStorage.
+      // Querying non-existent columns causes HTTP 400 / PG error 42703, which was
+      // preventing setProfile() from ever being called for new users after onboarding.
       const { data, error } = await supabase
         .from("student_profiles")
-        .select("id, full_name, semester, section, avatar_url, public_display_name, reputation")
+        .select("id, full_name, semester, section")
         .eq("id", currentUser.id)
         .maybeSingle()
 
       if (data) {
+        // Read avatar and display name from localStorage (set by background sync / MyProfile)
+        const localAvatar = localStorage.getItem(`coursepilot_avatar_${currentUser.id}`) || null
+        const localDisplayName = localStorage.getItem(`coursepilot_display_name_${currentUser.id}`) || null
+
         saveUserProfile(data)
         setProfile({
           id: currentUser.id,
           full_name: data.full_name || currentUser.email?.split("@")[0] || "Student",
           semester: data.semester || 3,
           section: data.section || "B2",
-          avatar_url: data.avatar_url || null,
-          public_display_name: data.public_display_name || data.full_name || "Student",
-          reputation: data.reputation || 91,
+          avatar_url: localAvatar,
+          public_display_name: localDisplayName || data.full_name || "Student",
+          reputation: 91, // Default; updated by background cloud stats sync
         })
       }
 
