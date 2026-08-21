@@ -1,50 +1,180 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "../lib/supabase"
 import { CoursePilotLogo } from "../components/CoursePilotLogo"
+import {
+  checkLoginRateLimit,
+  recordFailedLogin,
+  clearFailedLogins,
+  checkPasswordResetRateLimit,
+  recordPasswordResetRequest,
+} from "../utils/sessionSecurity"
 
-function Auth({ onLogin, initialMode = "login", onBackToLanding }) {
-  const [mode, setMode] = useState(initialMode)
+function Auth({
+  onLogin,
+  initialMode = "login",
+  initialMessage = "",
+  onBackToLanding,
+}) {
+  const [mode, setMode] = useState(initialMode) // 'login' | 'signup' | 'forgot' | 'reset'
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState(initialMessage)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    setMode(initialMode)
+  }, [initialMode])
+
+  useEffect(() => {
+    if (initialMessage) {
+      setMessage(initialMessage)
+    }
+  }, [initialMessage])
 
   async function handleSubmit(e) {
     e.preventDefault()
-
-    setLoading(true)
     setError("")
     setMessage("")
 
-    if (mode === "login") {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+    const cleanEmail = email.trim().toLowerCase()
 
-      if (error) {
-        setError(error.message)
-      } else {
-        onLogin(data.user)
+    // 1. Password Reset Request Flow (Forgot Password)
+    if (mode === "forgot") {
+      if (!cleanEmail || !cleanEmail.includes("@")) {
+        setError("Please provide a valid university email address.")
+        return
       }
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      })
 
-      if (error) {
-        setError(error.message)
-      } else if (data.user) {
+      // Check client-side rate limit
+      const rateCheck = checkPasswordResetRateLimit()
+      if (!rateCheck.allowed) {
+        setError(rateCheck.message)
+        return
+      }
+
+      setLoading(true)
+      recordPasswordResetRequest()
+
+      try {
+        const redirectTo = typeof window !== "undefined"
+          ? `${window.location.origin}/#reset-password`
+          : undefined
+
+        await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo })
+      } catch {
+        // Suppress specific backend errors to prevent account enumeration
+      } finally {
+        setLoading(false)
+        // Always provide a generic, safe response to prevent email enumeration
         setMessage(
-          "Account created successfully. You can now continue."
+          "If an account exists for that email, a password reset link has been sent."
         )
-        onLogin(data.user)
       }
+      return
     }
 
-    setLoading(false)
+    // 2. Set New Password Flow (Recovery / Reset Link Target)
+    if (mode === "reset") {
+      if (!password || password.length < 6) {
+        setError("New password must be at least 6 characters.")
+        return
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match. Please re-enter.")
+        return
+      }
+
+      setLoading(true)
+      try {
+        const { data, error: updateError } = await supabase.auth.updateUser({
+          password,
+        })
+
+        if (updateError) {
+          setError(
+            "This password reset link is invalid or has expired. Please request a new one."
+          )
+        } else if (data?.user) {
+          setMessage("Your password has been successfully updated! You can now log in.")
+          setPassword("")
+          setConfirmPassword("")
+          setMode("login")
+        }
+      } catch {
+        setError(
+          "This password reset link is invalid or has expired. Please request a new one."
+        )
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    // 3. Login Flow
+    if (mode === "login") {
+      // Check login rate limiting
+      const rateCheck = checkLoginRateLimit(cleanEmail)
+      if (!rateCheck.allowed) {
+        setError(rateCheck.message)
+        return
+      }
+
+      setLoading(true)
+      try {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        })
+
+        if (authError) {
+          recordFailedLogin(cleanEmail)
+          // Generic authentication error message to prevent user enumeration
+          setError("Invalid email or password.")
+        } else if (data?.user) {
+          clearFailedLogins(cleanEmail)
+          onLogin(data.user)
+        }
+      } catch {
+        recordFailedLogin(cleanEmail)
+        setError("Authentication failed. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    // 4. Signup Flow
+    if (mode === "signup") {
+      if (!cleanEmail || !cleanEmail.includes("@")) {
+        setError("Please enter a valid email address.")
+        return
+      }
+      if (!password || password.length < 6) {
+        setError("Password must be at least 6 characters.")
+        return
+      }
+
+      setLoading(true)
+      try {
+        const { data, error: signupError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+        })
+
+        if (signupError) {
+          setError(signupError.message || "Could not complete account signup.")
+        } else if (data?.user) {
+          setMessage("Account created successfully. You can now continue.")
+          onLogin(data.user)
+        }
+      } catch {
+        setError("Signup failed. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
   }
 
   return (
@@ -64,45 +194,88 @@ function Auth({ onLogin, initialMode = "login", onBackToLanding }) {
           <CoursePilotLogo size="md" showTagline={true} />
 
           <h1 className="mt-6 text-2xl font-bold tracking-tight text-[#18181B] sm:text-3xl dark:text-[#f4f4f5]">
-            {mode === "login" ? "Welcome back" : "Create your account"}
+            {mode === "login" && "Welcome back"}
+            {mode === "signup" && "Create your account"}
+            {mode === "forgot" && "Reset your password"}
+            {mode === "reset" && "Set new password"}
           </h1>
 
           <p className="mt-1.5 text-xs sm:text-sm text-[#52525B] font-normal dark:text-[#a1a1aa]">
-            {mode === "login"
-              ? "Sign in to access your Next Best Action and study schedule."
-              : "Set up your student profile and start optimizing your study time."}
+            {mode === "login" && "Sign in to access your Next Best Action and study schedule."}
+            {mode === "signup" && "Set up your student profile and start optimizing your study time."}
+            {mode === "forgot" && "Enter your university email to receive a password recovery link."}
+            {mode === "reset" && "Enter your new account password below."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="student@university.edu"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
-            />
-          </div>
+          {mode !== "reset" && (
+            <div>
+              <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="student@university.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
+              />
+            </div>
+          )}
 
-          <div>
-            <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="Minimum 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
-            />
-          </div>
+          {mode !== "forgot" && (
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
+                  {mode === "reset" ? "New Password" : "Password"}
+                </label>
+                {mode === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("forgot")
+                      setError("")
+                      setMessage("")
+                    }}
+                    className="text-xs font-semibold text-[#0F766E] hover:underline dark:text-[#2DD4BF]"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <input
+                type="password"
+                placeholder="Minimum 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
+              />
+            </div>
+          )}
+
+          {mode === "reset" && (
+            <div>
+              <label className="text-[11px] font-bold tracking-wider text-[#71717A] uppercase dark:text-[#a1a1aa]">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                placeholder="Re-enter new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="mt-1 w-full rounded-xl border border-[#E4E4E7] bg-white px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#18181B] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 dark:bg-[#182226] dark:border-[#27343a] dark:text-[#f4f4f5]"
+              />
+            </div>
+          )}
 
           <button
             type="submit"
@@ -113,7 +286,11 @@ function Auth({ onLogin, initialMode = "login", onBackToLanding }) {
               ? "Please wait..."
               : mode === "login"
                 ? "Log In to CoursePilot"
-                : "Create Account"}
+                : mode === "signup"
+                  ? "Create Account"
+                  : mode === "forgot"
+                    ? "Send Reset Link"
+                    : "Update Password"}
           </button>
         </form>
 
@@ -129,19 +306,35 @@ function Auth({ onLogin, initialMode = "login", onBackToLanding }) {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === "login" ? "signup" : "login")
-            setError("")
-            setMessage("")
-          }}
-          className="mt-6 w-full text-center text-xs sm:text-sm font-semibold text-[#0F766E] hover:text-[#115E59] hover:underline dark:text-[#2DD4BF]"
-        >
-          {mode === "login"
-            ? "Don't have an account? Sign up"
-            : "Already have an account? Log in"}
-        </button>
+        <div className="mt-6 flex flex-col items-center gap-2">
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signup")
+                setError("")
+                setMessage("")
+              }}
+              className="text-xs sm:text-sm font-semibold text-[#0F766E] hover:text-[#115E59] hover:underline dark:text-[#2DD4BF]"
+            >
+              Don't have an account? Sign up
+            </button>
+          )}
+
+          {(mode === "signup" || mode === "forgot" || mode === "reset") && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login")
+                setError("")
+                setMessage("")
+              }}
+              className="text-xs sm:text-sm font-semibold text-[#0F766E] hover:text-[#115E59] hover:underline dark:text-[#2DD4BF]"
+            >
+              Remember your credentials? Log in
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

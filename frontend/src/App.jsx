@@ -81,6 +81,11 @@ import {
   clearUserScopedCache,
 } from "./lib/offlineDb"
 import { initSyncQueueListener, getPendingQueueCount, processSyncQueue } from "./lib/syncQueue"
+import {
+  initInactivityTracker,
+  recordUserActivity,
+  clearSessionActivity,
+} from "./utils/sessionSecurity"
 
 function PageSuspenseFallback() {
   return (
@@ -100,7 +105,8 @@ function App() {
   const [user, setUser] = useState(null)
   const currentUserIdRef = useRef(null) // Tracks current user.id for onAuthStateChange closure (stable across re-renders)
   const [authLoading, setAuthLoading] = useState(true)
-  const [authView, setAuthView] = useState(null) // null (landing), "login", "signup"
+  const [authView, setAuthView] = useState(null) // null (landing), "login", "signup", "forgot", "reset"
+  const [authMessage, setAuthMessage] = useState("")
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true)
@@ -170,9 +176,56 @@ function App() {
   // -------------------------------------------------------------
   // 1. FAST INITIALIZATION & INSTANT SESSION RESTORE
   // -------------------------------------------------------------
+  const handleSessionExpiry = useCallback(async () => {
+    const currentId = currentUserIdRef.current
+    if (currentId) {
+      await clearUserScopedCache(currentId)
+      clearUserXPCache(currentId)
+      clearUserChallengeHistory(currentId)
+      clearAcademicMemoryCache()
+      clearApiMemoryCache()
+    }
+    clearSessionActivity()
+    try {
+      await supabase.auth.signOut()
+    } catch {}
+    currentUserIdRef.current = null
+    setUser(null)
+    setProfile(null)
+    setDashboardTasks([])
+    setDashboardExams([])
+    setDashboardTopics([])
+    setStudySessions([])
+    setQuizAttempts([])
+    setXpTransactions([])
+    setChallengeHistory([])
+    setSavedItemIds(new Set())
+    setNotifications([])
+    setDashboardSchedule([])
+    setRecommendedTaskId(null)
+    setCurrentPage("Home")
+    setAuthMessage("Your session expired for security. Please sign in again.")
+    setAuthView("login")
+  }, [])
+
   useEffect(() => {
     initTheme()
     initSyncQueueListener(() => user?.id)
+    const stopInactivityTracker = initInactivityTracker(handleSessionExpiry)
+
+    // Check if user arrived via password recovery / reset link
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash || ""
+      const search = window.location.search || ""
+      if (
+        hash.includes("type=recovery") ||
+        hash.includes("reset-password") ||
+        search.includes("type=recovery")
+      ) {
+        setAuthView("reset")
+        setAuthMessage("Please set your new password below.")
+      }
+    }
 
     function handleOnline() {
       setIsOnline(true)
@@ -204,6 +257,7 @@ function App() {
         setUser(currentUser)
 
         if (currentUser) {
+          recordUserActivity()
           getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
           getUserSavedItems(currentUser.id).then(setSavedItemIds)
 
@@ -233,6 +287,12 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user || null
+
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthView("reset")
+        setAuthMessage("Please set your new password below.")
+        return
+      }
 
       if (event === "SIGNED_OUT" || !currentUser) {
         currentUserIdRef.current = null
@@ -272,18 +332,20 @@ function App() {
 
       currentUserIdRef.current = currentUser.id
       setUser(currentUser)
+      recordUserActivity()
       getPendingQueueCount(currentUser.id).then(setPendingSyncCount)
       getUserSavedItems(currentUser.id).then(setSavedItemIds)
       fetchProfile(currentUser, false)
     })
 
     return () => {
+      stopInactivityTracker()
       subscription.unsubscribe()
       window.removeEventListener("online", handleOnline)
       window.removeEventListener("offline", handleOffline)
       window.removeEventListener("coursepilot:sync-queue-updated", handleQueueUpdate)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- auth init runs once on mount only; onAuthStateChange handles all subsequent events
+  }, [handleSessionExpiry])
 
   // -------------------------------------------------------------
   // 2. PROFILE LOADING & ASYNCHRONOUS STATS SYNC
@@ -424,7 +486,7 @@ function App() {
   }
 
   async function handleLogout() {
-    const currentId = user?.id
+    const currentId = user?.id || currentUserIdRef.current
     if (currentId) {
       await clearUserScopedCache(currentId)
       clearUserXPCache(currentId)
@@ -432,11 +494,13 @@ function App() {
       clearAcademicMemoryCache()
       clearApiMemoryCache()
     }
+    clearSessionActivity()
     try {
       await supabase.auth.signOut()
     } catch (error) {
       console.error("Sign out error:", error)
     }
+    currentUserIdRef.current = null
     setUser(null)
     setProfile(null)
     setDashboardTasks([])
@@ -451,6 +515,8 @@ function App() {
     setDashboardSchedule([])
     setRecommendedTaskId(null)
     setCurrentPage("Home")
+    setAuthMessage("")
+    setAuthView(null)
   }
 
   // -------------------------------------------------------------
@@ -818,17 +884,28 @@ function App() {
   }
 
   if (!user) {
-    if (authView === "login" || authView === "signup") {
+    if (
+      authView === "login" ||
+      authView === "signup" ||
+      authView === "forgot" ||
+      authView === "reset"
+    ) {
       return (
         <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F7F7F2] p-6 dark:bg-[#0f1416]"><CoursePilotMark className="h-10 w-10 animate-pulse" /></div>}>
           <PWAInstallBanner />
           <Auth
             initialMode={authView}
+            initialMessage={authMessage}
             onLogin={(newUser) => {
               setUser(newUser)
               setAuthView(null)
+              setAuthMessage("")
+              recordUserActivity()
             }}
-            onBackToLanding={() => setAuthView(null)}
+            onBackToLanding={() => {
+              setAuthView(null)
+              setAuthMessage("")
+            }}
           />
         </Suspense>
       )
@@ -839,8 +916,14 @@ function App() {
         <PWAInstallBanner />
         <LandingPage
           user={user}
-          onGetStarted={() => setAuthView("signup")}
-          onSignIn={() => setAuthView("login")}
+          onGetStarted={() => {
+            setAuthMessage("")
+            setAuthView("signup")
+          }}
+          onSignIn={() => {
+            setAuthMessage("")
+            setAuthView("login")
+          }}
           onGoToDashboard={() => setCurrentPage("Dashboard")}
         />
       </Suspense>

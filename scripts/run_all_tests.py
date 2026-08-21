@@ -154,6 +154,12 @@ def run_tests():
     assert len(normalized["high_yield_points"]) == 2
     print("  --> [PASS] Study pack schema parser and normalizer fully verified.")
 
+    # 10. Security Hardening, Protected Routes, Cross-User Isolation, Rate Limiting & Auth
+    print("\n[TEST 10/10] Comprehensive Security Hardening & Cross-User Isolation Suite...")
+    from test_security_hardening import test_security_hardening
+    test_security_hardening()
+    print("  --> [PASS] Security hardening, unauthenticated rejection, and cross-user isolation verified.")
+
     duration = round(time.time() - start_time, 2)
     print("\n=======================================================")
     print(f" ALL TESTS PASSED SUCCESSFULLY in {duration}s! (100% PASS)")
