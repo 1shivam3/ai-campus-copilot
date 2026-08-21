@@ -25,7 +25,7 @@ TIMETABLE_I_TO_L = {
       {"period": 3, "time": "10:40am-11:40am", "status": "class", "course_code": "BHUM-118", "details": "Human Value & Ethics, [Doubt Clearing Session], Dr. Sidharth sharma, 170", "raw": "BHUM-118 Human Value & Ethics, [Doubt Clearing Session], Dr. Sidharth sharma, 170"},
       {"period": 4, "time": "11:40am-12:40pm", "status": "class", "course_code": "BCSE-501", "details": "Ashwani Singh, 170", "raw": "BCSE-501 Ashwani Singh, 170"},
       {"period": 5, "time": "12:40pm-01:40pm", "status": "lunch_break", "course_code": None, "details": None, "raw": "LUNCH BREAK"},
-      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 169", "raw": "BMAT-003C, Dr. Shilpa Garg, 169"},
+      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 253", "raw": "BMAT-003C, Dr. Shilpa Garg, 253"},
       {"period": 7, "time": "02:40pm-03:40pm", "status": "class", "course_code": "BCSE-502", "details": "Dr. Naveen Malik, 168", "raw": "BCSE-502 Dr. Naveen Malik, 168"}
     ],
     "THURSDAY": [
@@ -34,7 +34,7 @@ TIMETABLE_I_TO_L = {
       {"period": 3, "time": "10:40am-11:40am", "status": "class", "course_code": "BCSE-502", "details": "Dr. Naveen Malik, 168", "raw": "BCSE-502 Dr. Naveen Malik, 168"},
       {"period": 4, "time": "11:40am-12:40pm", "status": "class", "course_code": "BCSE-505", "details": "Dr. Vinisha Sumra, 168", "raw": "BCSE-505 Dr. Vinisha Sumra, 168"},
       {"period": 5, "time": "12:40pm-01:40pm", "status": "lunch_break", "course_code": None, "details": None, "raw": "LUNCH BREAK"},
-      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 169", "raw": "BMAT-003C, Dr. Shilpa Garg, 169"},
+      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 253", "raw": "BMAT-003C, Dr. Shilpa Garg, 253"},
       {"period": 7, "time": "02:40pm-03:40pm", "status": "library", "course_code": None, "details": None, "raw": "LIBRARY"}
     ],
     "FRIDAY": [
@@ -72,7 +72,7 @@ TIMETABLE_I_TO_L = {
       {"period": 3, "time": "10:40am-11:40am", "status": "class", "course_code": "BHUM-118", "details": "Human Value & Ethics, [Doubt Clearing Session], Dr. Sidharth sharma, 170", "raw": "BHUM-118 Human Value & Ethics, [Doubt Clearing Session], Dr. Sidharth sharma, 170"},
       {"period": 4, "time": "11:40am-12:40pm", "status": "class", "course_code": "BCSE-501", "details": "Ashwani Singh, 170", "raw": "BCSE-501 Ashwani Singh, 170"},
       {"period": 5, "time": "12:40pm-01:40pm", "status": "lunch_break", "course_code": None, "details": None, "raw": "LUNCH BREAK"},
-      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 169", "raw": "BMAT-003C, Dr. Shilpa Garg, 169"},
+      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 253", "raw": "BMAT-003C, Dr. Shilpa Garg, 253"},
       {"period": 7, "time": "02:40pm-03:40pm", "status": "class", "course_code": "BCSE-502", "details": "Dr. Naveen Malik, 168", "raw": "BCSE-502 Dr. Naveen Malik, 168"}
     ],
     "THURSDAY": [
@@ -81,7 +81,7 @@ TIMETABLE_I_TO_L = {
       {"period": 3, "time": "10:40am-11:40am", "status": "class", "course_code": "BCSE-502", "details": "Dr. Naveen Malik, 168", "raw": "BCSE-502 Dr. Naveen Malik, 168"},
       {"period": 4, "time": "11:40am-12:40pm", "status": "class", "course_code": "BCSE-505", "details": "Dr. Vinisha Sumra, 168", "raw": "BCSE-505 Dr. Vinisha Sumra, 168"},
       {"period": 5, "time": "12:40pm-01:40pm", "status": "lunch_break", "course_code": None, "details": None, "raw": "LUNCH BREAK"},
-      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 169", "raw": "BMAT-003C, Dr. Shilpa Garg, 169"},
+      {"period": 6, "time": "01:40pm-02:40pm", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 253", "raw": "BMAT-003C, Dr. Shilpa Garg, 253"},
       {"period": 7, "time": "02:40pm-03:40pm", "status": "library", "course_code": None, "details": None, "raw": "LIBRARY"}
     ],
     "FRIDAY": [
@@ -123,7 +123,7 @@ TIMETABLE_I_TO_L = {
       {"period": 7, "time": "02:40pm-03:40pm", "status": "class", "course_code": "BCSE-503L", "details": "Ms. Neelam Oberoi, (161)", "raw": "BCSE-503L Ms. Neelam Oberoi, (161)"}
     ],
     "THURSDAY": [
-      {"period": 1, "time": "08:40am-09:40am", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 169", "raw": "BMAT-003C, Dr. Shilpa Garg, 169"},
+      {"period": 1, "time": "08:40am-09:40am", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 265", "raw": "BMAT-003C, Dr. Shilpa Garg, 265"},
       {"period": 2, "time": "09:40am-10:40am", "status": "class", "course_code": "BCSE-503", "details": "Dr. Charu Sharma, 169", "raw": "BCSE-503 Dr. Charu Sharma, 169"},
       {"period": 3, "time": "10:40am-11:40am", "status": "class", "course_code": "BCSE-505", "details": "Dr. Sandip Kumar Goyal, 117", "raw": "BCSE-505 Dr. Sandip Kumar Goyal, 117"},
       {"period": 4, "time": "11:40am-12:40pm", "status": "class", "course_code": "BET-I", "details": "PD Trainer, 206", "raw": "BET-I PD Trainer, 206"},
@@ -170,7 +170,7 @@ TIMETABLE_I_TO_L = {
       {"period": 7, "time": "02:40pm-03:40pm", "status": "class", "course_code": "BCSE-504L", "details": "Mr. Vishal Trainer (162)", "raw": "BCSE-504L Mr. Vishal Trainer (162)"}
     ],
     "THURSDAY": [
-      {"period": 1, "time": "08:40am-09:40am", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 169", "raw": "BMAT-003C, Dr. Shilpa Garg, 169"},
+      {"period": 1, "time": "08:40am-09:40am", "status": "class", "course_code": "BMAT-003C", "details": "Dr. Shilpa Garg, 265", "raw": "BMAT-003C, Dr. Shilpa Garg, 265"},
       {"period": 2, "time": "09:40am-10:40am", "status": "class", "course_code": "BCSE-503", "details": "Dr. Charu Sharma, 169", "raw": "BCSE-503 Dr. Charu Sharma, 169"},
       {"period": 3, "time": "10:40am-11:40am", "status": "class", "course_code": "BCSE-505", "details": "Dr. Sandip Kumar Goyal, 117", "raw": "BCSE-505 Dr. Sandip Kumar Goyal, 117"},
       {"period": 4, "time": "11:40am-12:40pm", "status": "class", "course_code": "BET-I", "details": "PD Trainer, 206", "raw": "BET-I PD Trainer, 206"},

@@ -1029,8 +1029,8 @@
           "time": "01:40pm-02:40pm",
           "status": "class",
           "course_code": "BMAT-003C",
-          "details": "Dr. Ravinder , 118",
-          "raw": "BMAT-003C, Dr. Ravinder , 118"
+          "details": "Dr. Ravinder, 207",
+          "raw": "BMAT-003C, Dr. Ravinder, 207"
         },
         {
           "period": 7,
@@ -1321,8 +1321,8 @@
           "time": "01:40pm-02:40pm",
           "status": "class",
           "course_code": "BMAT-003C",
-          "details": "Dr. Ravinder , 118",
-          "raw": "BMAT-003C, Dr. Ravinder , 118"
+          "details": "Dr. Ravinder, 207",
+          "raw": "BMAT-003C, Dr. Ravinder, 207"
         },
         {
           "period": 7,
@@ -5059,8 +5059,8 @@
           "time": "01:40pm-02:40pm",
           "status": "class",
           "course_code": "BMAT-003C",
-          "details": "Dr. Shilpa Garg, 169",
-          "raw": "BMAT-003C, Dr. Shilpa Garg, 169"
+          "details": "Dr. Shilpa Garg, 253",
+          "raw": "BMAT-003C, Dr. Shilpa Garg, 253"
         },
         {
           "period": 7,
@@ -5093,8 +5093,8 @@
           "time": "10:40am-11:40am",
           "status": "class",
           "course_code": "BET-I",
-          "details": "PD Trainer, 169",
-          "raw": "BET-I PD Trainer, 169"
+          "details": "PD Trainer, 208",
+          "raw": "BET-I, PD Trainer, 208"
         },
         {
           "period": 4,
@@ -5351,8 +5351,8 @@
           "time": "01:40pm-02:40pm",
           "status": "class",
           "course_code": "BMAT-003C",
-          "details": "Dr. Shilpa Garg, 169",
-          "raw": "BMAT-003C, Dr. Shilpa Garg, 169"
+          "details": "Dr. Shilpa Garg, 253",
+          "raw": "BMAT-003C, Dr. Shilpa Garg, 253"
         },
         {
           "period": 7,
@@ -5385,8 +5385,8 @@
           "time": "10:40am-11:40am",
           "status": "class",
           "course_code": "BET-I",
-          "details": "PD Trainer, 169",
-          "raw": "BET-I PD Trainer, 169"
+          "details": "PD Trainer, 208",
+          "raw": "BET-I, PD Trainer, 208"
         },
         {
           "period": 4,
@@ -5603,8 +5603,8 @@
           "time": "08:40am-09:40am",
           "status": "class",
           "course_code": "BMAT-003C",
-          "details": "Dr. Shilpa Garg, 169",
-          "raw": "BMAT-003C, Dr. Shilpa Garg, 169"
+          "details": "Dr. Shilpa Garg, 265",
+          "raw": "BMAT-003C, Dr. Shilpa Garg, 265"
         },
         {
           "period": 2,
@@ -5895,8 +5895,8 @@
           "time": "08:40am-09:40am",
           "status": "class",
           "course_code": "BMAT-003C",
-          "details": "Dr. Shilpa Garg, 169",
-          "raw": "BMAT-003C, Dr. Shilpa Garg, 169"
+          "details": "Dr. Shilpa Garg, 265",
+          "raw": "BMAT-003C, Dr. Shilpa Garg, 265"
         },
         {
           "period": 2,
