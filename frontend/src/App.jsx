@@ -77,7 +77,9 @@ import {
 import {
   saveUserProfile,
   getCachedUserProfile,
+  getSyncCachedUserProfile,
   getCachedClassSchedule,
+  getSyncCachedClassSchedule,
   clearUserScopedCache,
 } from "./lib/offlineDb"
 import { initSyncQueueListener, getPendingQueueCount, processSyncQueue } from "./lib/syncQueue"
@@ -101,13 +103,38 @@ function PageSuspenseFallback() {
   )
 }
 
+function getStoredUserId() {
+  if (typeof window === "undefined") return null
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          return parsed?.user?.id || null
+        }
+      }
+    }
+  } catch {}
+  return null
+}
+
 function App() {
   const [user, setUser] = useState(null)
   const currentUserIdRef = useRef(null) // Tracks current user.id for onAuthStateChange closure (stable across re-renders)
   const [authLoading, setAuthLoading] = useState(true)
   const [authView, setAuthView] = useState(null) // null (landing), "login", "signup", "forgot", "reset"
   const [authMessage, setAuthMessage] = useState("")
-  const [profile, setProfile] = useState(null)
+
+  const initialUserId = useMemo(() => getStoredUserId(), [])
+
+  const [profile, setProfile] = useState(() => {
+    if (initialUserId) {
+      return getSyncCachedUserProfile(initialUserId)
+    }
+    return null
+  })
   const [profileLoading, setProfileLoading] = useState(false)
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true)
   const [pendingSyncCount, setPendingSyncCount] = useState(0)
@@ -119,7 +146,16 @@ function App() {
   const [dashboardTasks, setDashboardTasks] = useState([])
   const [dashboardExams, setDashboardExams] = useState([])
   const [dashboardTopics, setDashboardTopics] = useState([])
-  const [dashboardSchedule, setDashboardSchedule] = useState([])
+  const [dashboardSchedule, setDashboardSchedule] = useState(() => {
+    if (initialUserId) {
+      const p = getSyncCachedUserProfile(initialUserId)
+      if (p?.semester && p?.section) {
+        const sched = getSyncCachedClassSchedule(p.semester, p.section)
+        if (sched && sched.length > 0) return sched
+      }
+    }
+    return []
+  })
   const [xpTransactions, setXpTransactions] = useState([])
   const [studySessions, setStudySessions] = useState([])
   const [quizAttempts, setQuizAttempts] = useState([])
@@ -262,7 +298,7 @@ function App() {
           getUserSavedItems(currentUser.id).then(setSavedItemIds)
 
           // 0ms instant cached profile restore
-          const cached = await getCachedUserProfile(currentUser.id)
+          const cached = getSyncCachedUserProfile(currentUser.id) || (await getCachedUserProfile(currentUser.id))
           if (cached) {
             setProfile(cached)
             setAuthLoading(false) // Unblock UI immediately!
@@ -520,101 +556,86 @@ function App() {
   }
 
   // -------------------------------------------------------------
-  // 3. PROGRESSIVE DASHBOARD DATA LOADING (CRITICAL FIRST)
+  // 3. PROGRESSIVE DASHBOARD DATA LOADING (CRITICAL FIRST & PARALLEL)
   // -------------------------------------------------------------
-  const loadAllDashboardData = useCallback(async () => {
+  const loadAllDashboardData = useCallback(() => {
     if (!user?.id || !profile) return
 
-    // 1. Critical first: Timetable (0ms cached + background refresh)
-    try {
-      const cached = await getCachedClassSchedule(profile.semester, profile.section)
+    // 1. Critical first: Timetable (Instant cache + background revalidate)
+    getCachedClassSchedule(profile.semester, profile.section).then((cached) => {
       if (cached && cached.length > 0) {
-        setDashboardSchedule(cached)
+        setDashboardSchedule((prev) => (prev.length === 0 ? cached : prev))
       }
+    }).catch(() => {})
 
-      if (typeof navigator !== "undefined" && navigator.onLine) {
-        const data = await getClassSchedule(profile.semester, profile.section)
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      getClassSchedule(profile.semester, profile.section).then((data) => {
         if (data && data.length > 0) {
           setDashboardSchedule(data)
         }
-      }
-    } catch (error) {
-      console.warn("Dashboard schedule note:", error)
+      }).catch((err) => console.warn("Dashboard schedule note:", err))
     }
 
-    // 2. Secondary in background: Tasks, Exams, Study sessions
-    try {
-      const [
-        tasksResult,
-        examsResult,
-        topicsResult,
-        sessionsResult,
-        quizzesResult,
-        xpData,
-        histData,
-        savedData,
-      ] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("id, title, subject, deadline, importance, estimated_minutes, status, is_completed, completed_at, updated_at")
-          .eq("user_id", user.id)
-          .eq("status", "pending")
-          .order("deadline", { ascending: true })
-          .limit(10),
+    // 2. Secondary in background: Tasks, Exams, Study sessions in parallel
+    Promise.all([
+      supabase
+        .from("tasks")
+        .select("id, title, subject, deadline, importance, estimated_minutes, status, is_completed, completed_at, updated_at")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .order("deadline", { ascending: true })
+        .limit(10),
 
-        supabase
-          .from("exams")
-          .select("id, subject, exam_date, importance")
-          .eq("user_id", user.id)
-          .gte("exam_date", new Date().toISOString())
-          .order("exam_date", { ascending: true })
-          .limit(5),
+      supabase
+        .from("exams")
+        .select("id, subject, exam_date, importance")
+        .eq("user_id", user.id)
+        .gte("exam_date", new Date().toISOString())
+        .order("exam_date", { ascending: true })
+        .limit(5),
 
-        supabase
-          .from("student_topic_progress")
-          .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
-          .eq("user_id", user.id)
-          .limit(15),
+      supabase
+        .from("student_topic_progress")
+        .select("id, mastery_score, status, syllabus_topic_id, syllabus_topics(id, topic_name, unit_number, academic_subjects(subject_name))")
+        .eq("user_id", user.id)
+        .limit(15),
 
-        supabase
-          .from("study_sessions")
-          .select("id, duration_minutes, completed_at, created_at")
-          .eq("user_id", user.id)
-          .limit(10),
+      supabase
+        .from("study_sessions")
+        .select("id, duration_minutes, completed_at, created_at")
+        .eq("user_id", user.id)
+        .limit(10),
 
-        supabase
-          .from("topic_quiz_attempts")
-          .select("id, score_percentage, attempted_at, created_at")
-          .eq("user_id", user.id)
-          .limit(10),
+      supabase
+        .from("topic_quiz_attempts")
+        .select("id, score_percentage, attempted_at, created_at")
+        .eq("user_id", user.id)
+        .limit(10),
 
-        getXPTransactions(user.id),
-        getUserChallengeHistory(user.id),
-        getUserSavedItems(user.id),
-      ])
-
-      const formattedTopics = (topicsResult.data || []).map((p) => ({
-        id: p.syllabus_topic_id || p.id,
-        topic_name: p.syllabus_topics?.topic_name || "Topic",
-        subject: p.syllabus_topics?.academic_subjects?.subject_name || "Academic Subject",
-        mastery_score: p.mastery_score || 0,
-        status: p.status || "not_started",
-      }))
-
-      if (tasksResult.data) setDashboardTasks(tasksResult.data)
-      if (examsResult.data) setDashboardExams(examsResult.data)
-      if (formattedTopics.length > 0) setDashboardTopics(formattedTopics)
-      if (sessionsResult.data) setStudySessions(sessionsResult.data)
-      if (quizzesResult.data) setQuizAttempts(quizzesResult.data)
+      getXPTransactions(user.id),
+      getUserChallengeHistory(user.id),
+      getUserSavedItems(user.id),
+    ]).then(([tasksResult, examsResult, topicsResult, sessionsResult, quizzesResult, xpData, histData, savedData]) => {
+      if (tasksResult?.data) setDashboardTasks(tasksResult.data)
+      if (examsResult?.data) setDashboardExams(examsResult.data)
+      if (topicsResult?.data) {
+        const formattedTopics = topicsResult.data.map((p) => ({
+          id: p.syllabus_topic_id || p.id,
+          topic_name: p.syllabus_topics?.topic_name || "Topic",
+          subject: p.syllabus_topics?.academic_subjects?.subject_name || "Academic Subject",
+          mastery_score: p.mastery_score || 0,
+          status: p.status || "not_started",
+        }))
+        if (formattedTopics.length > 0) setDashboardTopics(formattedTopics)
+      }
+      if (sessionsResult?.data) setStudySessions(sessionsResult.data)
+      if (quizzesResult?.data) setQuizAttempts(quizzesResult.data)
       if (xpData) setXpTransactions(xpData)
       if (histData) setChallengeHistory(histData)
       if (savedData) setSavedItemIds(savedData)
-
-      // Flashcard due-review check removed (Study Material feature removed)
-
-    } catch (err) {
+    }).catch((err) => {
       console.warn("Secondary academic data note:", err)
-    }
+    })
   }, [user?.id, profile?.semester, profile?.section])
 
   useEffect(() => {

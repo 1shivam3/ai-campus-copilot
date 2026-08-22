@@ -22,17 +22,32 @@ db.version(1).stores({
 // -------------------------------------------------------------
 // USER PROFILE CACHE
 // -------------------------------------------------------------
-export async function saveUserProfile(profile) {
-  if (!profile || !profile.id) return
+export function getSyncCachedUserProfile(userId) {
+  if (!userId) return null
   try {
-    await db.user_profile.put({
-      user_id: profile.id,
-      full_name: profile.full_name || "Student",
-      semester: Number(profile.semester) || 3,
-      section: profile.section || "B2",
-      avatar_url: profile.avatar_url || null,
-      updated_at: new Date().toISOString(),
-    })
+    const raw = localStorage.getItem(`coursepilot_cached_profile_${userId}`)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return null
+}
+
+export async function saveUserProfile(profile) {
+  if (!profile || (!profile.id && !profile.user_id)) return
+  const id = profile.id || profile.user_id
+  const payload = {
+    id: id,
+    user_id: id,
+    full_name: profile.full_name || "Student",
+    semester: Number(profile.semester) || 3,
+    section: profile.section || "B2",
+    avatar_url: profile.avatar_url || null,
+    updated_at: new Date().toISOString(),
+  }
+  try {
+    localStorage.setItem(`coursepilot_cached_profile_${id}`, JSON.stringify(payload))
+  } catch {}
+  try {
+    await db.user_profile.put(payload)
   } catch (err) {
     console.warn("[OfflineDB] saveUserProfile error:", err)
   }
@@ -40,6 +55,8 @@ export async function saveUserProfile(profile) {
 
 export async function getCachedUserProfile(userId) {
   if (!userId) return null
+  const syncCached = getSyncCachedUserProfile(userId)
+  if (syncCached) return syncCached
   try {
     return await db.user_profile.get(userId)
   } catch (err) {
@@ -51,27 +68,40 @@ export async function getCachedUserProfile(userId) {
 // -------------------------------------------------------------
 // TIMETABLE & LAB SCHEDULE CACHE
 // -------------------------------------------------------------
+export function getSyncCachedClassSchedule(semester, section) {
+  if (!semester || !section) return []
+  try {
+    const raw = localStorage.getItem(`coursepilot_cached_schedule_${semester}_${section}`)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return []
+}
+
 export async function saveClassSchedule(semester, section, scheduleList) {
   if (!semester || !section || !Array.isArray(scheduleList)) return
   try {
+    const records = scheduleList.map((item) => ({
+      id: item.id,
+      semester: Number(item.semester || semester),
+      section: String(item.section || section),
+      day_of_week: item.day_of_week,
+      start_time: item.start_time,
+      end_time: item.end_time,
+      room: item.room || item.academic_subjects?.room || "",
+      teacher_name: item.teacher_name || item.academic_subjects?.teacher_name || "",
+      subject_id: item.subject_id,
+      academic_subjects: item.academic_subjects || null,
+    }))
+
+    try {
+      localStorage.setItem(`coursepilot_cached_schedule_${semester}_${section}`, JSON.stringify(records))
+    } catch {}
+
     await db.transaction("rw", db.class_schedule, db.cached_metadata, async () => {
       // Clear previous schedule for this semester & section
       await db.class_schedule
         .where({ semester: Number(semester), section: String(section) })
         .delete()
-
-      const records = scheduleList.map((item) => ({
-        id: item.id,
-        semester: Number(item.semester || semester),
-        section: String(item.section || section),
-        day_of_week: item.day_of_week,
-        start_time: item.start_time,
-        end_time: item.end_time,
-        room: item.room || item.academic_subjects?.room || "",
-        teacher_name: item.teacher_name || item.academic_subjects?.teacher_name || "",
-        subject_id: item.subject_id,
-        academic_subjects: item.academic_subjects || null,
-      }))
 
       await db.class_schedule.bulkPut(records)
 
@@ -90,6 +120,8 @@ export async function saveClassSchedule(semester, section, scheduleList) {
 
 export async function getCachedClassSchedule(semester, section) {
   if (!semester || !section) return []
+  const syncCached = getSyncCachedClassSchedule(semester, section)
+  if (syncCached && syncCached.length > 0) return syncCached
   try {
     return await db.class_schedule
       .where({ semester: Number(semester), section: String(section) })
@@ -325,6 +357,9 @@ export async function setSyncMetadata(key, value = {}, version = 1) {
 export async function clearUserScopedCache(userId) {
   if (!userId) return
   try {
+    try {
+      localStorage.removeItem(`coursepilot_cached_profile_${userId}`)
+    } catch {}
     await db.transaction(
       "rw",
       [db.user_profile, db.student_topic_progress, db.attendance_records, db.sync_queue],

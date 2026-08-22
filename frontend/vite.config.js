@@ -15,6 +15,9 @@ export default defineConfig({
             if (id.includes('react') || id.includes('react-dom')) {
               return 'vendor-react'
             }
+            if (id.includes('dexie')) {
+              return 'dexie'
+            }
             return 'vendor'
           }
         },
