@@ -37,6 +37,19 @@ for path, body in protected:
     except Exception as e:
         print(f"Test on {path}: {e}")
 
+# 3. Public Leaderboard endpoint test
+try:
+    r_lb = requests.get(f"{PROD_BACKEND}/api/leaderboard?timeframe=global", timeout=15)
+    print(f"GET /api/leaderboard: status={r_lb.status_code}")
+    assert r_lb.status_code == 200
+    lb_data = r_lb.json()
+    print(f"  - Total active learners: {lb_data.get('total_active_learners')}")
+    print(f"  - Top 3 learners:")
+    for ranker in lb_data.get("leaderboard", [])[:3]:
+        print(f"    Rank {ranker.get('rank')}: {ranker.get('display_name')} ({ranker.get('xp')} XP, {ranker.get('solved')} solved)")
+except Exception as e:
+    print(f"Leaderboard test: {e}")
+
 print("\n==================================================")
 print("PRODUCTION BACKEND VERIFICATION COMPLETE")
 print("==================================================")
