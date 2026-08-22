@@ -618,7 +618,7 @@ function App() {
   }, [user?.id, profile?.semester, profile?.section])
 
   useEffect(() => {
-    if (user?.id && profile && (currentPage === "Home" || currentPage === "Dashboard" || currentPage === "Saved")) {
+    if (user?.id && profile) {
       loadAllDashboardData()
     }
   }, [user?.id, profile?.semester, profile?.section, currentPage, loadAllDashboardData])
@@ -1135,7 +1135,15 @@ function App() {
 
           {currentPage === "Leaderboard" && (
             <Suspense fallback={<PageSuspenseFallback />}>
-              <Leaderboard user={user} profile={profile} />
+              <Leaderboard
+                user={user}
+                profile={profile}
+                totalXP={xpSummary.totalXP}
+                thisWeekXP={xpSummary.thisWeekXP}
+                streak={learningStreak.currentStreak}
+                reputation={profile.reputation || 91}
+                onNavigate={setCurrentPage}
+              />
             </Suspense>
           )}
 
@@ -1169,7 +1177,16 @@ function App() {
               <MyProfile
                 user={user}
                 profile={profile}
-                onUpdateProfile={(updated) => setProfile(updated)}
+                totalXP={xpSummary.totalXP}
+                thisWeekXP={xpSummary.thisWeekXP}
+                streak={learningStreak.currentStreak}
+                reputation={profile.reputation || 91}
+                topicProgress={dashboardTopics}
+                quizAttempts={quizAttempts}
+                xpTransactions={xpTransactions}
+                studySessions={studySessions}
+                onProfileUpdated={(updated) => setProfile(updated)}
+                onNavigate={setCurrentPage}
               />
             </Suspense>
           )}

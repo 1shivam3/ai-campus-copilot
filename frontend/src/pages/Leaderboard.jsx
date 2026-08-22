@@ -53,9 +53,9 @@ export default function Leaderboard({
     async function syncAndFetch() {
       setLoading(true)
 
-      // Parallel execution: sync user stats AND fetch live campus standings simultaneously
-      const syncPromise = user?.id
-        ? syncUserLearningStats({
+      try {
+        if (user?.id) {
+          await syncUserLearningStats({
             user_id: user.id,
             full_name: profile?.full_name || "Student",
             public_display_name: userDisplayName,
@@ -68,12 +68,9 @@ export default function Leaderboard({
             reputation: profile?.reputation || reputation || 91,
             solved_count: Math.floor(totalXP / 25),
           })
-        : Promise.resolve(null)
+        }
 
-      const fetchPromise = fetchCampusLeaderboard(timeframe)
-
-      try {
-        const [, leaderboardData] = await Promise.all([syncPromise, fetchPromise])
+        const leaderboardData = await fetchCampusLeaderboard(timeframe)
 
         if (isMounted && Array.isArray(leaderboardData) && leaderboardData.length > 0) {
           setRemoteRankings(leaderboardData)

@@ -137,12 +137,13 @@ export function rankFeedItems({
     }
 
     // F. Novelty & Completion Penalty (10%)
+    // F. Novelty & Completion Penalty (10%)
     const isCompleted =
       completedReferenceKeys.has(`challenge_completion:${item.id}`) ||
       completedReferenceKeys.has(item.id)
 
     if (isCompleted) {
-      noveltyScore = 10
+      noveltyScore = 0
     } else {
       const ageHours = (Date.now() - new Date(item.created_at || Date.now()).getTime()) / 3600000
       noveltyScore = Math.max(40, 100 - Math.min(60, ageHours * 1.5))
@@ -172,11 +173,9 @@ export function rankFeedItems({
     }
   })
 
-  // Sort descending by score, prioritizing uncompleted high-yield items
-  return scoredItems.sort((a, b) => {
-    if (a.isCompleted !== b.isCompleted) {
-      return a.isCompleted ? 1 : -1
-    }
-    return b.rankingScore - a.rankingScore
-  })
+  // Exclude completed items from active candidate feed
+  const activeCandidates = scoredItems.filter((item) => !item.isCompleted)
+
+  // Sort descending by score
+  return activeCandidates.sort((a, b) => b.rankingScore - a.rankingScore)
 }

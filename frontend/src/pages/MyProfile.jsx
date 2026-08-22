@@ -206,8 +206,8 @@ export default function MyProfile({
     })
 
     return Object.entries(categories).map(([name, stat]) => {
-      const avg = stat.count > 0 ? Math.round(stat.total / stat.count) : 65
-      return { name, percentage: Math.min(100, Math.max(20, avg)) }
+      const avg = stat.count > 0 ? Math.round(stat.total / stat.count) : 0
+      return { name, percentage: avg }
     })
   }, [topicProgress])
 
@@ -222,9 +222,9 @@ export default function MyProfile({
     const masteredTopicsCount = topicProgress.filter((tp) => (tp.mastery_score || 0) >= 80).length
 
     return {
-      totalChallenges: Math.max(totalChallenges, 3),
-      totalQuizzes: Math.max(totalQuizzes, 2),
-      totalFocusMinutes: Math.max(totalFocusMinutes, 45),
+      totalChallenges,
+      totalQuizzes,
+      totalFocusMinutes,
       masteredTopicsCount,
     }
   }, [xpTransactions, quizAttempts, studySessions, topicProgress])

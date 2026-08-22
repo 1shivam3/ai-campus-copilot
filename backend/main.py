@@ -59,8 +59,132 @@ except Exception as e:
     supabase_client = None
     logger.warning(f"Could not initialize Supabase backend client on module import: {e}")
 
-if not api_key:
-    logger.warning("GEMINI_API_KEY is not configured in environment. AI endpoints will operate with graceful fallbacks.")
+def parse_llm_json(raw_text: str) -> dict:
+    """
+    Robust JSON parser for LLM responses.
+    Handles markdown code fences, leading/trailing conversational text,
+    trailing commas, unescaped newlines, and common formatting anomalies.
+    """
+    if not raw_text or not isinstance(raw_text, str):
+        raise ValueError("Empty or invalid response from AI model.")
+
+    text = raw_text.strip()
+
+    # 1. Direct try
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # 2. Extract content from ```json ... ``` or ``` ... ``` code fence
+    fence_pattern = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
+    fenced_match = fence_pattern.search(text)
+    if fenced_match:
+        candidate = fenced_match.group(1).strip()
+        try:
+            return json.loads(candidate)
+        except Exception:
+            text = candidate
+
+    # 3. Search for outermost JSON object { ... } or array [ ... ]
+    start_brace = text.find("{")
+    start_bracket = text.find("[")
+
+    if start_brace != -1 and (start_bracket == -1 or start_brace < start_bracket):
+        end_brace = text.rfind("}")
+        if end_brace > start_brace:
+            candidate = text[start_brace : end_brace + 1].strip()
+            try:
+                return json.loads(candidate)
+            except Exception:
+                cleaned = re.sub(r",\s*([\]\}])", r"\1", candidate)
+                try:
+                    return json.loads(cleaned)
+                except Exception:
+                    pass
+    elif start_bracket != -1:
+        end_bracket = text.rfind("]")
+        if end_bracket > start_bracket:
+            candidate = text[start_bracket : end_bracket + 1].strip()
+            try:
+                return json.loads(candidate)
+            except Exception:
+                cleaned = re.sub(r",\s*([\]\}])", r"\1", candidate)
+                try:
+                    return json.loads(cleaned)
+                except Exception:
+                    pass
+
+    # 4. Final attempt: normalize newlines inside string literals
+    try:
+        candidate_fixed = re.sub(r'[\r\n\t]+', ' ', text)
+        return json.loads(candidate_fixed)
+    except Exception as final_err:
+        raise ValueError(f"Could not parse valid JSON from AI response: {final_err}")
+
+
+def shuffle_mcq_options(q_dict: dict) -> dict:
+    """
+    Shuffles MCQ options with stable option ID tracking to ensure
+    the correct answer is genuinely varied across A, B, C, D (indices 0, 1, 2, 3).
+    """
+    if not isinstance(q_dict, dict):
+        return q_dict
+    options = q_dict.get("options")
+    if not isinstance(options, list) or len(options) < 2:
+        return q_dict
+
+    orig_idx = q_dict.get("correct_answer")
+    if orig_idx is None:
+        orig_idx = q_dict.get("correct_index", 0)
+    try:
+        orig_idx = int(orig_idx)
+    except (ValueError, TypeError):
+        orig_idx = 0
+    if orig_idx < 0 or orig_idx >= len(options):
+        orig_idx = 0
+
+    labeled = []
+    for i, opt in enumerate(options):
+        opt_text = opt.get("text", str(opt)) if isinstance(opt, dict) else str(opt)
+        opt_id = opt.get("id", f"opt_{i}") if isinstance(opt, dict) else f"opt_{i}"
+        labeled.append({
+            "id": opt_id,
+            "text": opt_text,
+            "is_correct": (i == orig_idx)
+        })
+
+    random.shuffle(labeled)
+
+    new_options = []
+    new_correct_idx = 0
+    for new_i, item in enumerate(labeled):
+        new_options.append(item["text"])
+        if item["is_correct"]:
+            new_correct_idx = new_i
+
+    q_dict["options"] = new_options
+    q_dict["correct_answer"] = new_correct_idx
+    q_dict["correct_index"] = new_correct_idx
+    q_dict["correct_option_id"] = f"opt_{new_correct_idx}"
+    return q_dict
+
+
+def normalize_and_shuffle_quiz_json(raw_text: str) -> str:
+    """
+    Parses quiz JSON and shuffles all MCQ options so correct answers vary across A, B, C, D.
+    """
+    try:
+        parsed = parse_llm_json(raw_text)
+        if isinstance(parsed, dict) and "questions" in parsed and isinstance(parsed["questions"], list):
+            for q in parsed["questions"]:
+                if isinstance(q, dict) and "options" in q:
+                    shuffle_mcq_options(q)
+            return json.dumps(parsed)
+    except Exception:
+        pass
+    return raw_text
+
 
 app = FastAPI(title="CoursePilot API", docs_url=None, redoc_url=None)
 
@@ -237,11 +361,11 @@ JSON format:
                     model=model_name,
                     contents=prompt,
                 )
-                return {"quiz": response.text}
+                return {"quiz": normalize_and_shuffle_quiz_json(response.text)}
             else:
                 model = genai_legacy.GenerativeModel(model_name)
                 response = model.generate_content(prompt)
-                return {"quiz": response.text}
+                return {"quiz": normalize_and_shuffle_quiz_json(response.text)}
         except Exception as err:
             last_error = err
 
@@ -478,6 +602,8 @@ JSON FORMAT:
                     parsed["unit"] = parsed.get("unit") or scope_label
                     parsed["question_type"] = parsed.get("question_type") or q_type
                     parsed["difficulty"] = parsed.get("difficulty") or chosen_difficulty
+                    if parsed.get("question_type") == "mcq" or "options" in parsed:
+                        shuffle_mcq_options(parsed)
                     return {"question": parsed}
         except Exception as err:
             last_error = err
@@ -502,6 +628,7 @@ JSON FORMAT:
             "correct_answer": 0,
             "explanation": f"{fallback_title} is designed to provide structured operational efficiency: {fallback_desc or 'Fundamental principle in curriculum.'}"
         }
+        shuffle_mcq_options(fallback_question)
     elif q_type == "short_answer":
         fallback_question = {
             "unit": scope_label,
@@ -589,11 +716,11 @@ JSON format:
                     model=model_name,
                     contents=prompt,
                 )
-                return {"quiz": response.text}
+                return {"quiz": normalize_and_shuffle_quiz_json(response.text)}
             else:
                 model = genai_legacy.GenerativeModel(model_name)
                 response = model.generate_content(prompt)
-                return {"quiz": response.text}
+                return {"quiz": normalize_and_shuffle_quiz_json(response.text)}
         except Exception as err:
             last_error = err
 
@@ -1723,70 +1850,6 @@ STRICT RAG RULES:
 # ---------------------------------------------------------
 # AI STUDY PACK GENERATION & LLM JSON PARSER HELPERS
 # ---------------------------------------------------------
-
-def parse_llm_json(raw_text: str) -> dict:
-    """
-    Robust JSON parser for LLM responses.
-    Handles markdown code fences, leading/trailing conversational text,
-    trailing commas, unescaped newlines, and common formatting anomalies.
-    """
-    if not raw_text or not isinstance(raw_text, str):
-        raise ValueError("Empty or invalid response from AI model.")
-
-    text = raw_text.strip()
-
-    # 1. Direct try
-    try:
-        return json.loads(text)
-    except Exception:
-        pass
-
-    # 2. Extract content from ```json ... ``` or ``` ... ``` code fence
-    fence_pattern = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
-    fenced_match = fence_pattern.search(text)
-    if fenced_match:
-        candidate = fenced_match.group(1).strip()
-        try:
-            return json.loads(candidate)
-        except Exception:
-            text = candidate
-
-    # 3. Search for outermost JSON object { ... } or array [ ... ]
-    start_brace = text.find("{")
-    start_bracket = text.find("[")
-
-    if start_brace != -1 and (start_bracket == -1 or start_brace < start_bracket):
-        end_brace = text.rfind("}")
-        if end_brace > start_brace:
-            candidate = text[start_brace : end_brace + 1].strip()
-            try:
-                return json.loads(candidate)
-            except Exception:
-                # Remove trailing commas before closing braces/brackets
-                cleaned = re.sub(r",\s*([\]\}])", r"\1", candidate)
-                try:
-                    return json.loads(cleaned)
-                except Exception:
-                    pass
-    elif start_bracket != -1:
-        end_bracket = text.rfind("]")
-        if end_bracket > start_bracket:
-            candidate = text[start_bracket : end_bracket + 1].strip()
-            try:
-                return json.loads(candidate)
-            except Exception:
-                cleaned = re.sub(r",\s*([\]\}])", r"\1", candidate)
-                try:
-                    return json.loads(cleaned)
-                except Exception:
-                    pass
-
-    # 4. Final attempt: normalize newlines inside string literals
-    try:
-        candidate_fixed = re.sub(r'[\r\n\t]+', ' ', text)
-        return json.loads(candidate_fixed)
-    except Exception as final_err:
-        raise ValueError(f"Could not parse valid JSON from AI response: {final_err}")
 
 
 def normalize_study_pack_schema(raw_data: dict) -> dict:

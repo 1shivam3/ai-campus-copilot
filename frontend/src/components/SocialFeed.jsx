@@ -166,154 +166,155 @@ function SocialFeed({
 
       {/* Feed Cards List */}
       <div className="space-y-4">
-        {rankedItems.map((item, index) => {
-          const isSolved =
-            completedKeys.has(`challenge_completion:${item.id}`) ||
-            completedKeys.has(item.id)
-          const isLiked = likedIds.has(item.id)
-          const isSaved = savedIds.has(item.id)
-          const isTopForYou = activeTab === "For You" && index === 0 && !isSolved
-          const realLikes = (item.likes_count || 0) + (isLiked ? 1 : 0)
-          const realParticipation = item.participation_count || 0
+        {rankedItems.length === 0 ? (
+          <div className="rounded-3xl border border-[#E4E4E7] bg-white p-8 text-center shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]">
+            <span className="text-3xl">🎉</span>
+            <h4 className="mt-2 text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
+              All Available Challenges Solved!
+            </h4>
+            <p className="mt-1 text-xs text-[#52525B] dark:text-[#a1a1aa] max-w-sm mx-auto">
+              You&apos;ve cleared all active curriculum challenges in this category. Head to Exam Mode or Topic Quizzes to keep leveling up your mastery!
+            </p>
+          </div>
+        ) : (
+          rankedItems.map((item, index) => {
+            const isSolved =
+              completedKeys.has(`challenge_completion:${item.id}`) ||
+              completedKeys.has(item.id)
+            const isLiked = likedIds.has(item.id)
+            const isSaved = savedIds.has(item.id)
+            const isTopForYou = activeTab === "For You" && index === 0 && !isSolved
+            const realLikes = (item.likes_count || 0) + (isLiked ? 1 : 0)
+            const realParticipation = item.participation_count || 0
 
-          return (
-            <div
-              key={item.id}
-              className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border p-4 sm:p-5 transition-all ${
-                isTopForYou
-                  ? "border-[#0F766E]/40 bg-[#ECFDF5]/50 shadow-2xs dark:border-[#2DD4BF]/40 dark:bg-[#182226]"
-                  : isSolved
-                  ? "border-[#E4E4E7] bg-[#F7F7F2] opacity-85 dark:border-[#27343a] dark:bg-[#182226]"
-                  : "border-[#E4E4E7] bg-white hover:border-[#0F766E]/40 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]"
-              }`}
-            >
-              {/* Top Priority Badge */}
-              {isTopForYou && (
-                <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#0F766E] px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-2xs self-start">
-                  <span>🔥 Recommended For You</span>
-                </div>
-              )}
+            return (
+              <div
+                key={item.id}
+                className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border p-4 sm:p-5 transition-all ${
+                  isTopForYou
+                    ? "border-[#0F766E]/40 bg-[#ECFDF5]/50 shadow-2xs dark:border-[#2DD4BF]/40 dark:bg-[#182226]"
+                    : "border-[#E4E4E7] bg-white hover:border-[#0F766E]/40 shadow-2xs dark:border-[#27343a] dark:bg-[#141c1f]"
+                }`}
+              >
+                {/* Top Priority Badge */}
+                {isTopForYou && (
+                  <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#0F766E] px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-2xs self-start">
+                    <span>🔥 Recommended For You</span>
+                  </div>
+                )}
 
-              <div>
-                {/* Subject & Difficulty Header */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11px] font-extrabold text-[#0F766E] uppercase dark:text-[#2DD4BF]">
-                    {item.subject}
-                  </span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                        item.difficulty === "Easy"
-                          ? "bg-emerald-50 text-[#15803D] dark:bg-emerald-950/40 dark:text-emerald-300"
-                          : item.difficulty === "Hard"
-                          ? "bg-rose-50 text-[#DC2626] dark:bg-rose-950/40 dark:text-rose-300"
-                          : "bg-amber-50 text-[#D97706] dark:bg-amber-950/40 dark:text-amber-300"
-                      }`}
-                    >
-                      {item.difficulty}
+                <div>
+                  {/* Subject & Difficulty Header */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[11px] font-extrabold text-[#0F766E] uppercase dark:text-[#2DD4BF]">
+                      {item.subject}
                     </span>
-                    {isSolved && (
-                      <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-extrabold text-[#15803D] border border-emerald-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]">
-                        ✓ Solved
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                          item.difficulty === "Easy"
+                            ? "bg-emerald-50 text-[#15803D] dark:bg-emerald-950/40 dark:text-emerald-300"
+                            : item.difficulty === "Hard"
+                            ? "bg-rose-50 text-[#DC2626] dark:bg-rose-950/40 dark:text-rose-300"
+                            : "bg-amber-50 text-[#D97706] dark:bg-amber-950/40 dark:text-amber-300"
+                        }`}
+                      >
+                        {item.difficulty}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* Challenge Title */}
+                  <h4 className="mt-2 text-sm sm:text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
+                    {item.title}
+                  </h4>
+
+                  {/* Question / Description Snippet */}
+                  <p className="mt-1 text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa] leading-relaxed line-clamp-3 font-normal">
+                    {item.content}
+                  </p>
+
+                  {/* Real-Data Social Metrics */}
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-medium text-[#71717A] dark:text-[#71717a] border-t border-[#E4E4E7] dark:border-[#27343a] pt-2.5">
+                    {realParticipation > 0 ? (
+                      <>
+                        <span>👥 {realParticipation} participated</span>
+                        <span>·</span>
+                        <span>🎯 {item.success_rate || 88}% success</span>
+                      </>
+                    ) : (
+                      <span>🎯 Be the first to solve!</span>
+                    )}
+                    {item.source && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate">{item.source}</span>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* Challenge Title */}
-                <h4 className="mt-2 text-sm sm:text-base font-bold text-[#18181B] dark:text-[#f4f4f5]">
-                  {item.title}
-                </h4>
+                {/* Bottom Actions Row */}
+                <div className="mt-3.5 flex items-center justify-between border-t border-[#E4E4E7] pt-3 dark:border-[#27343a]">
+                  {/* Social Buttons: Helpful, Save, Share */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleLike(item.id, e)}
+                      className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
+                        isLiked
+                          ? "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300"
+                          : "text-[#52525B] hover:bg-[#F7F7F2] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
+                      }`}
+                      title={isLiked ? "Unlike" : "Helpful / Like"}
+                    >
+                      <span>{isLiked ? "❤️" : "🤍"}</span>
+                      <span>{realLikes > 0 ? realLikes : "Helpful"}</span>
+                    </button>
 
-                {/* Question / Description Snippet */}
-                <p className="mt-1 text-xs sm:text-sm text-[#52525B] dark:text-[#a1a1aa] leading-relaxed line-clamp-3 font-normal">
-                  {item.content}
-                </p>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleSave(item.id, e)}
+                      className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
+                        isSaved
+                          ? "bg-teal-50 text-[#0F766E] dark:bg-[#182226] dark:text-[#2DD4BF]"
+                          : "text-[#52525B] hover:bg-[#F7F7F2] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
+                      }`}
+                      title={isSaved ? "Remove from saved" : "Bookmark / Save for review"}
+                    >
+                      <span>{isSaved ? "🔖" : "📑"}</span>
+                      <span>{isSaved ? "Saved" : "Save"}</span>
+                    </button>
 
-                {/* Real-Data Social Metrics */}
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-medium text-[#71717A] dark:text-[#71717a] border-t border-[#E4E4E7] dark:border-[#27343a] pt-2.5">
-                  {realParticipation > 0 ? (
-                    <>
-                      <span>👥 {realParticipation} participated</span>
-                      <span>·</span>
-                      <span>🎯 {item.success_rate}% success</span>
-                    </>
-                  ) : (
-                    <span>🎯 Be the first to solve!</span>
-                  )}
-                  {item.source && (
-                    <>
-                      <span>·</span>
-                      <span className="truncate">{item.source}</span>
-                    </>
-                  )}
+                    <button
+                      type="button"
+                      onClick={(e) => handleShare(item, e)}
+                      className="flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold text-[#52525B] hover:bg-[#F7F7F2] transition dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
+                      title="Share challenge"
+                    >
+                      <span>🔗</span>
+                      <span>Share</span>
+                    </button>
+                  </div>
+
+                  {/* Primary Action Button */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-[#0F766E] dark:text-[#2DD4BF]">
+                      +{item.xp_reward || 25} XP
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSolverItem(item)}
+                      className="rounded-2xl bg-[#0F766E] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#115E59] shadow-2xs transition active:scale-95"
+                    >
+                      {item.action || "Solve"}
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Bottom Actions Row */}
-              <div className="mt-3.5 flex items-center justify-between border-t border-[#E4E4E7] pt-3 dark:border-[#27343a]">
-                {/* Social Buttons: Helpful, Save, Share */}
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => handleToggleLike(item.id, e)}
-                    className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
-                      isLiked
-                        ? "bg-rose-50 text-[#DC2626] dark:bg-rose-950/40 dark:text-rose-300"
-                        : "text-[#52525B] hover:bg-[#F7F7F2] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
-                    }`}
-                    title="Helpful"
-                  >
-                    <span>{isLiked ? "❤️" : "🤍"}</span>
-                    <span>{realLikes > 0 ? realLikes : "Helpful"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleToggleSave(item.id, e)}
-                    className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
-                      isSaved
-                        ? "bg-[#ECFDF5] text-[#0F766E] border border-teal-200/60 dark:bg-[#182226] dark:border-[#2DD4BF]/30 dark:text-[#2DD4BF]"
-                        : "text-[#52525B] hover:bg-[#F7F7F2] dark:text-[#a1a1aa] dark:hover:bg-[#182226]"
-                    }`}
-                    title={isSaved ? "Saved" : "Save challenge"}
-                  >
-                    <span>{isSaved ? "🔖" : "🏷️"}</span>
-                    <span>{isSaved ? "Saved" : "Save"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleShare(item, e)}
-                    className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs text-[#52525B] hover:bg-[#F7F7F2] dark:text-[#a1a1aa] dark:hover:bg-[#182226] transition"
-                    title="Share challenge"
-                  >
-                    <span>↗️</span>
-                    <span className="hidden sm:inline">Share</span>
-                  </button>
-                </div>
-
-                {/* Primary Action Button */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-[#0F766E] dark:text-[#2DD4BF]">
-                    ⭐ +{item.xp_reward} XP
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveSolverItem(item)}
-                    className={`rounded-2xl px-4 py-1.5 text-xs font-bold transition active:scale-95 ${
-                      isSolved
-                        ? "border border-[#E4E4E7] bg-white text-[#52525B] hover:bg-[#F7F7F2] dark:border-[#27343a] dark:bg-[#141c1f] dark:text-[#a1a1aa]"
-                        : "bg-[#0F766E] text-white hover:bg-[#115E59] shadow-2xs"
-                    }`}
-                  >
-                    {isSolved ? "Review" : item.action || "Solve"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
 
       {/* Interactive Challenge Solver Modal */}
@@ -338,7 +339,7 @@ function SocialFeed({
 }
 
 /**
- * Interactive Challenge Solver Modal with Instant Validation & Social Percentile Comparison.
+ * Interactive Challenge Solver Modal with Stable Option IDs & Instant Verification.
  */
 function ChallengeSolverModal({
   challenge,
@@ -348,14 +349,38 @@ function ChallengeSolverModal({
   onXPUpdated,
   onChallengeSolved,
 }) {
-  const [selectedIdx, setSelectedIdx] = useState(null)
+  const [selectedOptionId, setSelectedOptionId] = useState(null)
   const [submitted, setSubmitted] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [awardedXP, setAwardedXP] = useState(0)
 
+  // Normalize options with stable IDs and verify correct option
+  const normalizedOptions = useMemo(() => {
+    if (!challenge?.options) return []
+    return challenge.options.map((opt, idx) => {
+      const isObj = typeof opt === "object" && opt !== null
+      const id = isObj ? opt.id : `opt_${idx}`
+      const text = isObj ? opt.text : opt
+      const isCorrectOption =
+        challenge.correct_option_id !== undefined
+          ? challenge.correct_option_id === id
+          : challenge.correct_index !== undefined
+          ? challenge.correct_index === idx
+          : false
+      return {
+        id,
+        text,
+        isCorrectOption,
+        letter: String.fromCharCode(65 + idx),
+        originalIdx: idx,
+      }
+    })
+  }, [challenge])
+
   async function handleValidate() {
-    if (selectedIdx === null || submitted) return
-    const correct = selectedIdx === challenge.correct_index
+    if (selectedOptionId === null || submitted) return
+    const chosen = normalizedOptions.find((o) => o.id === selectedOptionId)
+    const correct = chosen ? chosen.isCorrectOption : false
     setIsCorrect(correct)
     setSubmitted(true)
 
@@ -366,7 +391,7 @@ function ChallengeSolverModal({
         challengeId: challenge.id,
         passed: correct,
         score: correct ? 100 : 0,
-        selectedOption: selectedIdx,
+        selectedOption: chosen ? chosen.letter : selectedOptionId,
       })
     }
 
@@ -426,40 +451,46 @@ function ChallengeSolverModal({
           {challenge.question || challenge.content}
         </p>
 
-        {/* Interactive MCQ Options */}
-        {challenge.options && (
+        {/* Interactive MCQ Options with Stable Identifiers */}
+        {normalizedOptions.length > 0 && (
           <div className="space-y-2 mb-5">
-            {challenge.options.map((opt, idx) => {
+            {normalizedOptions.map((opt) => {
+              const isSelected = selectedOptionId === opt.id
               let optStyle =
                 "border-[#E4E4E7] bg-[#F7F7F2] hover:bg-white text-[#18181B] dark:border-[#27343a] dark:bg-[#182226] dark:text-[#f4f4f5]"
 
               if (submitted) {
-                if (idx === challenge.correct_index) {
+                if (opt.isCorrectOption) {
                   optStyle =
                     "border-emerald-500 bg-[#ECFDF5] text-[#15803D] font-bold dark:bg-emerald-950/60 dark:text-emerald-200"
-                } else if (idx === selectedIdx && !isCorrect) {
+                } else if (isSelected && !isCorrect) {
                   optStyle =
                     "border-rose-500 bg-rose-50 text-[#DC2626] font-bold dark:bg-rose-950/60 dark:text-rose-200"
                 } else {
                   optStyle = "opacity-40 border-[#E4E4E7] dark:border-[#27343a]"
                 }
-              } else if (selectedIdx === idx) {
+              } else if (isSelected) {
                 optStyle =
                   "border-[#0F766E] bg-[#ECFDF5] text-[#0F766E] font-bold shadow-2xs dark:bg-[#182226] dark:border-[#2DD4BF] dark:text-[#2DD4BF]"
               }
 
               return (
                 <button
-                  key={idx}
+                  key={opt.id}
                   type="button"
                   disabled={submitted}
-                  onClick={() => setSelectedIdx(idx)}
+                  onClick={() => setSelectedOptionId(opt.id)}
                   className={`w-full rounded-2xl border p-3.5 text-left text-xs sm:text-sm transition ${optStyle}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span>{opt}</span>
-                    {submitted && idx === challenge.correct_index && <span>✓</span>}
-                    {submitted && idx === selectedIdx && !isCorrect && <span>✗</span>}
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs opacity-70">
+                        {opt.letter}.
+                      </span>
+                      <span>{opt.text}</span>
+                    </div>
+                    {submitted && opt.isCorrectOption && <span>✓</span>}
+                    {submitted && isSelected && !isCorrect && <span>✗</span>}
                   </div>
                 </button>
               )
@@ -494,9 +525,9 @@ function ChallengeSolverModal({
             {/* Social Performance Proof */}
             <div className="mt-3 border-t border-[#E4E4E7] dark:border-[#27343a] pt-2 text-[11px] text-[#71717A] dark:text-[#a1a1aa] font-medium">
               {isCorrect ? (
-                <span>🏆 You solved this faster than {challenge.success_rate}% of participants!</span>
+                <span>🏆 You solved this faster than {challenge.success_rate || 88}% of participants!</span>
               ) : (
-                <span>💡 {challenge.success_rate}% of students solved this on their first attempt.</span>
+                <span>💡 {challenge.success_rate || 88}% of students solved this on their first attempt.</span>
               )}
             </div>
           </div>
@@ -507,7 +538,7 @@ function ChallengeSolverModal({
           {!submitted ? (
             <button
               type="button"
-              disabled={selectedIdx === null}
+              disabled={selectedOptionId === null}
               onClick={handleValidate}
               className="rounded-2xl bg-[#0F766E] px-5 py-2.5 text-xs font-bold text-white shadow-2xs hover:bg-[#115E59] disabled:opacity-40 transition active:scale-95"
             >

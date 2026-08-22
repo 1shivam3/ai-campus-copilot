@@ -155,10 +155,16 @@ def run_tests():
     print("  --> [PASS] Study pack schema parser and normalizer fully verified.")
 
     # 10. Security Hardening, Protected Routes, Cross-User Isolation, Rate Limiting & Auth
-    print("\n[TEST 10/10] Comprehensive Security Hardening & Cross-User Isolation Suite...")
+    print("\n[TEST 10/11] Comprehensive Security Hardening & Cross-User Isolation Suite...")
     from test_security_hardening import test_security_hardening
     test_security_hardening()
     print("  --> [PASS] Security hardening, unauthenticated rejection, and cross-user isolation verified.")
+
+    # 11. Data Consistency, MCQ Answer Distribution, XP Sync, Leaderboard & Mastery Suite
+    print("\n[TEST 11/11] Data Consistency, MCQ Option Shuffling, Leaderboard & Subject Mastery Suite...")
+    from test_data_consistency_fixes import test_data_consistency
+    test_data_consistency()
+    print("  --> [PASS] Data consistency, varied MCQ answers, XP sync, leaderboard ranking, and mastery isolation verified.")
 
     duration = round(time.time() - start_time, 2)
     print("\n=======================================================")
